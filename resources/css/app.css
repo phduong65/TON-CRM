@@ -66,6 +66,7 @@
     }
 }
 
+
 @layer components {
     /* Sidebar */
     .sidebar-link {
@@ -669,6 +670,83 @@
         }
     }
 
+    /* ── P-CRM Alert Modal ── */
+    @keyframes pcrm-alert-backdrop-in {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    @keyframes pcrm-alert-popup-in {
+        from { opacity: 0; transform: scale(0.78) translateY(-20px); }
+        60%  { transform: scale(1.03) translateY(0); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes pcrm-alert-popup-out {
+        from { opacity: 1; transform: scale(1); }
+        to   { opacity: 0; transform: scale(0.88) translateY(10px); }
+    }
+    @keyframes pcrm-alert-icon-bounce {
+        0%   { transform: scale(0.4); opacity: 0; }
+        55%  { transform: scale(1.12); opacity: 1; }
+        75%  { transform: scale(0.94); }
+        100% { transform: scale(1); }
+    }
+    @keyframes pcrm-alert-check {
+        0%   { stroke-dashoffset: 48; opacity: 0; }
+        30%  { opacity: 1; }
+        100% { stroke-dashoffset: 0; }
+    }
+    @keyframes pcrm-alert-x-left {
+        0%   { stroke-dashoffset: 20; opacity: 0; }
+        40%  { opacity: 1; }
+        100% { stroke-dashoffset: 0; }
+    }
+    @keyframes pcrm-alert-x-right {
+        0%   { stroke-dashoffset: 20; }
+        40%  { opacity: 1; }
+        100% { stroke-dashoffset: 0; }
+    }
+    @keyframes pcrm-alert-timer {
+        from { width: 100%; }
+        to   { width: 0%; }
+    }
+    @keyframes pcrm-alert-exclaim {
+        0%   { transform: scale(0) rotate(-10deg); opacity: 0; }
+        60%  { transform: scale(1.1) rotate(3deg); opacity: 1; }
+        80%  { transform: scale(0.96) rotate(-1deg); }
+        100% { transform: scale(1) rotate(0); }
+    }
+
+    .pcrm-alert-backdrop {
+        animation: pcrm-alert-backdrop-in 0.25s ease forwards;
+    }
+    .pcrm-alert-popup {
+        animation: pcrm-alert-popup-in 0.4s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+    }
+    .pcrm-alert-popup-out {
+        animation: pcrm-alert-popup-out 0.22s ease forwards;
+    }
+    .pcrm-alert-icon-wrap {
+        animation: pcrm-alert-icon-bounce 0.5s cubic-bezier(0.34, 1.2, 0.64, 1) 0.1s both;
+    }
+    .pcrm-alert-check-path {
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: pcrm-alert-check 0.5s ease 0.35s forwards;
+    }
+    .pcrm-alert-x-left {
+        stroke-dasharray: 20;
+        stroke-dashoffset: 20;
+        animation: pcrm-alert-x-left 0.3s ease 0.35s forwards;
+    }
+    .pcrm-alert-x-right {
+        stroke-dasharray: 20;
+        stroke-dashoffset: 20;
+        animation: pcrm-alert-x-right 0.3s ease 0.45s forwards;
+    }
+    .pcrm-alert-exclaim-path {
+        animation: pcrm-alert-exclaim 0.45s cubic-bezier(0.34, 1.2, 0.64, 1) 0.2s both;
+    }
+
     .rank-1 {
         background-color: var(--color-rank-100);
         color: var(--color-rank-700);
@@ -692,6 +770,41 @@
     .dark .rank-3 {
         background-color: color-mix(in srgb, var(--color-amber-900) 30%, transparent);
         color: var(--color-amber-400);
+    }
+
+    /* ── Personal dashboard ─────────────────────────────────────── */
+    @keyframes dash-hero-in {
+        from { opacity: 0; transform: translateY(18px) scale(0.99); }
+        to   { opacity: 1; transform: translateY(0)    scale(1);    }
+    }
+    @keyframes dash-card-in {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0);    }
+    }
+    @keyframes dash-bar-fill {
+        from { width: 0 !important; }
+    }
+    @keyframes dash-avatar-glow {
+        0%, 100% { box-shadow: 0 0 0 0   rgba(255,255,255,0.45); }
+        50%       { box-shadow: 0 0 0 10px rgba(255,255,255,0);   }
+    }
+    @keyframes dash-redzone-blink {
+        0%, 100% { opacity: 1;    }
+        50%       { opacity: 0.55; }
+    }
+    .dash-hero      { animation: dash-hero-in  0.55s cubic-bezier(0.22,1,0.36,1) both; }
+    .dash-card-1    { animation: dash-card-in  0.42s 0.10s ease both; }
+    .dash-card-2    { animation: dash-card-in  0.42s 0.20s ease both; }
+    .dash-card-3    { animation: dash-card-in  0.42s 0.30s ease both; }
+    .dash-sect-l    { animation: dash-card-in  0.42s 0.18s ease both; }
+    .dash-sect-r    { animation: dash-card-in  0.42s 0.30s ease both; }
+    .dash-score-bar { animation: dash-bar-fill 0.90s 0.70s cubic-bezier(0.22,1,0.36,1) both; }
+    .dash-avatar    { animation: dash-avatar-glow  2.8s 0.9s ease-in-out infinite; }
+    .dash-redzone-blink { animation: dash-redzone-blink 1.6s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+        .dash-hero, .dash-card-1, .dash-card-2, .dash-card-3,
+        .dash-sect-l, .dash-sect-r, .dash-score-bar,
+        .dash-avatar, .dash-redzone-blink { animation: none !important; }
     }
 }
 

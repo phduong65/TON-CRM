@@ -29,6 +29,13 @@ class LoginController extends Controller
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
+            if (Auth::user()->status === 'inactive') {
+                Auth::logout();
+                $request->session()->invalidate();
+                throw ValidationException::withMessages([
+                    'email' => 'Tài khoản của bạn đã bị tạm khóa. Vui lòng liên hệ quản trị viên.',
+                ]);
+            }
             $request->session()->regenerate();
             return redirect()->intended('/dashboard');
         }

@@ -32,8 +32,15 @@ class RolesController extends Controller
         $role = Role::create(['name' => $request->name, 'guard_name' => 'web']);
         $role->syncPermissions($request->permissions ?? []);
 
+        $permCount = count($request->permissions ?? []);
         activity()->causedBy(auth()->user())
-            ->log('created_role: ' . $request->name);
+            ->performedOn($role)
+            ->inLog('role')
+            ->withProperties([
+                'name'              => $role->name,
+                'permissions_count' => $permCount,
+            ])
+            ->log('Tạo vai trò: ' . $role->name . ' (' . $permCount . ' quyền)');
 
         return redirect()->route('roles.index')
             ->with('success', 'Tạo vai trò "' . $request->name . '" thành công.');
@@ -61,8 +68,15 @@ class RolesController extends Controller
         $role->update(['name' => $request->name]);
         $role->syncPermissions($request->permissions ?? []);
 
+        $permCount = count($request->permissions ?? []);
         activity()->causedBy(auth()->user())
-            ->log('updated_role: ' . $request->name);
+            ->performedOn($role)
+            ->inLog('role')
+            ->withProperties([
+                'name'              => $role->name,
+                'permissions_count' => $permCount,
+            ])
+            ->log('Cập nhật vai trò: ' . $role->name . ' (' . $permCount . ' quyền)');
 
         return redirect()->route('roles.index')
             ->with('success', 'Cập nhật vai trò thành công.');
@@ -79,7 +93,12 @@ class RolesController extends Controller
         }
 
         activity()->causedBy(auth()->user())
-            ->log('deleted_role: ' . $role->name);
+            ->performedOn($role)
+            ->inLog('role')
+            ->withProperties([
+                'name' => $role->name,
+            ])
+            ->log('Xóa vai trò: ' . $role->name);
 
         $role->delete();
 

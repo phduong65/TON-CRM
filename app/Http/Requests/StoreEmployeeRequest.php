@@ -16,7 +16,7 @@ class StoreEmployeeRequest extends FormRequest
         return [
             'code' => 'required|string|max:50|unique:employees,code',
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255|unique:employees,email',
+            'email' => 'required|email|max:255|unique:employees,email|unique:users,email',
             'phone' => 'nullable|string|max:20',
             'position' => 'nullable|string|max:255',
             'branch_id' => 'required|exists:branches,id',
@@ -32,7 +32,8 @@ class StoreEmployeeRequest extends FormRequest
             'code.required' => 'Mã nhân viên là bắt buộc.',
             'code.unique' => 'Mã nhân viên đã tồn tại.',
             'name.required' => 'Tên nhân viên là bắt buộc.',
-            'email.unique' => 'Email đã được sử dụng.',
+            'email.required' => 'Email là bắt buộc để tạo tài khoản đăng nhập.',
+            'email.unique' => 'Email này đã được sử dụng.',
             'branch_id.required' => 'Vui lòng chọn chi nhánh.',
             'branch_id.exists' => 'Chi nhánh không hợp lệ.',
             'team_id.required' => 'Vui lòng chọn đội nhóm.',

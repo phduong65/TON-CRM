@@ -10,7 +10,7 @@
         <div>
             <div class="inline-flex items-center gap-2">
                 <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-pcrm-100 dark:bg-pcrm-900/50 text-pcrm-700 dark:text-pcrm-400">
-                    <i class="ph-trophy text-lg"></i>
+                    <i class="bi bi-trophy text-lg"></i>
                 </span>
                 <h3 class="page-title">Bảng xếp hạng</h3>
             </div>
@@ -48,8 +48,8 @@
                                 <th class="table-th">Nhân viên</th>
                                 <th class="table-th">Chi nhánh</th>
                                 <th class="table-th">Đội nhóm</th>
-                                <th class="table-th text-right">Tổng điểm</th>
-                                <th class="table-th text-center">Huy hiệu</th>
+                                <th class="table-th text-center">Tổng điểm</th>
+                                {{-- <th class="table-th text-center">Huy hiệu</th> --}}
                             </tr>
                         </thead>
                         <tbody>
@@ -58,9 +58,9 @@
                                 <td class="table-td">
                                     @if($index < 3)
                                         <span class="rank-badge rank-{{ $index + 1 }} leaderboard-medal" aria-label="Top {{ $index + 1 }}">
-                                            @if($index === 0) <i class="ph-trophy-fill"></i>
-                                            @elseif($index === 1) <i class="ph-trophy-fill"></i>
-                                            @else <i class="ph-trophy-fill"></i>
+                                            @if($index === 0) <i class="bi bi-trophy"></i>
+                                            @elseif($index === 1) <i class="bi bi-trophy"></i>
+                                            @else <i class="bi bi-trophy"></i>
                                             @endif
                                         </span>
                                     @else
@@ -77,8 +77,8 @@
                                 </td>
                                 <td class="table-td">{{ $emp->branch->name ?? '—' }}</td>
                                 <td class="table-td">{{ $emp->team->name ?? '—' }}</td>
-                                <td class="table-td text-right font-bold">{{ number_format($emp->total_score ?? 0) }}</td>
-                                <td class="table-td text-center">
+                                <td class="table-td text-center font-bold">{{ number_format($emp->total_score ?? 0) }}</td>
+                                {{-- <td class="table-td text-center">
                                     @if($index === 0)
                                         <span class="badge bg-rank-500 text-white">Vàng</span>
                                     @elseif($index === 1)
@@ -86,9 +86,9 @@
                                     @elseif($index === 2)
                                         <span class="badge bg-amber-600 text-white">Đồng</span>
                                     @else
-                                        <span class="badge-neutral">—</span>
+                                        <span class="badge-neutral"></span>
                                     @endif
-                                </td>
+                                </td> --}}
                             </tr>
                             @empty
                             <tr>
@@ -109,7 +109,7 @@
                             <div class="leaderboard-card-rank">
                                 @if($index < 3)
                                     <span class="rank-badge rank-{{ $index + 1 }} leaderboard-medal">
-                                        <i class="ph-trophy-fill"></i>
+                                        <i class="bi bi-trophy"></i>
                                     </span>
                                 @else
                                     <span class="leaderboard-rank-number">{{ $index + 1 }}</span>
@@ -169,8 +169,8 @@
                                 <th class="table-th w-12">#</th>
                                 <th class="table-th">Đội nhóm</th>
                                 <th class="table-th">Chi nhánh</th>
-                                <th class="table-th text-right">Số nhân viên</th>
-                                <th class="table-th text-right">Điểm trung bình</th>
+                                <th class="table-th text-center">Số nhân viên</th>
+                                <th class="table-th text-center">Điểm trung bình</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -179,7 +179,7 @@
                                 <td class="table-td">
                                     @if($index < 3)
                                         <span class="rank-badge rank-{{ $index + 1 }} leaderboard-medal">
-                                            <i class="ph-trophy-fill"></i>
+                                            <i class="bi bi-trophy"></i>
                                         </span>
                                     @else
                                         <span class="text-sm font-semibold text-slate-500 dark:text-slate-400">{{ $index + 1 }}</span>
@@ -187,8 +187,8 @@
                                 </td>
                                 <td class="table-td font-medium">{{ $team->name }}</td>
                                 <td class="table-td">{{ $team->branch->name ?? '—' }}</td>
-                                <td class="table-td text-right">{{ $team->employees_count ?? 0 }}</td>
-                                <td class="table-td text-right font-bold">{{ number_format($team->average_score, 1) }}</td>
+                                <td class="table-td text-center">{{ $team->employees_count ?? 0 }}</td>
+                                <td class="table-td text-center font-bold">{{ number_format($team->average_score, 1) }}</td>
                             </tr>
                             @empty
                             <tr>

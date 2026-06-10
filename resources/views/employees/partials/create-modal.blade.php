@@ -12,6 +12,12 @@
         <form action="{{ route('employees.store') }}" method="POST" class="px-6 py-5 space-y-4 overflow-y-auto">
             @csrf
             <input type="hidden" name="_modal" value="createEmployeeModal">
+
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-[#f5f7fa] dark:bg-[#2d3748] border border-sky-200 dark:border-sky-700 text-sm">
+                <i class="bi bi-person-badge text-sky-500 mt-0.5 shrink-0"></i>
+                <p class="text-sky-700 dark:text-sky-300">Hệ thống sẽ tự động tạo tài khoản đăng nhập cho nhân viên. Email sẽ được dùng làm tên đăng nhập.</p>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Mã nhân viên <span class="text-red-500">*</span></label>
@@ -31,8 +37,8 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="form-label">Email</label>
-                    <input type="email" name="email" class="form-input" value="{{ old('email') }}" placeholder="email@congty.vn">
+                    <label class="form-label">Email <span class="text-red-500">*</span></label>
+                    <input type="email" name="email" class="form-input" value="{{ old('email') }}" placeholder="email@congty.vn" required>
                     @error('email') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
                 <div>

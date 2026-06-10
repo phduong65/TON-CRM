@@ -50,6 +50,11 @@ class Penalty extends Model
         return $this->hasMany(PenaltyMember::class);
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');

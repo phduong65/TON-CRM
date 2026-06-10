@@ -5,19 +5,41 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Branch;
 use App\Models\Team;
+use App\Models\User;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
+use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class EmployeesController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $employees = Employee::with(['branch', 'team'])
-            ->orderBy('name')
-            ->paginate(15);
-        $branches = Branch::orderBy('name')->get();
-        $teams    = Team::orderBy('name')->get();
+        $query = Employee::with(['branch', 'team'])
+            ->orderBy('name');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%")->orWhere('email', 'like', "%$s%"));
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('team_id')) {
+            $query->where('team_id', $request->team_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === '1');
+        }
+
+        $employees = $query->paginate(15)->withQueryString();
+        $branches  = Branch::orderBy('name')->get();
+        $teams     = Team::orderBy('name')->get();
         return view('employees.index', compact('employees', 'branches', 'teams'));
     }
 
@@ -30,15 +52,57 @@ class EmployeesController extends Controller
 
     public function store(StoreEmployeeRequest $request)
     {
-        $employee = Employee::create($request->validated());
+        $plainPassword = Str::random(10);
 
+        $defaultPoints = (int) Setting::getValue('default_points', 100);
+
+        $employee = DB::transaction(function () use ($request, $plainPassword, $defaultPoints) {
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => $plainPassword,
+            ]);
+
+            if (\Spatie\Permission\Models\Role::where('name', 'staff')->exists()) {
+                $user->assignRole('staff');
+            }
+
+            $employee = Employee::create(array_merge(
+                $request->validated(),
+                ['user_id' => $user->id]
+            ));
+
+            $employee->scores()->create([
+                'points' => $defaultPoints,
+                'reason' => 'Điểm khởi điểm',
+                'type'   => 'adjustment',
+            ]);
+
+            return $employee;
+        });
+
+        $employee->loadMissing(['branch', 'team']);
         activity()
             ->performedOn($employee)
             ->causedBy(auth()->user())
-            ->log('created_employee');
+            ->inLog('employee')
+            ->withProperties([
+                'code'     => $employee->code,
+                'name'     => $employee->name,
+                'email'    => $employee->email,
+                'position' => $employee->position,
+                'branch'   => $employee->branch?->name,
+                'team'     => $employee->team?->name,
+            ])
+            ->log('Tạo nhân viên ' . $employee->name . ' (' . $employee->code . ')');
 
-        return redirect()->route('employees.index')
-            ->with('success', 'Nhân viên ' . $employee->name . ' đã được thêm!');
+        return redirect()->route('employees.show', $employee)
+            ->with('new_account', [
+                'name'     => $employee->name,
+                'code'     => $employee->code,
+                'email'    => $employee->email,
+                'password' => $plainPassword,
+            ]);
     }
 
     public function show(Employee $employee)
@@ -60,10 +124,19 @@ class EmployeesController extends Controller
     {
         $employee->update($request->validated());
 
+        $employee->refresh()->loadMissing(['branch', 'team']);
         activity()
             ->performedOn($employee)
             ->causedBy(auth()->user())
-            ->log('updated_employee');
+            ->inLog('employee')
+            ->withProperties([
+                'code'     => $employee->code,
+                'name'     => $employee->name,
+                'position' => $employee->position,
+                'branch'   => $employee->branch?->name,
+                'team'     => $employee->team?->name,
+            ])
+            ->log('Cập nhật nhân viên ' . $employee->name . ' (' . $employee->code . ')');
 
         return redirect()->route('employees.index')
             ->with('success', 'Thông tin nhân viên đã được cập nhật!');
@@ -71,12 +144,19 @@ class EmployeesController extends Controller
 
     public function destroy(Employee $employee)
     {
-        $employee->update(['is_active' => false]);
-
+        $employee->loadMissing(['branch']);
         activity()
             ->performedOn($employee)
             ->causedBy(auth()->user())
-            ->log('deactivated_employee');
+            ->inLog('employee')
+            ->withProperties([
+                'code'   => $employee->code,
+                'name'   => $employee->name,
+                'branch' => $employee->branch?->name,
+            ])
+            ->log('Vô hiệu hóa nhân viên ' . $employee->name . ' (' . $employee->code . ')');
+
+        $employee->update(['is_active' => false]);
 
         return redirect()->route('employees.index')
             ->with('success', 'Nhân viên đã được vô hiệu hóa!');

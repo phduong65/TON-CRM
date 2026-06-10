@@ -8,12 +8,26 @@ use Illuminate\Http\Request;
 
 class TeamsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $teams = Team::with('branch')
+        $query = Team::with('branch')
             ->withCount('employees')
-            ->orderBy('name')
-            ->paginate(15);
+            ->orderBy('name');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
+        }
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === '1');
+        }
+
+        $teams    = $query->paginate(15)->withQueryString();
         $branches = Branch::orderBy('name')->get();
         return view('teams.index', compact('teams', 'branches'));
     }

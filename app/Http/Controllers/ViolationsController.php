@@ -8,11 +8,31 @@ use Illuminate\Http\Request;
 
 class ViolationsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $violations = Violation::with('regulation')
-            ->orderBy('name')
-            ->paginate(15);
-        return view('violations.index', compact('violations'));
+        $query = Violation::with('regulation')
+            ->orderBy('name');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
+        }
+
+        if ($request->filled('regulation_id')) {
+            $query->where('regulation_id', $request->regulation_id);
+        }
+
+        if ($request->filled('severity')) {
+            $query->where('severity', $request->severity);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === '1');
+        }
+
+        $violations  = $query->paginate(15)->withQueryString();
+        $regulations = Regulation::orderBy('name')->get();
+
+        return view('violations.index', compact('violations', 'regulations'));
     }
 }

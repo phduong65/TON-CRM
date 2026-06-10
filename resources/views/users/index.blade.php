@@ -18,13 +18,60 @@
         @endcan
     </div>
 
-    <div class="card overflow-hidden">
+    {{-- Filter bar --}}
+    <div class="card">
+        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+            <form action="{{ route('users.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           class="form-input h-9 text-sm w-52" placeholder="Tên, email...">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Vai trò</label>
+                    <select name="role" class="form-input h-9 text-sm">
+                        <option value="">Tất cả vai trò</option>
+                        @foreach($roles as $role)
+                            @php
+                                $rLabels = ['admin'=>'Quản trị viên','manager'=>'Quản lý','team_leader'=>'Trưởng nhóm','staff'=>'Nhân viên'];
+                            @endphp
+                            <option value="{{ $role->name }}" @selected(request('role') === $role->name)>
+                                {{ $rLabels[$role->name] ?? $role->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái TK</label>
+                    <select name="status" class="form-input h-9 text-sm">
+                        <option value="">Tất cả</option>
+                        <option value="active"   @selected(request('status') === 'active')>Hoạt động</option>
+                        <option value="inactive" @selected(request('status') === 'inactive')>Tạm khóa</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+                        <i class="bi bi-funnel text-xs"></i> Lọc
+                    </button>
+                    @if(request()->anyFilled(['search', 'role', 'status']))
+                    <a href="{{ route('users.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
+                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    </a>
+                    @endif
+                </div>
+                <div class="ml-auto flex items-end">
+                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $users->total() }} kết quả</p>
+                </div>
+            </form>
+        </div>
+        <div class="table-container border-0 rounded-none">
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60">
                     <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">#</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Người dùng</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Vai trò</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Trạng thái TK</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Quyền riêng</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-600 dark:text-slate-300">Đăng ký</th>
                     <th class="px-4 py-3 text-right font-semibold text-slate-600 dark:text-slate-300">Thao tác</th>
@@ -36,14 +83,14 @@
                     <td class="px-4 py-3 text-slate-400 dark:text-slate-500 text-xs">{{ $loop->iteration }}</td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-pcrm-100 dark:bg-pcrm-900/50 flex items-center justify-center text-pcrm-700 dark:text-pcrm-400 font-bold text-xs shrink-0">
+                            <div class="w-8 h-8 rounded-full {{ $user->status === 'inactive' ? 'bg-slate-200 dark:bg-slate-700' : 'bg-pcrm-100 dark:bg-pcrm-900/50' }} flex items-center justify-center {{ $user->status === 'inactive' ? 'text-slate-400' : 'text-pcrm-700 dark:text-pcrm-400' }} font-bold text-xs shrink-0">
                                 {{ strtoupper(substr($user->name, 0, 2)) }}
                             </div>
                             <div class="min-w-0">
-                                <p class="font-medium text-slate-900 dark:text-white truncate">
+                                <p class="font-medium {{ $user->status === 'inactive' ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white' }} truncate">
                                     {{ $user->name }}
                                     @if($user->id === auth()->id())
-                                        <span class="ml-1 text-[10px] text-pcrm-600 dark:text-pcrm-400 font-semibold">(bạn)</span>
+                                        <span class="ml-1 text-[10px] text-pcrm-600 dark:text-pcrm-400 font-semibold no-underline">(bạn)</span>
                                     @endif
                                 </p>
                                 <p class="text-xs text-slate-400 dark:text-slate-500 truncate">{{ $user->email }}</p>
@@ -78,6 +125,17 @@
                         @endif
                     </td>
                     <td class="px-4 py-3">
+                        @if($user->status === 'inactive')
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                <i class="bi bi-lock text-[9px]"></i> Tạm khóa
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                <i class="bi bi-check-circle text-[9px]"></i> Hoạt động
+                            </span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-3">
                         @php $directCount = $user->getDirectPermissions()->count(); @endphp
                         @if($directCount > 0)
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
@@ -96,15 +154,31 @@
                             @can('manage-users')
                             <button onclick='openEditUserModal({{ json_encode(["id"=>$user->id,"name"=>$user->name,"email"=>$user->email,"role"=>$user->roles->first()?->name ?? ""]) }})'
                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                <i class="bi bi-pencil text-xs"></i>
-                                Sửa
+                                <i class="bi bi-pencil text-xs"></i> Sửa
                             </button>
+                            @if($user->id !== auth()->id())
+                            <form action="{{ route('users.toggleStatus', $user) }}" method="POST" class="inline">
+                                @csrf
+                                @if($user->status === 'inactive')
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                        title="Kích hoạt tài khoản">
+                                    <i class="bi bi-unlock text-xs"></i> Kích hoạt
+                                </button>
+                                @else
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                                        title="Tạm khóa tài khoản">
+                                    <i class="bi bi-lock text-xs"></i> Khóa
+                                </button>
+                                @endif
+                            </form>
+                            @endif
                             @endcan
                             @if($user->id !== auth()->id())
                             <button onclick="openDeleteUserModal({{ $user->id }}, '{{ addslashes($user->name) }}')"
                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                <i class="bi bi-trash text-xs"></i>
-                                Xóa
+                                <i class="bi bi-trash text-xs"></i> Xóa
                             </button>
                             @endif
                         </div>
@@ -112,7 +186,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
+                    <td colspan="7" class="px-4 py-12 text-center text-slate-400 dark:text-slate-500">
                         <i class="bi bi-people text-3xl block mb-2 opacity-40"></i>
                         <p>Chưa có người dùng nào.</p>
                     </td>
@@ -120,7 +194,7 @@
                 @endforelse
             </tbody>
         </table>
-
+        </div>
         @if($users->hasPages())
         <div class="px-4 py-3 border-t border-slate-100 dark:border-slate-700">
             {{ $users->links() }}

@@ -18,6 +18,60 @@
     </div>
 
     <div class="card">
+        {{-- Filter bar --}}
+        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+            <form action="{{ route('employees.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           class="form-input h-9 text-sm w-48" placeholder="Tên, mã NV, email...">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Chi nhánh</label>
+                    <select name="branch_id" class="form-input h-9 text-sm">
+                        <option value="">Tất cả chi nhánh</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Đội nhóm</label>
+                    <select name="team_id" class="form-input h-9 text-sm">
+                        <option value="">Tất cả đội nhóm</option>
+                        @foreach($teams as $team)
+                            <option value="{{ $team->id }}" @selected(request('team_id') == $team->id)>
+                                {{ $team->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                    <select name="status" class="form-input h-9 text-sm">
+                        <option value="">Tất cả</option>
+                        <option value="1" @selected(request('status') === '1')>Đang làm việc</option>
+                        <option value="0" @selected(request('status') === '0')>Đã nghỉ việc</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+                        <i class="bi bi-funnel text-xs"></i> Lọc
+                    </button>
+                    @if(request()->anyFilled(['search', 'branch_id', 'team_id', 'status']))
+                    <a href="{{ route('employees.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
+                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    </a>
+                    @endif
+                </div>
+                <div class="ml-auto flex items-end">
+                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $employees->total() }} kết quả</p>
+                </div>
+            </form>
+        </div>
+
         <div class="card-body p-0">
             <div class="table-container border-0 rounded-none">
                 <table class="table-base">
@@ -29,6 +83,7 @@
                             <th class="table-th">Chi nhánh</th>
                             <th class="table-th">Đội nhóm</th>
                             <th class="table-th">Chức vụ</th>
+                            <th class="table-th text-center">Trạng thái</th>
                             <th class="table-th text-right">Điểm</th>
                             <th class="table-th text-center">Thao tác</th>
                         </tr>
@@ -46,6 +101,13 @@
                             <td class="table-td">{{ $emp->branch->name ?? '—' }}</td>
                             <td class="table-td">{{ $emp->team->name ?? '—' }}</td>
                             <td class="table-td">{{ $emp->position ?? '—' }}</td>
+                            <td class="table-td text-center">
+                                @if($emp->is_active)
+                                    <span class="badge badge-success">Đang làm</span>
+                                @else
+                                    <span class="badge badge-neutral">Đã nghỉ</span>
+                                @endif
+                            </td>
                             <td class="table-td text-right font-semibold">{{ number_format($emp->total_score) }}</td>
                             <td class="table-td text-center">
                                 <div class="flex items-center justify-center gap-1">
@@ -72,7 +134,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="table-td text-center py-8 text-slate-400">
+                            <td colspan="9" class="table-td text-center py-8 text-slate-400">
                                 <i class="bi bi-person-x text-3xl mb-2 block opacity-40"></i>
                                 <p>Chưa có nhân viên nào</p>
                             </td>

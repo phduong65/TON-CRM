@@ -39,7 +39,7 @@
                             <td class="table-td text-sm text-slate-500">{{ $penalty->created_at->format('d/m/Y') }}</td>
                             <td class="table-td text-center">
                                 <a href="{{ route('penalties.show', $penalty) }}" class="btn-ghost btn-sm">
-                                    <i class="ph-eye"></i>
+                                    <i class="bi bi-eye"></i>
                                 </a>
                             </td>
                         </tr>

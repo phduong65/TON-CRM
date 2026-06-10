@@ -11,6 +11,7 @@ use App\Http\Controllers\RegulationsController;
 use App\Http\Controllers\ViolationsController;
 use App\Http\Controllers\BranchesController;
 use App\Http\Controllers\TeamsController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\UsersController;
@@ -40,6 +41,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/theme/toggle', [ThemeController::class, 'toggle'])
         ->name('theme.toggle');
 
+    // Profile — xem & chỉnh sửa hồ sơ cá nhân
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
     // Employees — Full CRUD (create/edit via modal)
     Route::prefix('employees')->name('employees.')->group(function () {
         Route::get('/', [EmployeesController::class, 'index'])->name('index');
@@ -62,7 +68,11 @@ Route::middleware('auth')->group(function () {
     // Penalties
     Route::prefix('penalties')->name('penalties.')->group(function () {
         Route::get('/', [PenaltiesController::class, 'index'])->name('index');
+        Route::post('/', [PenaltiesController::class, 'store'])->name('store');
         Route::get('/{penalty}', [PenaltiesController::class, 'show'])->name('show');
+        Route::get('/{penalty}/detail-json', [PenaltiesController::class, 'detailJson'])->name('detail-json');
+        Route::put('/{penalty}', [PenaltiesController::class, 'update'])->name('update');
+        Route::delete('/{penalty}', [PenaltiesController::class, 'destroy'])->name('destroy');
         Route::post('/{penalty}/approve', [PenaltiesController::class, 'approve'])->name('approve');
         Route::post('/{penalty}/reject', [PenaltiesController::class, 'reject'])->name('reject');
     });
@@ -92,6 +102,7 @@ Route::middleware('auth')->group(function () {
     // User Management (admin: manage-users) — create/edit via modal
     Route::middleware('can:manage-users')->group(function () {
         Route::resource('users', UsersController::class)->except(['create', 'edit', 'show']);
+        Route::post('/users/{user}/toggle-status', [UsersController::class, 'toggleStatus'])->name('users.toggleStatus');
     });
 
     // Role & Permission Management (admin: manage-roles) — create/edit via modal

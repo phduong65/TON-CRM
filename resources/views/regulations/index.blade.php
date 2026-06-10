@@ -9,13 +9,56 @@
         <div>
             <p class="page-subtitle">Quản lý các quy chế xử phạt — điểm, tiền hoặc cả hai</p>
         </div>
+        @can('create-regulations')
         <button onclick="openModal('createRegulationModal')" class="btn-primary">
             <i class="bi bi-plus-lg"></i>
             <span>Thêm quy chế</span>
         </button>
+        @endcan
     </div>
 
     <div class="card">
+        {{-- Filter bar --}}
+        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+            <form action="{{ route('regulations.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           class="form-input h-9 text-sm w-52" placeholder="Tên, mã quy chế...">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Loại phạt</label>
+                    <select name="type" class="form-input h-9 text-sm">
+                        <option value="">Tất cả loại</option>
+                        <option value="points" @selected(request('type') === 'points')>Điểm</option>
+                        <option value="money"  @selected(request('type') === 'money')>Tiền</option>
+                        <option value="both"   @selected(request('type') === 'both')>Cả hai</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                    <select name="status" class="form-input h-9 text-sm">
+                        <option value="">Tất cả</option>
+                        <option value="1" @selected(request('status') === '1')>Hiệu lực</option>
+                        <option value="0" @selected(request('status') === '0')>Tạm ngưng</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+                        <i class="bi bi-funnel text-xs"></i> Lọc
+                    </button>
+                    @if(request()->anyFilled(['search', 'type', 'status']))
+                    <a href="{{ route('regulations.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
+                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    </a>
+                    @endif
+                </div>
+                <div class="ml-auto flex items-end">
+                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $regulations->total() }} kết quả</p>
+                </div>
+            </form>
+        </div>
+
         <div class="card-body p-0">
             <div class="table-container border-0 rounded-none">
                 <table class="table-base">
@@ -28,7 +71,9 @@
                             <th class="table-th text-right">Tiền mặc định</th>
                             <th class="table-th">Hiệu lực từ</th>
                             <th class="table-th text-center">Trạng thái</th>
+                            @canany(['create-regulations', 'update-regulations'])
                             <th class="table-th text-center">Thao tác</th>
+                            @endcanany
                         </tr>
                     </thead>
                     <tbody>
@@ -61,6 +106,7 @@
                                     <span class="badge badge-neutral">Tạm ngưng</span>
                                 @endif
                             </td>
+                            @canany(['create-regulations', 'update-regulations'])
                             <td class="table-td text-center">
                                 <div class="flex items-center justify-center gap-1">
                                     <button onclick='openEditRegulationModal({{ json_encode(["id"=>$reg->id,"code"=>$reg->code,"name"=>$reg->name,"description"=>$reg->description,"type"=>$reg->type,"default_points"=>$reg->default_points,"default_money"=>$reg->default_money,"effective_date"=>optional($reg->effective_date)->format("Y-m-d"),"is_active"=>$reg->is_active]) }})'
@@ -73,6 +119,7 @@
                                     </button>
                                 </div>
                             </td>
+                            @endcanany
                         </tr>
                         @empty
                         <tr>

@@ -5,6 +5,48 @@
 @section('breadcrumb', 'Nhân viên / Chi tiết')
 
 @section('content')
+    @if(session('new_account'))
+    @php $acc = session('new_account'); @endphp
+    <div id="newAccountBanner" class="mb-6 rounded-xl border-2 border-emerald-400 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 overflow-hidden">
+        <div class="flex items-center gap-3 px-5 py-3 bg-emerald-400/20 dark:bg-emerald-500/10 border-b border-emerald-300 dark:border-emerald-600">
+            <i class="bi bi-shield-check text-emerald-600 dark:text-emerald-400 text-lg"></i>
+            <span class="font-semibold text-emerald-800 dark:text-emerald-300">Tài khoản đã được tạo thành công!</span>
+            <button onclick="document.getElementById('newAccountBanner').remove()"
+                    class="ml-auto w-7 h-7 flex items-center justify-center rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-700 transition">
+                <i class="bi bi-x-lg text-sm"></i>
+            </button>
+        </div>
+        <div class="px-5 py-4 space-y-3">
+            <p class="text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill text-amber-500"></i>
+                Ghi lại thông tin này ngay — mật khẩu <strong>chỉ hiển thị một lần</strong>.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="rounded-lg bg-white dark:bg-slate-800 border border-emerald-200 dark:border-slate-600 px-4 py-3 space-y-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Nhân viên</p>
+                    <p class="text-sm font-medium text-slate-800 dark:text-white">{{ $acc['name'] }}</p>
+                    <p class="text-xs text-slate-500 font-mono">Mã: {{ $acc['code'] }}</p>
+                </div>
+                <div class="rounded-lg bg-white dark:bg-slate-800 border border-emerald-200 dark:border-slate-600 px-4 py-3 space-y-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Thông tin đăng nhập</p>
+                    <div class="flex items-center gap-2">
+                        <i class="bi bi-envelope text-slate-400 text-xs"></i>
+                        <span class="text-sm font-mono text-slate-800 dark:text-white select-all">{{ $acc['email'] }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="bi bi-key text-slate-400 text-xs"></i>
+                        <span id="newAccPassword" class="text-sm font-mono font-bold text-pcrm-600 dark:text-pcrm-400 select-all tracking-widest">{{ $acc['password'] }}</span>
+                        <button onclick="navigator.clipboard.writeText('{{ $acc['password'] }}').then(()=>{this.innerHTML='<i class=\'bi bi-check2\'></i>';setTimeout(()=>{this.innerHTML='<i class=\'bi bi-clipboard\'></i>'},1500)})"
+                                class="ml-1 p-1 rounded text-slate-400 hover:text-pcrm-600 dark:hover:text-pcrm-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Sao chép mật khẩu">
+                            <i class="bi bi-clipboard text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Profile Card -->
         <div class="lg:col-span-1">

@@ -16,6 +16,49 @@
     </div>
 
     <div class="card">
+        {{-- Filter bar --}}
+        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+            <form action="{{ route('teams.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           class="form-input h-9 text-sm w-44" placeholder="Tên, mã đội nhóm...">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Chi nhánh</label>
+                    <select name="branch_id" class="form-input h-9 text-sm">
+                        <option value="">Tất cả chi nhánh</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                    <select name="status" class="form-input h-9 text-sm">
+                        <option value="">Tất cả</option>
+                        <option value="1" @selected(request('status') === '1')>Hoạt động</option>
+                        <option value="0" @selected(request('status') === '0')>Ngừng hoạt động</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+                        <i class="bi bi-funnel text-xs"></i> Lọc
+                    </button>
+                    @if(request()->anyFilled(['search', 'branch_id', 'status']))
+                    <a href="{{ route('teams.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
+                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    </a>
+                    @endif
+                </div>
+                <div class="ml-auto flex items-end">
+                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $teams->total() }} kết quả</p>
+                </div>
+            </form>
+        </div>
+
         <div class="card-body p-0">
             <div class="table-container border-0 rounded-none">
                 <table class="table-base">

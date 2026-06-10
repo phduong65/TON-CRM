@@ -7,9 +7,24 @@ use Illuminate\Http\Request;
 
 class RegulationsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $regulations = Regulation::orderBy('name')->paginate(15);
+        $query = Regulation::orderBy('name');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === '1');
+        }
+
+        $regulations = $query->paginate(15)->withQueryString();
         return view('regulations.index', compact('regulations'));
     }
 

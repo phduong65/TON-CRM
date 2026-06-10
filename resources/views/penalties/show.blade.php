@@ -6,7 +6,7 @@
 
 @section('content')
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Info -->
+        <!-- Info + Attachments -->
         <div class="lg:col-span-2 space-y-6">
             <div class="card">
                 <div class="card-header">
@@ -69,6 +69,49 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Attachments Card --}}
+            @if($penalty->attachments->count() > 0)
+            <div class="card">
+                <div class="card-header flex items-center gap-2">
+                    <i class="bi bi-paperclip text-slate-500 dark:text-slate-400"></i>
+                    <h3 class="font-semibold text-slate-900 dark:text-white">
+                        Tệp đính kèm
+                        <span class="ml-1.5 text-xs font-normal text-slate-400">({{ $penalty->attachments->count() }})</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach($penalty->attachments as $att)
+                        @if($att->type === 'image')
+                        <a href="{{ $att->url }}" target="_blank"
+                           class="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 block">
+                            <img src="{{ $att->url }}" alt="{{ $att->filename }}"
+                                 class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105">
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end">
+                                <p class="w-full text-[10px] text-white bg-black/50 px-2 py-1 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {{ $att->filename }}
+                                </p>
+                            </div>
+                        </a>
+                        @else
+                        <div class="aspect-square rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex flex-col items-center justify-center gap-2 p-3">
+                            <i class="bi bi-film text-3xl text-slate-400"></i>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 text-center break-all leading-tight line-clamp-2">
+                                {{ $att->filename }}
+                            </p>
+                            <p class="text-[10px] text-slate-400">{{ $att->formatted_size }}</p>
+                            <a href="{{ $att->url }}" target="_blank"
+                               class="text-[10px] text-pcrm-600 dark:text-pcrm-400 hover:underline flex items-center gap-0.5">
+                                <i class="bi bi-play-circle text-xs"></i> Xem
+                            </a>
+                        </div>
+                        @endif
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
 
         <!-- Sidebar -->

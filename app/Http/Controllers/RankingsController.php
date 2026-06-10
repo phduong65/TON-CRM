@@ -17,10 +17,23 @@ class RankingsController extends Controller
             ->orderBy('total_score', 'desc')
             ->paginate(20);
 
-        $teams = Team::withSum('employees as scores_sum', DB::raw('COALESCE((SELECT SUM(points) FROM employee_scores WHERE employee_id IN (SELECT id FROM employees WHERE team_id = teams.id)), 0)'))
+        $teams = Team::select('teams.*')
+            ->selectSub(
+                DB::table('employee_scores')
+                    ->selectRaw('COALESCE(SUM(points), 0)')
+                    ->whereIn('employee_id', function ($q) {
+                        $q->select('id')->from('employees')->whereColumn('team_id', 'teams.id');
+                    }),
+                'scores_sum'
+            )
+            ->selectSub(
+                DB::table('employees')
+                    ->selectRaw('COUNT(*)')
+                    ->whereColumn('team_id', 'teams.id'),
+                'employees_count'
+            )
             ->orderBy('scores_sum', 'desc')
             ->get();
-
         return view('rankings.index', compact('employees', 'teams'));
     }
 }

@@ -9,11 +9,28 @@ use Spatie\Permission\Models\Role;
 
 class UsersController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with(['roles', 'permissions'])->orderBy('name')->paginate(15);
+        $query = User::with(['roles'])
+            ->orderBy('name');
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn($q) => $q->where('name', 'like', "%$s%")->orWhere('email', 'like', "%$s%"));
+        }
+
+        if ($request->filled('role')) {
+            $query->whereHas('roles', fn($q) => $q->where('name', $request->role));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $users = $query->paginate(15)->withQueryString();
         $roles = Role::with('permissions')->orderBy('name')->get();
         $permissionGroups = $this->permissionGroups();
+
         return view('users.index', compact('users', 'roles', 'permissionGroups'));
     }
 
@@ -39,6 +56,7 @@ class UsersController extends Controller
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
+            'status'   => 'active',
         ]);
 
         $user->assignRole($request->role);
@@ -49,7 +67,13 @@ class UsersController extends Controller
 
         activity()->causedBy(auth()->user())
             ->performedOn($user)
-            ->log('created_user');
+            ->inLog('user')
+            ->withProperties([
+                'name'  => $user->name,
+                'email' => $user->email,
+                'role'  => $request->role,
+            ])
+            ->log('Tạo người dùng ' . $user->name . ' — Vai trò: ' . $request->role);
 
         return redirect()->route('users.index')
             ->with('success', 'Tạo người dùng "' . $user->name . '" thành công.');
@@ -100,10 +124,41 @@ class UsersController extends Controller
 
         activity()->causedBy(auth()->user())
             ->performedOn($user)
-            ->log('updated_user');
+            ->inLog('user')
+            ->withProperties([
+                'name'             => $user->name,
+                'email'            => $user->email,
+                'role'             => $request->role,
+                'password_changed' => $request->filled('password') ? 'Có' : 'Không',
+            ])
+            ->log('Cập nhật người dùng ' . $user->name . ' — Vai trò: ' . $request->role);
 
         return redirect()->route('users.index')
             ->with('success', 'Cập nhật người dùng "' . $user->name . '" thành công.');
+    }
+
+    public function toggleStatus(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'Không thể thay đổi trạng thái tài khoản đang đăng nhập.');
+        }
+
+        $newStatus = $user->status === 'active' ? 'inactive' : 'active';
+        $user->update(['status' => $newStatus]);
+
+        $statusLabel = $newStatus === 'inactive' ? 'Tạm khóa' : 'Kích hoạt';
+        activity()->causedBy(auth()->user())
+            ->performedOn($user)
+            ->inLog('user')
+            ->withProperties([
+                'name'       => $user->name,
+                'email'      => $user->email,
+                'new_status' => $newStatus === 'inactive' ? 'Tạm khóa' : 'Hoạt động',
+            ])
+            ->log($statusLabel . ' tài khoản ' . $user->name . ' (' . $user->email . ')');
+
+        $label = $newStatus === 'inactive' ? 'tạm khóa' : 'kích hoạt';
+        return back()->with('success', "Đã $label tài khoản \"{$user->name}\".");
     }
 
     public function destroy(User $user)
@@ -114,7 +169,12 @@ class UsersController extends Controller
 
         activity()->causedBy(auth()->user())
             ->performedOn($user)
-            ->log('deleted_user');
+            ->inLog('user')
+            ->withProperties([
+                'name'  => $user->name,
+                'email' => $user->email,
+            ])
+            ->log('Xóa người dùng ' . $user->name . ' (' . $user->email . ')');
 
         $user->delete();
 
