@@ -9,19 +9,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Violation extends Model
 {
     protected $fillable = [
-        'code',
         'name',
         'description',
-        'category',
         'severity',
         'regulation_id',
+        'penalty_type',
+        'points_deducted',
+        'money_deducted',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
+            'is_active'       => 'boolean',
+            'points_deducted' => 'integer',
+            'money_deducted'  => 'decimal:2',
         ];
     }
 

@@ -93,11 +93,106 @@
         </form>
 
         <!-- Notifications -->
-        <button
-            class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            title="Thông báo">
-            <i class="bi bi-bell text-base"></i>
-        </button>
+        @php
+            $topbarUnreadCount  = \App\Models\Notification::where('user_id', auth()->id())->whereNull('read_at')->count();
+            $topbarNotifications = \App\Models\Notification::where('user_id', auth()->id())
+                ->orderBy('created_at', 'desc')
+                ->limit(6)
+                ->get();
+        @endphp
+        <div class="relative" id="notif-dropdown">
+            <button onclick="toggleNotifMenu()"
+                class="relative w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                title="Thông báo">
+                <i class="bi bi-bell text-base"></i>
+                @if($topbarUnreadCount > 0)
+                    <span class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                        {{ $topbarUnreadCount > 99 ? '99+' : $topbarUnreadCount }}
+                    </span>
+                @endif
+            </button>
+
+            <!-- Notification dropdown -->
+            <div id="notif-menu"
+                class="hidden absolute right-0 mt-1.5 w-[360px] bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl z-[300] overflow-hidden">
+
+                <!-- Header -->
+                <div class="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-700/70">
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-sm text-slate-900 dark:text-white">Thông báo</span>
+                        @if($topbarUnreadCount > 0)
+                            <span class="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-bold bg-red-500 text-white leading-none">
+                                {{ $topbarUnreadCount > 99 ? '99+' : $topbarUnreadCount }}
+                            </span>
+                        @endif
+                    </div>
+                    @if($topbarUnreadCount > 0)
+                        <form action="{{ route('notifications.read-all') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="text-xs text-pcrm-600 dark:text-pcrm-400 hover:text-pcrm-700 dark:hover:text-pcrm-300 font-medium transition-colors">
+                                Đọc tất cả
+                            </button>
+                        </form>
+                    @endif
+                </div>
+
+                <!-- Notification items -->
+                <div class="max-h-[360px] overflow-y-auto overscroll-contain divide-y divide-slate-50 dark:divide-slate-700/50">
+                    @forelse($topbarNotifications as $n)
+                        @php $unread = $n->isUnread(); @endphp
+                        <a href="{{ route('notifications.show', $n) }}"
+                           onclick="closeNotifMenu()"
+                           class="flex items-start gap-3 px-4 py-3.5 transition-colors
+                               {{ $unread
+                                   ? 'bg-pcrm-50/70 dark:bg-pcrm-900/20 hover:bg-pcrm-50 dark:hover:bg-pcrm-900/30'
+                                   : 'hover:bg-slate-50 dark:hover:bg-slate-700/30' }}">
+
+                            {{-- Unread indicator --}}
+                            <div class="mt-1 w-2 shrink-0 flex justify-center">
+                                @if($unread)
+                                    <span class="w-2 h-2 rounded-full bg-pcrm-500 shrink-0"></span>
+                                @endif
+                            </div>
+
+                            {{-- Type icon --}}
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 {{ $n->typeColor() }}">
+                                <i class="bi {{ $n->typeIcon() }} text-sm"></i>
+                            </div>
+
+                            {{-- Content --}}
+                            <div class="flex-1 min-w-0">
+                                <p class="text-[13px] {{ $unread ? 'font-semibold text-slate-900 dark:text-white' : 'font-medium text-slate-600 dark:text-slate-400' }} leading-snug line-clamp-1">
+                                    {{ $n->title }}
+                                </p>
+                                @if($n->body)
+                                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 line-clamp-2 leading-snug">{{ $n->body }}</p>
+                                @endif
+                                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5">
+                                    {{ $n->created_at->diffForHumans() }}
+                                </p>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="py-12 text-center text-slate-400 dark:text-slate-500">
+                            <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mx-auto mb-3">
+                                <i class="bi bi-bell-slash text-xl opacity-60"></i>
+                            </div>
+                            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Không có thông báo</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <!-- Footer -->
+                <div class="border-t border-slate-100 dark:border-slate-700/70">
+                    <a href="{{ route('notifications.index') }}"
+                       onclick="closeNotifMenu()"
+                       class="flex items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-pcrm-600 dark:text-pcrm-400 hover:bg-pcrm-50 dark:hover:bg-pcrm-900/20 transition-colors">
+                        Xem tất cả thông báo
+                        <i class="bi bi-arrow-right text-xs"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <!-- User dropdown -->
         <div class="relative ml-1" id="user-dropdown">
@@ -222,13 +317,29 @@
 <script>
     function toggleUserMenu() {
         document.getElementById('user-menu').classList.toggle('hidden');
+        document.getElementById('notif-menu').classList.add('hidden');
+    }
+
+    function toggleNotifMenu() {
+        document.getElementById('notif-menu').classList.toggle('hidden');
+        document.getElementById('user-menu').classList.add('hidden');
+    }
+
+    function closeNotifMenu() {
+        document.getElementById('notif-menu').classList.add('hidden');
     }
 
     document.addEventListener('click', function(e) {
         const userDropdown = document.getElementById('user-dropdown');
-        const userMenu = document.getElementById('user-menu');
+        const userMenu     = document.getElementById('user-menu');
+        const notifDropdown = document.getElementById('notif-dropdown');
+        const notifMenu    = document.getElementById('notif-menu');
+
         if (userDropdown && userMenu && !userDropdown.contains(e.target)) {
             userMenu.classList.add('hidden');
+        }
+        if (notifDropdown && notifMenu && !notifDropdown.contains(e.target)) {
+            notifMenu.classList.add('hidden');
         }
     });
 </script>

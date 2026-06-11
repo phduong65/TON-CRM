@@ -24,7 +24,7 @@
                                 $m = ['pending' => ['badge-warning', 'Chờ duyệt'], 'approved' => ['badge-success', 'Đã duyệt'], 'rejected' => ['badge-danger', 'Từ chối']];
                                 [$cls, $lbl] = $m[$penalty->status] ?? ['badge-neutral', $penalty->status];
                             @endphp
-                            <span class="{{ $cls }} mt-1 inline-block">{{ $lbl }}</span>
+                            <span class="{{ $cls }} text-sm mt-1 inline-block font-medium">{{ $lbl }}</span>
                         </div>
                         <div>
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Nhân viên</p>

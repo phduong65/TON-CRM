@@ -10,6 +10,7 @@ class Penalty extends Model
 {
     protected $fillable = [
         'code',
+        'created_by',
         'employee_id',
         'violation_id',
         'description',
@@ -38,6 +39,11 @@ class Penalty extends Model
     public function violation(): BelongsTo
     {
         return $this->belongsTo(Violation::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function approver(): BelongsTo

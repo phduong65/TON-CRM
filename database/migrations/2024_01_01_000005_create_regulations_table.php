@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('regulations', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 50)->unique();
             $table->string('name', 255);
             $table->text('description')->nullable();
             $table->enum('type', ['points', 'money', 'both'])->default('points');

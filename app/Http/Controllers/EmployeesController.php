@@ -18,7 +18,8 @@ class EmployeesController extends Controller
     public function index(Request $request)
     {
         $query = Employee::with(['branch', 'team'])
-            ->orderBy('name');
+            ->orderByDesc('is_active')
+            ->orderByDesc('updated_at');
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -123,8 +124,9 @@ class EmployeesController extends Controller
     public function update(UpdateEmployeeRequest $request, Employee $employee)
     {
         $employee->update($request->validated());
-
         $employee->refresh()->loadMissing(['branch', 'team']);
+
+        $employee->user?->update(['status' => $employee->is_active ? 'active' : 'inactive']);
         activity()
             ->performedOn($employee)
             ->causedBy(auth()->user())
@@ -157,6 +159,7 @@ class EmployeesController extends Controller
             ->log('Vô hiệu hóa nhân viên ' . $employee->name . ' (' . $employee->code . ')');
 
         $employee->update(['is_active' => false]);
+        $employee->user?->update(['status' => 'inactive']);
 
         return redirect()->route('employees.index')
             ->with('success', 'Nhân viên đã được vô hiệu hóa!');

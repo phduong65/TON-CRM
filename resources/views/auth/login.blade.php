@@ -45,7 +45,7 @@
         </div>
 
         <button type="submit" class="btn-primary w-full">
-            <i class="ph-sign-in"></i>
+            <i class="bi bi-box-arrow-in-right text-xs"></i>
             <span>Đăng nhập</span>
         </button>
 

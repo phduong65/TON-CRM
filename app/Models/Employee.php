@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Setting;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -54,8 +55,32 @@ class Employee extends Model
         return $this->hasMany(Penalty::class);
     }
 
+    public function monthlyScores(): HasMany
+    {
+        return $this->hasMany(MonthlyEmployeeScore::class);
+    }
+
     public function getTotalScoreAttribute(): int
     {
         return (int) $this->scores()->sum('points');
+    }
+
+    public function getMonthlyScore(int $month, int $year): int
+    {
+        $record = $this->monthlyScores()
+            ->where('month', $month)
+            ->where('year', $year)
+            ->first();
+        $default = (int) Setting::getValue('default_score_per_month', 100);
+        return $record ? $record->final_score : $default;
+    }
+
+    public function getCurrentZone(): string
+    {
+        $record = $this->monthlyScores()
+            ->where('month', now()->month)
+            ->where('year', now()->year)
+            ->first();
+        return $record ? $record->zone : 'green';
     }
 }

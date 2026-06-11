@@ -151,10 +151,13 @@
         @endif
     </div>
 
+@endsection
+
+@push('modals')
     @include('employees.partials.create-modal')
     @include('employees.partials.edit-modal')
     @include('employees.partials.delete-modal')
-@endsection
+@endpush
 
 @push('scripts')
 <script>

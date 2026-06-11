@@ -81,6 +81,7 @@
     </div>
     <!-- ── /P-CRM Alert Modal ── -->
 
+    @stack('modals')
     @stack('scripts')
 
     <script>

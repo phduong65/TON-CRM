@@ -6,17 +6,19 @@ use App\Http\Requests\StorePenaltyRequest;
 use App\Http\Requests\UpdatePenaltyRequest;
 use App\Models\Employee;
 use App\Models\EmployeeScore;
+use App\Models\MonthlyEmployeeScore;
 use App\Models\Penalty;
 use App\Models\PenaltyMember;
 use App\Models\Violation;
 use App\Services\AttachmentService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class PenaltiesController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Penalty::with(['employee', 'violation', 'approver'])
+        $query = Penalty::with(['employee', 'violation.regulation', 'approver', 'members', 'attachments'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('search')) {
@@ -65,9 +67,9 @@ class PenaltiesController extends Controller
             ->map(fn($vios) => $vios->map(fn($v) => [
                 'id'     => $v->id,
                 'name'   => $v->name,
-                'points' => $v->regulation?->default_points ?? 0,
-                'money'  => (float) ($v->regulation?->default_money ?? 0),
-                'type'   => $v->regulation?->type ?? 'points',
+                'points' => $v->points_deducted,
+                'money'  => (float) $v->money_deducted,
+                'type'   => $v->penalty_type,
             ])->values());
 
         // JS map: team_id → employees[]
@@ -82,9 +84,9 @@ class PenaltiesController extends Controller
         // Flat map violation_id → defaults (used by edit modal)
         $violationDefaults = $violations->mapWithKeys(fn($v) => [
             $v->id => [
-                'points' => $v->regulation?->default_points ?? 0,
-                'money'  => (float) ($v->regulation?->default_money ?? 0),
-                'type'   => $v->regulation?->type ?? 'points',
+                'points' => $v->points_deducted,
+                'money'  => (float) $v->money_deducted,
+                'type'   => $v->penalty_type,
             ],
         ]);
 
@@ -103,6 +105,7 @@ class PenaltiesController extends Controller
 
         $penalty = Penalty::create([
             'code'                  => $code,
+            'created_by'            => auth()->id(),
             'employee_id'           => $request->employee_id,
             'violation_id'          => $request->violation_id,
             'description'           => $request->description,
@@ -146,6 +149,8 @@ class PenaltiesController extends Controller
             ->log('Tạo phiếu phạt ' . $penalty->code
                 . ' — Vi phạm: ' . ($penalty->violation?->name ?? '—')
                 . ' — NV: ' . ($penalty->employee?->name ?? '—'));
+
+        app(NotificationService::class)->notifyPenaltyCreated($penalty);
 
         return redirect()->route('penalties.show', $penalty)
             ->with('success', 'Tạo phiếu phạt thành công!');
@@ -205,23 +210,53 @@ class PenaltiesController extends Controller
                 'type'     => $a->type,
                 'filename' => $a->filename,
                 'size'     => $a->formatted_size,
+                'path'     => $a->path,
             ]),
         ]);
     }
 
-    public function update(UpdatePenaltyRequest $request, Penalty $penalty)
+    public function update(UpdatePenaltyRequest $request, Penalty $penalty, AttachmentService $attachments)
     {
         abort_if($penalty->status !== 'pending', 403, 'Không thể chỉnh sửa phiếu phạt đã xử lý.');
 
         $penalty->update([
-            'employee_id'          => $request->employee_id,
-            'violation_id'         => $request->violation_id,
-            'description'          => $request->description,
+            'employee_id'           => $request->employee_id,
+            'violation_id'          => $request->violation_id,
+            'description'           => $request->description,
             'total_points_deducted' => $request->points_deducted,
-            'total_money_deducted' => $request->money_deducted ?? 0,
+            'total_money_deducted'  => $request->money_deducted ?? 0,
         ]);
 
+        // Sync additional members: delete all, re-insert from request
+        $penalty->members()->delete();
+        if ($request->filled('members')) {
+            foreach ($request->members as $m) {
+                if (!empty($m['employee_id'])) {
+                    PenaltyMember::create([
+                        'penalty_id'      => $penalty->id,
+                        'employee_id'     => $m['employee_id'],
+                        'points_deducted' => $m['points_deducted'] ?? $request->points_deducted,
+                        'money_deducted'  => $m['money_deducted'] ?? 0,
+                        'note'            => $m['note'] ?? null,
+                    ]);
+                }
+            }
+        }
+
+        // Delete removed attachments
+        if ($request->filled('delete_attachment_ids')) {
+            foreach ($request->delete_attachment_ids as $attId) {
+                $attachments->deleteAttachment((int) $attId);
+            }
+        }
+
+        // Upload new attachments
+        if ($request->hasFile('attachments')) {
+            $attachments->storeForPenalty($request->file('attachments'), $penalty->id);
+        }
+
         $penalty->refresh()->loadMissing(['violation', 'employee']);
+        $membersCount = $penalty->members()->count();
         activity()->causedBy(auth()->user())
             ->performedOn($penalty)
             ->inLog('penalty')
@@ -232,6 +267,7 @@ class PenaltiesController extends Controller
                 'violation'       => $penalty->violation?->name,
                 'points_deducted' => $penalty->total_points_deducted,
                 'money_deducted'  => (float) $penalty->total_money_deducted,
+                'members_count'   => $membersCount,
             ])
             ->log('Cập nhật phiếu phạt ' . $penalty->code
                 . ' — NV: ' . ($penalty->employee?->name ?? '—')
@@ -288,6 +324,7 @@ class PenaltiesController extends Controller
                 'reference_type' => Penalty::class,
                 'reference_id'   => $penalty->id,
             ]);
+            $this->applyMonthlyDeduction($penalty->employee_id, $penalty->total_points_deducted);
         }
 
         // Deduct points from additional members
@@ -301,6 +338,7 @@ class PenaltiesController extends Controller
                     'reference_type' => Penalty::class,
                     'reference_id'   => $penalty->id,
                 ]);
+                $this->applyMonthlyDeduction($member->employee_id, $member->points_deducted);
             }
         }
 
@@ -321,7 +359,22 @@ class PenaltiesController extends Controller
                 . ' — Trừ ' . $penalty->total_points_deducted . ' điểm'
                 . ' — NV: ' . ($penalty->employee?->name ?? '—'));
 
+        app(NotificationService::class)->notifyPenaltyApproved($penalty);
+
         return back()->with('success', 'Đã duyệt xử phạt!');
+    }
+
+    private function applyMonthlyDeduction(int $employeeId, int $points): void
+    {
+        try {
+            MonthlyEmployeeScore::ensureExists($employeeId, now()->month, now()->year)->deduct($points);
+        } catch (\Throwable $e) {
+            \Log::error('applyMonthlyDeduction failed', [
+                'employee_id' => $employeeId,
+                'points'      => $points,
+                'error'       => $e->getMessage(),
+            ]);
+        }
     }
 
     public function reject(Request $request, Penalty $penalty)
@@ -349,6 +402,8 @@ class PenaltiesController extends Controller
             ->log('Từ chối phiếu phạt ' . $penalty->code
                 . ' — NV: ' . ($penalty->employee?->name ?? '—')
                 . ' — Lý do: ' . \Illuminate\Support\Str::limit($request->rejected_reason, 60));
+
+        app(NotificationService::class)->notifyPenaltyRejected($penalty, $request->rejected_reason);
 
         return back()->with('success', 'Đã từ chối xử phạt!');
     }

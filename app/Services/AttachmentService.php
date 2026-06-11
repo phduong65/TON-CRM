@@ -34,6 +34,14 @@ class AttachmentService
         Storage::disk('public')->deleteDirectory('penalties/' . $penaltyId);
     }
 
+    public function deleteAttachment(int $attachmentId): void
+    {
+        $attachment = Attachment::find($attachmentId);
+        if (!$attachment) return;
+        Storage::disk($attachment->disk)->delete($attachment->path);
+        $attachment->delete();
+    }
+
     private function store(UploadedFile $file, int $penaltyId): Attachment
     {
         $ext = strtolower($file->getClientOriginalExtension());

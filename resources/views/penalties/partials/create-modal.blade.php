@@ -8,7 +8,7 @@
         {{-- Header --}}
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <i class="ph-gavel text-red-500"></i> Tạo phiếu xử phạt
+                <i class="bi bi-gear text-red-500"></i> Tạo phiếu xử phạt
             </h3>
             <button onclick="closeModal('createPenaltyModal')"
                     class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
@@ -37,12 +37,6 @@
                         <option value="{{ $reg->id }}"
                                 @if(old('_regulation_id') == $reg->id) selected @endif>
                             {{ $reg->name }}
-                            @if($reg->type !== 'points')
-                                ({{ $reg->default_points }}đ
-                                @if($reg->type === 'both') / {{ number_format($reg->default_money, 0, ',', '.') }}₫ @endif)
-                            @else
-                                ({{ $reg->default_points }}đ)
-                            @endif
                         </option>
                         @endforeach
                     </select>
@@ -61,8 +55,9 @@
                                 data-reg="{{ $v->regulation_id ?? 0 }}"
                                 @if(old('violation_id') == $v->id) selected @endif>
                             {{ $v->name }}
-                            @if($v->regulation)
-                                — {{ $v->regulation->default_points }}đ
+                            @if($v->points_deducted > 0) — {{ $v->points_deducted }}đ @endif
+                            @if($v->penalty_type === 'money' || $v->penalty_type === 'both')
+                                @if($v->money_deducted > 0) / {{ number_format($v->money_deducted, 0, ',', '.') }}₫ @endif
                             @endif
                         </option>
                         @endforeach
@@ -195,9 +190,9 @@
                     </div>
                 </div>
 
-                {{-- ④ Điểm trừ / Tiền phạt --}}
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
+                {{-- ④ Mức phạt --}}
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex-1 min-w-[120px]">
                         <label class="form-label">Điểm trừ <span class="text-red-500">*</span></label>
                         <input type="number" id="cp_points" name="points_deducted"
                                class="form-input" min="0" max="100"
@@ -205,11 +200,15 @@
                                oninput="cpSyncTeamPoints(this.value)" required>
                         @error('points_deducted') <p class="form-error">{{ $message }}</p> @enderror
                     </div>
-                    <div>
-                        <label class="form-label">Tiền phạt (₫)</label>
-                        <input type="number" id="cp_money" name="money_deducted"
-                               class="form-input" min="0" step="1000"
-                               value="{{ old('money_deducted', 0) }}">
+                    <div id="cp_money_wrap" class="hidden flex-1 min-w-[120px]">
+                        <label class="form-label">Tiền phạt</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">₫</span>
+                            <input type="text" id="cp_money_display"
+                                   class="form-input pl-7 bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300"
+                                   readonly tabindex="-1">
+                        </div>
+                        <input type="hidden" id="cp_money" name="money_deducted" value="{{ old('money_deducted', 0) }}">
                         @error('money_deducted') <p class="form-error">{{ $message }}</p> @enderror
                     </div>
                 </div>
@@ -265,7 +264,7 @@
             <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
                 <button type="button" onclick="closeModal('createPenaltyModal')" class="btn-secondary">Hủy</button>
                 <button type="submit" class="btn-danger">
-                    <i class="ph-gavel"></i> Tạo phiếu phạt
+                    <i class="bi bi-gavel"></i> Tạo phiếu phạt
                 </button>
             </div>
         </form>
@@ -313,16 +312,32 @@
         var vio   = vios.find(function (v) { return String(v.id) === String(violId); });
 
         if (!vio) {
-            // try all regulations
             Object.values(REG_VIOLATIONS).forEach(function (arr) {
                 arr.forEach(function (v) { if (String(v.id) === String(violId)) vio = v; });
             });
         }
 
+        var moneyWrap    = document.getElementById('cp_money_wrap');
+        var moneyHidden  = document.getElementById('cp_money');
+        var moneyDisplay = document.getElementById('cp_money_display');
+
         if (vio) {
-            document.getElementById('cp_points').value = vio.points;
-            document.getElementById('cp_money').value  = vio.money;
-            cpSyncTeamPoints(vio.points);
+            var hasMoney  = vio.type === 'money' || vio.type === 'both';
+            var pts       = (vio.type === 'money') ? 0 : vio.points;
+
+            document.getElementById('cp_points').value = pts;
+            moneyHidden.value = vio.money;
+
+            moneyWrap.classList.toggle('hidden', !hasMoney);
+            if (hasMoney) {
+                moneyDisplay.value = new Intl.NumberFormat('vi-VN').format(vio.money);
+            }
+
+            cpSyncTeamPoints(pts);
+        } else {
+            document.getElementById('cp_points').value = 0;
+            moneyHidden.value = 0;
+            moneyWrap.classList.add('hidden');
         }
     };
 
@@ -480,6 +495,12 @@
         }
 
         document.getElementById('cp_employee_id').value = primaryId;
+
+        // Sync primary employee's individual points override to the global field
+        var primaryPtsInput = form.querySelector('.cp-team-points[data-id="' + primaryId + '"]');
+        if (primaryPtsInput && primaryPtsInput.value !== '') {
+            document.getElementById('cp_points').value = primaryPtsInput.value;
+        }
 
         // Remove previously injected team member inputs
         form.querySelectorAll('.cp-team-hidden').forEach(function (el) { el.remove(); });

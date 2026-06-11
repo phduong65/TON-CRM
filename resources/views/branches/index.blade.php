@@ -113,10 +113,13 @@
         @endif
     </div>
 
+@endsection
+
+@push('modals')
     @include('branches.partials.create-modal')
     @include('branches.partials.edit-modal')
     @include('branches.partials.delete-modal')
-@endsection
+@endpush
 
 @push('scripts')
 <script>

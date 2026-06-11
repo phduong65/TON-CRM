@@ -9,15 +9,11 @@ class RegulationsController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Regulation::orderBy('name');
+        $query = Regulation::withCount('violations')->orderBy('name');
 
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(fn($q) => $q->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
-        }
-
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
+            $query->where('name', 'like', "%$s%");
         }
 
         if ($request->filled('status')) {
@@ -28,23 +24,16 @@ class RegulationsController extends Controller
         return view('regulations.index', compact('regulations'));
     }
 
-    public function create()
-    {
-        return view('regulations.form');
-    }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:regulations',
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'required|in:points,money,both',
-            'default_points' => 'nullable|integer|min:0',
-            'default_money' => 'nullable|numeric|min:0',
-            'is_active' => 'boolean',
+            'name'           => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'is_active'      => 'boolean',
             'effective_date' => 'nullable|date',
         ]);
+
+        $validated['is_active'] = $request->boolean('is_active', true);
 
         Regulation::create($validated);
 
@@ -52,23 +41,16 @@ class RegulationsController extends Controller
             ->with('success', 'Quy chế đã được tạo!');
     }
 
-    public function edit(Regulation $regulation)
-    {
-        return view('regulations.form', compact('regulation'));
-    }
-
     public function update(Request $request, Regulation $regulation)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:50|unique:regulations,code,' . $regulation->id,
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => 'required|in:points,money,both',
-            'default_points' => 'nullable|integer|min:0',
-            'default_money' => 'nullable|numeric|min:0',
-            'is_active' => 'boolean',
+            'name'           => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'is_active'      => 'boolean',
             'effective_date' => 'nullable|date',
         ]);
+
+        $validated['is_active'] = $request->boolean('is_active');
 
         $regulation->update($validated);
 

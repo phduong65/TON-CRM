@@ -41,7 +41,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
             {{-- Nhân viên --}}
-            <div class="stat-card flex flex-col gap-3">
+            <a href="{{ route('employees.index') }}" class="stat-card flex flex-col gap-3 group">
                 <div class="flex items-start justify-between">
                     <div class="stat-icon-wrap bg-pcrm-50 dark:bg-pcrm-900/30">
                         <i class="bi bi-people-fill text-2xl text-pcrm-600 dark:text-pcrm-400"></i>
@@ -56,14 +56,19 @@
                         {{ $totalEmployees ?? 0 }}</p>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tổng nhân viên</p>
                 </div>
-                <div class="flex items-center gap-1.5 text-xs text-slate-400">
-                    <i class="bi bi-person-badge-fill text-sm"></i>
-                    <span>{{ $activeEmployees ?? ($totalEmployees ?? 0) }} đang hoạt động</span>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                        <i class="bi bi-person-badge-fill text-sm"></i>
+                        <span>{{ $activeEmployees ?? ($totalEmployees ?? 0) }} đang hoạt động</span>
+                    </div>
+                    <span class="text-xs text-pcrm-500 dark:text-pcrm-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        Xem <i class="bi bi-arrow-right text-xs"></i>
+                    </span>
                 </div>
-            </div>
+            </a>
 
             {{-- Đội nhóm --}}
-            <div class="stat-card flex flex-col gap-3">
+            <a href="{{ route('teams.index') }}" class="stat-card flex flex-col gap-3 group">
                 <div class="flex items-start justify-between">
                     <div class="stat-icon-wrap bg-amber-50 dark:bg-amber-900/30">
                         <i class="bi bi-trophy-fill text-2xl text-amber-600 dark:text-amber-400"></i>
@@ -78,14 +83,19 @@
                     </p>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tổng đội nhóm</p>
                 </div>
-                <div class="flex items-center gap-1.5 text-xs text-slate-400">
-                    <i class="bi bi-diagram-3-fill text-sm"></i>
-                    <span>Bar · Service · Kitchen · Security</span>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                        <i class="bi bi-diagram-3-fill text-sm"></i>
+                        <span>Bar · Service · Kitchen · Security</span>
+                    </div>
+                    <span class="text-xs text-amber-500 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        Xem <i class="bi bi-arrow-right text-xs"></i>
+                    </span>
                 </div>
-            </div>
+            </a>
 
             {{-- Vi phạm tháng này --}}
-            <div class="stat-card flex flex-col gap-3">
+            <a href="{{ route('penalties.index') }}" class="stat-card flex flex-col gap-3 group">
                 <div class="flex items-start justify-between">
                     <div class="stat-icon-wrap bg-red-50 dark:bg-red-900/30">
                         <i class="bi bi-hammer text-2xl text-red-600 dark:text-red-400"></i>
@@ -107,18 +117,23 @@
                         {{ $totalPenaltiesThisMonth ?? 0 }}</p>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Vi phạm tháng này</p>
                 </div>
-                <div class="flex items-center gap-3 text-xs">
-                    <span class="inline-flex items-center gap-1 text-amber-500">
-                        <i class="bi bi-hourglass-split text-sm"></i> {{ $pendingPenalties ?? 0 }} chờ duyệt
-                    </span>
-                    <span class="inline-flex items-center gap-1 text-emerald-500">
-                        <i class="bi bi-check-circle-fill text-sm"></i> {{ $approvedPenalties ?? 0 }} đã duyệt
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="inline-flex items-center gap-1 text-amber-500">
+                            <i class="bi bi-hourglass-split text-sm"></i> {{ $pendingPenalties ?? 0 }} chờ duyệt
+                        </span>
+                        <span class="inline-flex items-center gap-1 text-emerald-500">
+                            <i class="bi bi-check-circle-fill text-sm"></i> {{ $approvedPenalties ?? 0 }} đã duyệt
+                        </span>
+                    </div>
+                    <span class="text-xs text-red-500 dark:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        Xem <i class="bi bi-arrow-right text-xs"></i>
                     </span>
                 </div>
-            </div>
+            </a>
 
             {{-- Redzone --}}
-            <div class="stat-card flex flex-col gap-3">
+            <a href="{{ route('redzone.index') }}" class="stat-card flex flex-col gap-3 group">
                 <div class="flex items-start justify-between">
                     <div class="stat-icon-wrap bg-rose-50 dark:bg-rose-900/30">
                         <i class="bi bi-exclamation-octagon-fill text-2xl text-rose-600 dark:text-rose-400"></i>
@@ -140,11 +155,45 @@
                         {{ $redzoneCount ?? 0 }}</p>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Nhân viên Redzone</p>
                 </div>
-                <div class="flex items-center gap-1.5 text-xs text-slate-400">
-                    <i class="bi bi-speedometer2 text-sm"></i>
-                    <span>Ngưỡng ≤ {{ $redzoneThreshold ?? 50 }} điểm</span>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                        <i class="bi bi-speedometer2 text-sm"></i>
+                        <span>Ngưỡng ≤ {{ $redzoneThreshold ?? 50 }} điểm</span>
+                    </div>
+                    <span class="text-xs text-rose-500 dark:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        Xem <i class="bi bi-arrow-right text-xs"></i>
+                    </span>
                 </div>
-            </div>
+            </a>
+
+            {{-- Thưởng điểm tháng này --}}
+            @can('view-rewards')
+            <a href="{{ route('rewards.index') }}" class="stat-card flex flex-col gap-3 group">
+                <div class="flex items-start justify-between">
+                    <div class="stat-icon-wrap bg-emerald-50 dark:bg-emerald-900/30">
+                        <i class="bi bi-gift-fill text-2xl text-emerald-600 dark:text-emerald-400"></i>
+                    </div>
+                    @if(($pendingRewards ?? 0) > 0)
+                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 animate-pulse">
+                            <i class="bi bi-hourglass-split text-xs"></i> {{ $pendingRewards }} chờ duyệt
+                        </span>
+                    @endif
+                </div>
+                <div>
+                    <p class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ $totalRewardsThisMonth ?? 0 }}</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Thưởng điểm tháng này</p>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                        <i class="bi bi-star-fill text-sm text-emerald-400"></i>
+                        <span>{{ $pendingRewards ?? 0 }} chờ duyệt</span>
+                    </div>
+                    <span class="text-xs text-emerald-500 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        Xem <i class="bi bi-arrow-right text-xs"></i>
+                    </span>
+                </div>
+            </a>
+            @endcan
         </div>
 
         {{-- ─── Row 2: Charts ──────────────────────────────────────────────────── --}}
@@ -340,6 +389,63 @@
             </div>
         </div>
 
+        {{-- ─── Row 3b: Recent Rewards ─────────────────────────────────────────── --}}
+        @can('view-rewards')
+        @if(isset($recentRewards) && $recentRewards->count() > 0)
+        <div class="card mb-6">
+            <div class="card-header flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-gift-fill text-emerald-500"></i>
+                    <h3 class="font-semibold text-slate-900 dark:text-white">Thưởng điểm gần đây</h3>
+                </div>
+                <a href="{{ route('rewards.index') }}"
+                   class="text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline flex items-center gap-1">
+                    Xem tất cả <i class="bi bi-arrow-right text-xs"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-container border-0 rounded-none">
+                    <table class="table-base">
+                        <thead>
+                            <tr>
+                                <th class="table-th">Nhân viên</th>
+                                <th class="table-th">Loại thưởng</th>
+                                <th class="table-th">Điểm</th>
+                                <th class="table-th">Trạng thái</th>
+                                <th class="table-th">Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($recentRewards as $reward)
+                            <tr class="table-tr-hover">
+                                <td class="table-td">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                                            {{ strtoupper(substr($reward->employee->name ?? 'N', 0, 1)) }}
+                                        </div>
+                                        <span class="font-medium text-sm">{{ $reward->employee?->name ?? 'N/A' }}</span>
+                                    </div>
+                                </td>
+                                <td class="table-td text-sm text-slate-500">{{ $reward->rewardType?->name }}</td>
+                                <td class="table-td font-semibold text-emerald-600 dark:text-emerald-400">+{{ $reward->total_points_awarded }}</td>
+                                <td class="table-td">
+                                    @php
+                                        $sm = ['pending' => ['badge-warning','Chờ duyệt'], 'approved' => ['badge-success','Đã duyệt'], 'rejected' => ['badge-danger','Từ chối']];
+                                        [$sc, $sl] = $sm[$reward->status] ?? ['badge-neutral', $reward->status];
+                                    @endphp
+                                    <span class="{{ $sc }}">{{ $sl }}</span>
+                                </td>
+                                <td class="table-td text-sm text-slate-500">{{ $reward->created_at->format('d/m') }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        @endif
+        @endcan
+
         {{-- ─── Row 4: Top Rankings ─────────────────────────────────────────────── --}}
         <div class="card">
             <div class="card-header flex items-center justify-between">
@@ -524,12 +630,12 @@
                                 <div class="w-32 h-32 p-3 rounded-full dash-avatar flex items-center justify-center font-black text-xl md:text-2xl text-white select-none"
                                     style="background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.45);">
                                     <div class="text-center">
-                                        <p class="text-white font-black text-2xl leading-none tracking-tight">
+                                        <p class="text-white font-black text-3xl leading-none tracking-tight">
                                             {{ number_format($myTotalScore) }}</p>
                                         <p class="text-xs" style="color:rgba(255,255,255,0.6)">điểm</p>
                                          {{-- Status badge --}}
                         @if ($employee)
-                            <div class="hidden sm:flex flex-col items-center gap-2 self-center">
+                            <div class="hidden sm:flex flex-col items-center gap-2 self-center mt-2">
                                 @if ($isInRedzone)
                                     <div class="flex flex-col items-center gap-1.5">
                                         <span
@@ -547,8 +653,6 @@
                                             style="background:rgba(16,185,129,0.75);border:1px solid rgba(52,211,153,0.5);">
                                             <i class="bi bi-shield-fill-check text-xs"></i> An toàn
                                         </span>
-                                        <span class="text-xs text-center" style="color:rgba(255,255,255,0.55)">Trạng thái
-                                            tốt</span>
                                     </div>
                                 @endif
                             </div>

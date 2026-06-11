@@ -605,7 +605,7 @@
         }
         to {
             opacity: 1;
-            transform: translateY(0);
+            transform: none;
         }
     }
 
@@ -651,7 +651,7 @@
 
     @keyframes pcrm-fadeInUp {
         from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+        to   { opacity: 1; transform: none; }
     }
 
     @keyframes pcrm-iconFloat {
@@ -775,11 +775,11 @@
     /* ── Personal dashboard ─────────────────────────────────────── */
     @keyframes dash-hero-in {
         from { opacity: 0; transform: translateY(18px) scale(0.99); }
-        to   { opacity: 1; transform: translateY(0)    scale(1);    }
+        to   { opacity: 1; transform: none; }
     }
     @keyframes dash-card-in {
         from { opacity: 0; transform: translateY(10px); }
-        to   { opacity: 1; transform: translateY(0);    }
+        to   { opacity: 1; transform: none; }
     }
     @keyframes dash-bar-fill {
         from { width: 0 !important; }

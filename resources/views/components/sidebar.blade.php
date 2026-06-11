@@ -13,6 +13,13 @@
     } catch (\Exception $e) {
         $redzoneCount = 0;
     }
+
+    try {
+        $unreadNotifCount = \App\Models\Notification::where('user_id', auth()->id())
+            ->whereNull('read_at')->count();
+    } catch (\Exception $e) {
+        $unreadNotifCount = 0;
+    }
 @endphp
 
 <!-- Left sidebar (desktop) -->
@@ -53,6 +60,17 @@
             class="sidebar-link {{ $isActive(['dashboard']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-speedometer2 text-base"></i>
             <span>Bảng điều khiển</span>
+        </a>
+
+        <a href="{{ route('notifications.index') }}"
+            class="sidebar-link {{ $isActive(['notifications']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+            <i class="bi bi-bell text-base"></i>
+            <span class="flex-1">Thông báo</span>
+            @if($unreadNotifCount > 0)
+                <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white leading-none">
+                    {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
+                </span>
+            @endif
         </a>
 
         {{-- ── NHÂN SỰ ──────────────────────────────── --}}
@@ -97,6 +115,22 @@
             </a>
         @endcan
 
+        @can('view-rewards')
+            <a href="{{ route('rewards.index') }}"
+                class="sidebar-link {{ $isActive(['rewards']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-gift text-base"></i>
+                <span>Thưởng điểm</span>
+            </a>
+        @endcan
+
+        @can('import-attendance')
+            <a href="{{ route('attendance-import.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-file-earmark-arrow-up text-base"></i>
+                <span>Import Chấm Công</span>
+            </a>
+        @endcan
+
         <a href="{{ route('rankings.index') }}"
             class="sidebar-link {{ $isActive(['rankings']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-trophy text-base"></i>
@@ -112,7 +146,7 @@
                     class="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white">{{ $redzoneCount }}</span>
             @endif
         </a>
-        @canany(['view-violations', 'view-regulations'])
+        @canany(['view-violations', 'view-regulations', 'view-reward-types', 'view-reward-categories'])
         <p class="px-3 pb-1.5 pt-3 text-[10px] font-medium text-slate-300 dark:text-slate-600 uppercase tracking-wider">
             Danh mục</p>
         @endcanany
@@ -120,7 +154,7 @@
             <a href="{{ route('violations.index') }}"
                 class="sidebar-link {{ $isActive(['violations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-book text-base"></i>
-                <span>Danh mục vi phạm</span>
+                <span>Danh sách vi phạm</span>
             </a>
         @endcan
         @can('view-regulations')
@@ -129,6 +163,20 @@
             <i class="bi bi-journal-check text-base"></i>
             <span>Quy chế</span>
         </a>
+        @endcan
+        @can('view-reward-categories')
+            <a href="{{ route('reward-categories.index') }}"
+                class="sidebar-link {{ $isActive(['reward-categories']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-folder-check text-base"></i>
+                <span>Danh mục thưởng</span>
+            </a>
+        @endcan
+        @can('view-reward-types')
+            <a href="{{ route('reward-types.index') }}"
+                class="sidebar-link {{ $isActive(['reward-types']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-star text-base"></i>
+                <span>Loại thưởng</span>
+            </a>
         @endcan
         {{-- ── HỆ THỐNG ──────────────────────────────── --}}
         @canany(['manage-settings', 'view-activity-log'])
@@ -211,6 +259,17 @@
             <i class="bi bi-speedometer2 text-base"></i><span>Bảng điều khiển</span>
         </a>
 
+        <a href="{{ route('notifications.index') }}"
+            class="sidebar-link {{ $isActive(['notifications']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+            <i class="bi bi-bell text-base"></i>
+            <span class="flex-1">Thông báo</span>
+            @if($unreadNotifCount > 0)
+                <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white leading-none">
+                    {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
+                </span>
+            @endif
+        </a>
+
         <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Nhân sự</p>
         @can('view-employees')
             <a href="{{ route('employees.index') }}"
@@ -238,6 +297,18 @@
                 <i class="bi bi-hammer text-base"></i><span>Xử phạt</span>
             </a>
         @endcan
+        @can('view-rewards')
+            <a href="{{ route('rewards.index') }}"
+                class="sidebar-link {{ $isActive(['rewards']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-gift text-base"></i><span>Thưởng điểm</span>
+            </a>
+        @endcan
+        @can('import-attendance')
+            <a href="{{ route('attendance-import.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-file-earmark-arrow-up text-base"></i><span>Import Chấm Công</span>
+            </a>
+        @endcan
         <a href="{{ route('rankings.index') }}"
             class="sidebar-link {{ $isActive(['rankings']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-trophy text-base"></i><span>Bảng xếp hạng</span>
@@ -261,6 +332,18 @@
             class="sidebar-link {{ $isActive(['regulations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-journal-check text-base"></i><span>Quy chế</span>
         </a>
+        @can('view-reward-categories')
+            <a href="{{ route('reward-categories.index') }}"
+                class="sidebar-link {{ $isActive(['reward-categories']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-folder-check text-base"></i><span>Danh mục thưởng</span>
+            </a>
+        @endcan
+        @can('view-reward-types')
+            <a href="{{ route('reward-types.index') }}"
+                class="sidebar-link {{ $isActive(['reward-types']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-star text-base"></i><span>Loại thưởng</span>
+            </a>
+        @endcan
 
         <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Hệ thống</p>
         <a href="{{ route('settings.index') }}"

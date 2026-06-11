@@ -140,6 +140,40 @@
                 </div>
             </div>
 
+            <!-- Reward History -->
+            @php $recentRewards = \App\Models\Reward::with('rewardType')->where('employee_id', $employee->id)->where('status', 'approved')->latest()->take(5)->get(); @endphp
+            @if($recentRewards->count() > 0)
+            <div class="card">
+                <div class="card-header flex justify-between">
+                    <h4 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="bi bi-gift text-emerald-500 text-sm"></i> Lịch sử thưởng điểm
+                    </h4>
+                    @can('view-rewards')
+                    <a href="{{ route('rewards.index', ['search' => $employee->code]) }}" class="text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline">
+                        Xem tất cả
+                    </a>
+                    @endcan
+                </div>
+                <div class="card-body p-0">
+                    <div class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach($recentRewards as $reward)
+                        <div class="flex items-center justify-between px-6 py-3">
+                            <div class="flex-1">
+                                <a href="{{ route('rewards.show', $reward) }}" class="text-sm font-medium text-slate-900 dark:text-white hover:text-pcrm-600 dark:hover:text-pcrm-400">
+                                    {{ $reward->rewardType?->name ?? 'Thưởng điểm' }}
+                                </a>
+                                <p class="text-xs text-slate-400">{{ $reward->code }} · {{ $reward->created_at->format('d/m/Y') }}</p>
+                            </div>
+                            <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                +{{ number_format($reward->total_points_awarded) }}đ
+                            </span>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Score History -->
             <div class="card">
                 <div class="card-header">

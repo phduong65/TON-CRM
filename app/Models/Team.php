@@ -33,8 +33,4 @@ class Team extends Model
         return $this->hasMany(Employee::class);
     }
 
-    public function getAverageScoreAttribute(): float
-    {
-        return (float) $this->employees()->withSum('scores', 'points')->get()->avg('scores_sum_points') ?? 0;
-    }
 }

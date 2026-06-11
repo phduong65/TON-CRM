@@ -124,10 +124,13 @@
         @endif
     </div>
 
+@endsection
+
+@push('modals')
     @include('teams.partials.create-modal')
     @include('teams.partials.edit-modal')
     @include('teams.partials.delete-modal')
-@endsection
+@endpush
 
 @push('scripts')
 <script>

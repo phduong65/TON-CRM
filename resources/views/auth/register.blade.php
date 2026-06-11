@@ -47,7 +47,7 @@
         </div>
 
         <button type="submit" class="btn-primary w-full">
-            <i class="ph-user-plus"></i>
+            <i class="bi bi-user"></i>
             <span>Đăng ký</span>
         </button>
 
