@@ -31,6 +31,7 @@ class RolesController extends Controller
 
         $role = Role::create(['name' => $request->name, 'guard_name' => 'web']);
         $role->syncPermissions($request->permissions ?? []);
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $permCount = count($request->permissions ?? []);
         activity()->causedBy(auth()->user())
@@ -67,6 +68,7 @@ class RolesController extends Controller
 
         $role->update(['name' => $request->name]);
         $role->syncPermissions($request->permissions ?? []);
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $permCount = count($request->permissions ?? []);
         activity()->causedBy(auth()->user())
@@ -101,6 +103,7 @@ class RolesController extends Controller
             ->log('Xóa vai trò: ' . $role->name);
 
         $role->delete();
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         return redirect()->route('roles.index')
             ->with('success', 'Đã xóa vai trò.');

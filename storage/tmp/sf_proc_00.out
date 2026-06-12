@@ -1,0 +1,22 @@
+
+   Symfony\Component\Process\Exception\RuntimeException 
+
+  A temporary file could not be opened to write the process output: fopen(C:\Windows\sf_proc_00.out.lock): Failed to open stream: Permission denied
+
+  at vendor\symfony\process\Pipes\WindowsPipes.php:62
+     58▕                         if (file_exists($file.'.lock')) {
+     59▕                             continue 2;
+     60▕                         }
+     61▕                         restore_error_handler();
+  ➜  62▕                         throw new RuntimeException('A temporary file could not be opened to write the process output: '.$lastError);
+     63▕                     }
+     64▕                     if (!flock($h, \LOCK_EX | \LOCK_NB)) {
+     65▕                         continue 2;
+     66▕                     }
+
+  1   vendor\symfony\process\Process.php:1314
+      Symfony\Component\Process\Pipes\WindowsPipes::__construct()
+
+  2   vendor\symfony\process\Process.php:325
+      Symfony\Component\Process\Process::getDescriptors()
+

@@ -21,13 +21,13 @@ return new class extends Migration
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
 
-        $admin = Role::findByName('admin', 'web');
+        $admin = Role::where('name', 'admin')->where('guard_name', 'web')->first();
         $admin?->givePermissionTo($permissions);
 
-        $manager = Role::findByName('manager', 'web');
+        $manager = Role::where('name', 'manager')->where('guard_name', 'web')->first();
         $manager?->givePermissionTo(['view-reward-categories']);
 
-        $teamLeader = Role::findByName('team_leader', 'web');
+        $teamLeader = Role::where('name', 'team_leader')->where('guard_name', 'web')->first();
         $teamLeader?->givePermissionTo(['view-reward-categories']);
 
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();

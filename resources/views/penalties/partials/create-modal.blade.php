@@ -88,13 +88,36 @@
                 <div id="cp_panel_individual" class="space-y-4">
                     <div>
                         <label class="form-label">Nhân viên vi phạm <span class="text-red-500">*</span></label>
+                        {{-- Filter row --}}
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <select id="cp_filter_branch" class="form-input text-sm py-1.5" onchange="cpOnBranchFilter()">
+                                <option value="">Tất cả chi nhánh</option>
+                                @foreach($branches as $b)
+                                <option value="{{ $b->id }}">{{ $b->name }}</option>
+                                @endforeach
+                            </select>
+                            <select id="cp_filter_team" class="form-input text-sm py-1.5" onchange="cpFilterEmployees()">
+                                <option value="">Tất cả phòng ban</option>
+                                @foreach($teams as $t)
+                                <option value="{{ $t->id }}" data-branch="{{ $t->branch_id ?? '' }}">{{ $t->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        {{-- Search --}}
+                        <div class="relative mb-1.5">
+                            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                            <input type="text" id="cp_emp_search" class="form-input pl-8 text-sm"
+                                   placeholder="Tìm mã / tên nhân viên..." oninput="cpFilterEmployees()">
+                        </div>
                         <select id="cp_individual_employee" class="form-input">
                             <option value="">-- Chọn nhân viên --</option>
                             @foreach($employees as $e)
                             <option value="{{ $e->id }}"
+                                    data-branch="{{ $e->branch_id ?? '' }}"
+                                    data-team="{{ $e->team_id ?? '' }}"
                                     @if(old('employee_id') == $e->id) selected @endif>
                                 {{ $e->code }} — {{ $e->name }}
-                                @if($e->branch) ({{ $e->branch->name }}) @endif
+                                @if($e->branch) · {{ $e->branch->name }} @endif
                             </option>
                             @endforeach
                         </select>
@@ -113,22 +136,33 @@
                         <div id="cp_individual_members" class="space-y-2">
                             @if(old('members'))
                                 @foreach(old('members') as $idx => $m)
-                                <div class="flex gap-2 items-center cp-member-row">
-                                    <select name="members[{{ $idx }}][employee_id]" class="form-input flex-1 text-sm" required>
-                                        <option value="">-- Chọn NV --</option>
-                                        @foreach($employees as $e)
-                                        <option value="{{ $e->id }}" @if($m['employee_id'] == $e->id) selected @endif>
-                                            {{ $e->code }} — {{ $e->name }}
-                                        </option>
-                                        @endforeach
-                                    </select>
-                                    <input type="number" name="members[{{ $idx }}][points_deducted]"
-                                           class="form-input w-24 text-sm" min="0" max="100"
-                                           value="{{ $m['points_deducted'] ?? 0 }}" required>
-                                    <button type="button" onclick="this.closest('.cp-member-row').remove()"
-                                            class="w-9 h-9 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
-                                        <i class="bi bi-trash text-sm"></i>
-                                    </button>
+                                <div class="cp-member-row rounded-lg border border-slate-200 dark:border-slate-700 p-2 space-y-1.5">
+                                    <div class="relative">
+                                        <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                                        <input type="text" class="form-input pl-7 text-sm py-1.5" placeholder="Tìm nhân viên..."
+                                               oninput="cpFilterMemberSelect(this)">
+                                    </div>
+                                    <div class="flex gap-2 items-center">
+                                        <select name="members[{{ $idx }}][employee_id]" class="form-input flex-1 text-sm" required>
+                                            <option value="">-- Chọn NV --</option>
+                                            @foreach($employees as $e)
+                                            <option value="{{ $e->id }}"
+                                                    data-branch="{{ $e->branch_id ?? '' }}"
+                                                    data-team="{{ $e->team_id ?? '' }}"
+                                                    @if($m['employee_id'] == $e->id) selected @endif>
+                                                {{ $e->code }} — {{ $e->name }}
+                                                @if($e->branch) · {{ $e->branch->name }} @endif
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        <input type="number" name="members[{{ $idx }}][points_deducted]"
+                                               class="form-input w-24 text-sm" min="0" max="100"
+                                               value="{{ $m['points_deducted'] ?? 0 }}" required>
+                                        <button type="button" onclick="this.closest('.cp-member-row').remove()"
+                                                class="w-9 h-9 flex items-center justify-center rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">
+                                            <i class="bi bi-trash text-sm"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 @endforeach
                             @endif
@@ -360,6 +394,58 @@
     };
 
     /* ──────────────────────────────────────────────────
+       ③b Branch / Team / Search filter for main employee select
+    ────────────────────────────────────────────────── */
+    window.cpOnBranchFilter = function () {
+        var branchId = document.getElementById('cp_filter_branch').value;
+        var teamSel  = document.getElementById('cp_filter_team');
+        Array.from(teamSel.options).forEach(function (opt) {
+            if (!opt.value) return;
+            var match = !branchId || String(opt.dataset.branch) === String(branchId);
+            opt.hidden   = !match;
+            opt.disabled = !match;
+        });
+        var cur = teamSel.options[teamSel.selectedIndex];
+        if (cur && cur.value && cur.hidden) teamSel.value = '';
+        cpFilterEmployees();
+    };
+
+    window.cpFilterEmployees = function () {
+        var branchId = document.getElementById('cp_filter_branch').value;
+        var teamId   = document.getElementById('cp_filter_team').value;
+        var search   = (document.getElementById('cp_emp_search').value || '').toLowerCase().trim();
+        var sel      = document.getElementById('cp_individual_employee');
+
+        Array.from(sel.options).forEach(function (opt) {
+            if (!opt.value) return;
+            var matchBranch = !branchId || String(opt.dataset.branch) === String(branchId);
+            var matchTeam   = !teamId   || String(opt.dataset.team)   === String(teamId);
+            var matchSearch = !search   || opt.textContent.toLowerCase().includes(search);
+            var show = matchBranch && matchTeam && matchSearch;
+            opt.hidden   = !show;
+            opt.disabled = !show;
+        });
+        var cur = sel.options[sel.selectedIndex];
+        if (cur && cur.value && cur.hidden) sel.value = '';
+    };
+
+    /* Filter a single member-row's select by its search input */
+    window.cpFilterMemberSelect = function (input) {
+        var search = (input.value || '').toLowerCase().trim();
+        var row    = input.closest('.cp-member-row');
+        var sel    = row ? row.querySelector('select') : null;
+        if (!sel) return;
+        Array.from(sel.options).forEach(function (opt) {
+            if (!opt.value) return;
+            var match = !search || opt.textContent.toLowerCase().includes(search);
+            opt.hidden   = !match;
+            opt.disabled = !match;
+        });
+        var cur = sel.options[sel.selectedIndex];
+        if (cur && cur.value && cur.hidden) sel.value = '';
+    };
+
+    /* ──────────────────────────────────────────────────
        ④ Individual: add extra member row
     ────────────────────────────────────────────────── */
     window.cpAddIndividualMember = function () {
@@ -367,26 +453,35 @@
         var points    = document.getElementById('cp_points').value || 0;
         var opts      = _buildEmployeeOptions();
         var row       = document.createElement('div');
-        row.className = 'flex gap-2 items-center cp-member-row';
+        row.className = 'cp-member-row rounded-lg border border-slate-200 dark:border-slate-700 p-2 space-y-1.5';
         row.innerHTML =
-            '<select name="members[' + _memberIdx + '][employee_id]" class="form-input flex-1 text-sm" required>'
+            '<div class="relative">'
+            + '<i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>'
+            + '<input type="text" class="form-input pl-7 text-sm py-1.5" placeholder="Tìm nhân viên..."'
+            + '       oninput="cpFilterMemberSelect(this)">'
+            + '</div>'
+            + '<div class="flex gap-2 items-center">'
+            + '<select name="members[' + _memberIdx + '][employee_id]" class="form-input flex-1 text-sm" required>'
             + '<option value="">-- Chọn NV --</option>' + opts + '</select>'
             + '<input type="number" name="members[' + _memberIdx + '][points_deducted]"'
             + '       class="form-input w-24 text-sm" min="0" max="100" value="' + points + '" required>'
             + '<button type="button" onclick="this.closest(\'.cp-member-row\').remove()"'
             + '        class="w-9 h-9 flex items-center justify-center rounded-lg text-red-400'
             + '               hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">'
-            + '<i class="bi bi-trash text-sm"></i></button>';
+            + '<i class="bi bi-trash text-sm"></i></button>'
+            + '</div>';
         container.appendChild(row);
         _memberIdx++;
     };
 
     function _buildEmployeeOptions() {
-        // Build from DOM (regulation-filtered violations already handled; just all employees)
-        var sel  = document.getElementById('cp_individual_employee');
+        var sel = document.getElementById('cp_individual_employee');
         if (!sel) return '';
         return Array.from(sel.options).slice(1).map(function (o) {
-            return '<option value="' + o.value + '">' + o.textContent.trim() + '</option>';
+            return '<option value="' + o.value + '"'
+                + ' data-branch="' + (o.dataset.branch || '') + '"'
+                + ' data-team="'   + (o.dataset.team   || '') + '">'
+                + o.textContent.trim() + '</option>';
         }).join('');
     }
 

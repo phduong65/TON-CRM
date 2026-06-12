@@ -11,8 +11,12 @@ return new class extends Migration
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->enum('type', ['general', 'penalty_created', 'penalty_approved', 'penalty_rejected'])
-                  ->default('general');
+            $table->enum('type', [
+                      'general',
+                      'penalty_created', 'penalty_approved', 'penalty_rejected',
+                      'reward_created',  'reward_approved',  'reward_rejected',
+                      'redzone_alert',
+                  ])->default('general');
             $table->string('title');
             $table->text('body')->nullable();
             $table->json('data')->nullable();

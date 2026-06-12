@@ -61,12 +61,33 @@
                 {{-- ③ Nhân viên vi phạm --}}
                 <div>
                     <label class="form-label">Nhân viên vi phạm <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <select id="ep_filter_branch" class="form-input text-sm py-1.5" onchange="epOnBranchFilter()">
+                            <option value="">Tất cả chi nhánh</option>
+                            @foreach($branches as $b)
+                            <option value="{{ $b->id }}">{{ $b->name }}</option>
+                            @endforeach
+                        </select>
+                        <select id="ep_filter_team" class="form-input text-sm py-1.5" onchange="epFilterEmployees()">
+                            <option value="">Tất cả phòng ban</option>
+                            @foreach($teams as $t)
+                            <option value="{{ $t->id }}" data-branch="{{ $t->branch_id ?? '' }}">{{ $t->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="relative mb-1.5">
+                        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input type="text" id="ep_emp_search" class="form-input pl-8 text-sm"
+                               placeholder="Tìm mã / tên nhân viên..." oninput="epFilterEmployees()">
+                    </div>
                     <select name="employee_id" id="ep_employee_id" class="form-input" required>
                         <option value="">-- Chọn nhân viên --</option>
                         @foreach($employees as $e)
-                        <option value="{{ $e->id }}">
+                        <option value="{{ $e->id }}"
+                                data-branch="{{ $e->branch_id ?? '' }}"
+                                data-team="{{ $e->team_id ?? '' }}">
                             {{ $e->code }} — {{ $e->name }}
-                            @if($e->branch) ({{ $e->branch->name }}) @endif
+                            @if($e->branch) · {{ $e->branch->name }} @endif
                         </option>
                         @endforeach
                     </select>
@@ -202,22 +223,79 @@
         }
     };
 
+    /* ── ② b Branch / Team / Search filter for employee select ── */
+    window.epOnBranchFilter = function () {
+        var branchId = document.getElementById('ep_filter_branch').value;
+        var teamSel  = document.getElementById('ep_filter_team');
+        Array.from(teamSel.options).forEach(function (opt) {
+            if (!opt.value) return;
+            var match = !branchId || String(opt.dataset.branch) === String(branchId);
+            opt.hidden   = !match;
+            opt.disabled = !match;
+        });
+        var cur = teamSel.options[teamSel.selectedIndex];
+        if (cur && cur.value && cur.hidden) teamSel.value = '';
+        epFilterEmployees();
+    };
+
+    window.epFilterEmployees = function () {
+        var branchId = document.getElementById('ep_filter_branch').value;
+        var teamId   = document.getElementById('ep_filter_team').value;
+        var search   = (document.getElementById('ep_emp_search').value || '').toLowerCase().trim();
+        var sel      = document.getElementById('ep_employee_id');
+
+        Array.from(sel.options).forEach(function (opt) {
+            if (!opt.value) return;
+            var matchBranch = !branchId || String(opt.dataset.branch) === String(branchId);
+            var matchTeam   = !teamId   || String(opt.dataset.team)   === String(teamId);
+            var matchSearch = !search   || opt.textContent.toLowerCase().includes(search);
+            var show = matchBranch && matchTeam && matchSearch;
+            opt.hidden   = !show;
+            opt.disabled = !show;
+        });
+        var cur = sel.options[sel.selectedIndex];
+        if (cur && cur.value && cur.hidden) sel.value = '';
+    };
+
+    /* Filter a member-row select by its search input */
+    window.epFilterMemberSelect = function (input) {
+        var search = (input.value || '').toLowerCase().trim();
+        var row    = input.closest('.ep-member-row');
+        var sel    = row ? row.querySelector('select') : null;
+        if (!sel) return;
+        Array.from(sel.options).forEach(function (opt) {
+            if (!opt.value) return;
+            var match = !search || opt.textContent.toLowerCase().includes(search);
+            opt.hidden   = !match;
+            opt.disabled = !match;
+        });
+        var cur = sel.options[sel.selectedIndex];
+        if (cur && cur.value && cur.hidden) sel.value = '';
+    };
+
     /* ── ③ Add linked member row ── */
     window.epAddMember = function (empId, pts) {
         var container = document.getElementById('ep_members');
         var points    = (pts !== undefined && pts !== null) ? pts : (document.getElementById('ep_points').value || 0);
         var opts      = _buildEpEmpOptions(empId);
         var row       = document.createElement('div');
-        row.className = 'flex gap-2 items-center ep-member-row';
+        row.className = 'ep-member-row rounded-lg border border-slate-200 dark:border-slate-700 p-2 space-y-1.5';
         row.innerHTML =
-            '<select name="members[' + _epIdx + '][employee_id]" class="form-input flex-1 text-sm" required>'
+            '<div class="relative">'
+            + '<i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>'
+            + '<input type="text" class="form-input pl-7 text-sm py-1.5" placeholder="Tìm nhân viên..."'
+            + '       oninput="epFilterMemberSelect(this)">'
+            + '</div>'
+            + '<div class="flex gap-2 items-center">'
+            + '<select name="members[' + _epIdx + '][employee_id]" class="form-input flex-1 text-sm" required>'
             + '<option value="">-- Chọn NV --</option>' + opts + '</select>'
             + '<input type="number" name="members[' + _epIdx + '][points_deducted]"'
             + '       class="form-input w-24 text-sm" min="0" max="100" value="' + points + '" required>'
             + '<button type="button" onclick="this.closest(\'.ep-member-row\').remove()"'
             + '        class="w-9 h-9 flex items-center justify-center rounded-lg text-red-400'
             + '               hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0">'
-            + '<i class="bi bi-trash text-sm"></i></button>';
+            + '<i class="bi bi-trash text-sm"></i></button>'
+            + '</div>';
         container.appendChild(row);
         _epIdx++;
     };
@@ -226,8 +304,11 @@
         var sel = document.getElementById('ep_employee_id');
         if (!sel) return '';
         return Array.from(sel.options).slice(1).map(function (o) {
-            var sel = String(o.value) === String(selectedId) ? ' selected' : '';
-            return '<option value="' + o.value + '"' + sel + '>' + o.textContent.trim() + '</option>';
+            var isSel = String(o.value) === String(selectedId) ? ' selected' : '';
+            return '<option value="' + o.value + '"'
+                + ' data-branch="' + (o.dataset.branch || '') + '"'
+                + ' data-team="'   + (o.dataset.team   || '') + '"'
+                + isSel + '>' + o.textContent.trim() + '</option>';
         }).join('');
     }
 
@@ -249,6 +330,18 @@
     window.openEditPenaltyModal = function (id, violationId, regulationId, employeeId, points, money, description, members, existingAttachments) {
         _epIdx   = 0;
         _epFiles = [];
+
+        // Reset filters and search
+        document.getElementById('ep_filter_branch').value = '';
+        document.getElementById('ep_filter_team').value   = '';
+        document.getElementById('ep_emp_search').value    = '';
+        // Reset all employee options to visible
+        Array.from(document.getElementById('ep_employee_id').options).forEach(function (o) {
+            o.hidden = false; o.disabled = false;
+        });
+        Array.from(document.getElementById('ep_filter_team').options).forEach(function (o) {
+            o.hidden = false; o.disabled = false;
+        });
 
         // Reset dynamic sections
         document.getElementById('ep_members').innerHTML = '';

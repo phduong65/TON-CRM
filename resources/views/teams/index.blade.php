@@ -1,6 +1,8 @@
 @extends('layouts.admin')
 
 @section('title', 'Đội nhóm')
+@section('page-title', 'Đội nhóm')
+@section('breadcrumb', 'Nhân sự')
 
 @section('content')
     <div class="page-header">

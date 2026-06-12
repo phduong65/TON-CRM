@@ -37,11 +37,34 @@
 
             <div>
                 <label class="form-label">Nhân viên được thưởng <span class="text-red-500">*</span></label>
-                <select name="employee_id" class="form-input" required>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <select id="rw_filter_branch" class="form-input text-sm py-1.5" onchange="rwOnBranchFilter()">
+                        <option value="">Tất cả chi nhánh</option>
+                        @foreach($branches as $b)
+                        <option value="{{ $b->id }}">{{ $b->name }}</option>
+                        @endforeach
+                    </select>
+                    <select id="rw_filter_team" class="form-input text-sm py-1.5" onchange="rwFilterEmployees()">
+                        <option value="">Tất cả phòng ban</option>
+                        @foreach($teams as $t)
+                        <option value="{{ $t->id }}" data-branch="{{ $t->branch_id ?? '' }}">{{ $t->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="relative mb-1.5">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                    <input type="text" id="rw_emp_search" class="form-input pl-8 text-sm"
+                           placeholder="Tìm mã / tên nhân viên..." oninput="rwFilterEmployees()">
+                </div>
+                <select id="rw_main_employee" name="employee_id" class="form-input" required>
                     <option value="">-- Chọn nhân viên --</option>
                     @foreach($employees as $emp)
-                        <option value="{{ $emp->id }}" {{ old('employee_id') == $emp->id ? 'selected' : '' }}>
-                            {{ $emp->name }} ({{ $emp->code }}) — {{ $emp->branch?->name }}
+                        <option value="{{ $emp->id }}"
+                                data-branch="{{ $emp->branch_id ?? '' }}"
+                                data-team="{{ $emp->team_id ?? '' }}"
+                                {{ old('employee_id') == $emp->id ? 'selected' : '' }}>
+                            {{ $emp->code }} — {{ $emp->name }}
+                            @if($emp->branch) · {{ $emp->branch->name }} @endif
                         </option>
                     @endforeach
                 </select>
@@ -66,12 +89,22 @@
                 <div id="rewardMembersContainer" class="space-y-2">
                     @if(old('members'))
                         @foreach(old('members') as $i => $m)
-                        <div class="flex items-center gap-2 reward-member-row">
+                        <div class="reward-member-row rounded-lg border border-slate-200 dark:border-slate-700 p-2 space-y-1.5">
+                            <div class="relative">
+                                <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                                <input type="text" class="form-input pl-7 text-sm py-1.5" placeholder="Tìm nhân viên..."
+                                       oninput="rwFilterMemberSelect(this)">
+                            </div>
+                            <div class="flex items-center gap-2">
                             <select name="members[{{ $i }}][employee_id]" class="form-input flex-1 text-sm">
                                 <option value="">-- Chọn nhân viên --</option>
                                 @foreach($employees as $emp)
-                                    <option value="{{ $emp->id }}" {{ $m['employee_id'] == $emp->id ? 'selected' : '' }}>
-                                        {{ $emp->name }} ({{ $emp->code }})
+                                    <option value="{{ $emp->id }}"
+                                            data-branch="{{ $emp->branch_id ?? '' }}"
+                                            data-team="{{ $emp->team_id ?? '' }}"
+                                            {{ $m['employee_id'] == $emp->id ? 'selected' : '' }}>
+                                        {{ $emp->code }} — {{ $emp->name }}
+                                        @if($emp->branch) · {{ $emp->branch->name }} @endif
                                     </option>
                                 @endforeach
                             </select>
@@ -83,7 +116,8 @@
                                     class="text-red-400 hover:text-red-600 shrink-0">
                                 <i class="bi bi-x-circle"></i>
                             </button>
-                        </div>
+                            </div>{{-- flex --}}
+                        </div>{{-- reward-member-row --}}
                         @endforeach
                     @endif
                 </div>

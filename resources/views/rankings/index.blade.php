@@ -5,48 +5,51 @@
 @section('breadcrumb', 'Phân tích / Xếp hạng')
 
 @php
-    // ── Zone helpers (used throughout this view) ──────────────────────────────
-    $zoneRowBg = fn(string $z) => match ($z) {
-        'green' => 'bg-emerald-50/40 dark:bg-emerald-950/10',
-        'yellow' => 'bg-yellow-50/40 dark:bg-yellow-950/10',
-        'orange' => 'bg-orange-50/40 dark:bg-orange-950/10',
-        'red' => 'bg-red-50/50 dark:bg-red-950/15',
-        default => '',
-    };
-    $zoneBorder = fn(string $z) => match ($z) {
-        'green' => 'border-l-emerald-400',
-        'yellow' => 'border-l-yellow-400',
-        'orange' => 'border-l-orange-400',
-        'red' => 'border-l-red-500',
-        default => 'border-l-transparent',
-    };
+    // ── Zone color helpers ────────────────────────────────────────────────────
     $zoneBadgeCss = fn(string $z) => match ($z) {
-        'green' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+        'green'  => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
         'yellow' => 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
         'orange' => 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-        'red' => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-        default => 'bg-slate-100 text-slate-500',
+        'red'    => 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+        default  => 'bg-slate-100 text-slate-500',
     };
     $zoneScoreColor = fn(string $z) => match ($z) {
-        'green' => 'text-emerald-600 dark:text-emerald-400',
+        'green'  => 'text-emerald-600 dark:text-emerald-400',
         'yellow' => 'text-yellow-600 dark:text-yellow-400',
         'orange' => 'text-orange-600 dark:text-orange-400',
-        'red' => 'text-red-600 dark:text-red-400',
-        default => 'text-slate-800 dark:text-white',
+        'red'    => 'text-red-600 dark:text-red-400',
+        default  => 'text-slate-800 dark:text-white',
     };
-    // Top-3 overrides (take precedence over zone)
-    $podiumRowBg = [
-        'bg-gradient-to-r from-amber-50 to-amber-50/0 dark:from-amber-950/40 dark:to-transparent',
-        'bg-gradient-to-r from-slate-100 to-slate-50/0 dark:from-slate-700/40 dark:to-transparent',
-        'bg-gradient-to-r from-orange-50 to-orange-50/0 dark:from-orange-950/30 dark:to-transparent',
-    ];
-    $podiumBorder = ['border-l-amber-400', 'border-l-slate-400', 'border-l-orange-500'];
-    $podiumMedal = ['🥇', '🥈', '🥉'];
-    $podiumLabel = ['Hạng nhất', 'Hạng nhì', 'Hạng ba'];
-    $podiumAvatarBg = [
-        'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300',
-        'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
-        'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
+    $zoneAvatarCss = fn(string $z, bool $isTop = false, int $idx = 0) => $isTop ? match ($idx) {
+        0 => 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 ring-2 ring-amber-300 dark:ring-amber-700',
+        1 => 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 ring-2 ring-slate-300 dark:ring-slate-600',
+        2 => 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 ring-2 ring-orange-300 dark:ring-orange-700',
+        default => 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
+    } : match ($z) {
+        'green'  => 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 ring-2 ring-emerald-300 dark:ring-emerald-700',
+        'yellow' => 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 ring-2 ring-yellow-300 dark:ring-yellow-700',
+        'orange' => 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 ring-2 ring-orange-300 dark:ring-orange-700',
+        'red'    => 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 ring-2 ring-rose-300 dark:ring-rose-700',
+        default  => 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300',
+    };
+    $zoneBarCls = fn(string $z) => match ($z) {
+        'green'  => 'bg-emerald-500',
+        'yellow' => 'bg-yellow-500',
+        'orange' => 'bg-orange-500',
+        'red'    => 'bg-rose-500',
+        default  => 'bg-slate-400',
+    };
+    $zoneEmoji = fn(string $z) => match ($z) {
+        'green' => '🟢', 'yellow' => '🟡', 'orange' => '🟠', 'red' => '🔴', default => '⚪',
+    };
+    // Top-3 podium
+    $podiumMedal    = ['🥇', '🥈', '🥉'];
+    $podiumLabel    = ['Hạng nhất', 'Hạng nhì', 'Hạng ba'];
+    $podiumCardTop  = ['leaderboard-card-top', 'leaderboard-card-top', 'leaderboard-card-top'];
+    $podiumScoreCls = [
+        'text-amber-600 dark:text-amber-400',
+        'text-slate-500 dark:text-slate-300',
+        'text-orange-600 dark:text-orange-400',
     ];
 @endphp
 
@@ -54,301 +57,189 @@
     <div class="page-header">
         <div>
             <div class="inline-flex items-center gap-2">
-                <span
-                    class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-pcrm-100 dark:bg-pcrm-900/50 text-pcrm-700 dark:text-pcrm-400">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-pcrm-100 dark:bg-pcrm-900/50 text-pcrm-700 dark:text-pcrm-400">
                     <i class="bi bi-trophy-fill text-lg"></i>
                 </span>
                 <h3 class="page-title">Bảng xếp hạng</h3>
             </div>
         </div>
         <div class="flex gap-2 flex-wrap" role="tablist">
-            <button type="button" class="btn-secondary ranking-tab-btn" onclick="showRankTab('alltime')" id="rtab-alltime"
-                role="tab">
-                <i class="bi bi-list"></i><span>Tất cả thời gian</span>
+            <button type="button" class="btn-secondary ranking-tab-btn" onclick="showRankTab('alltime')" id="rtab-alltime" role="tab">
+                <i class="bi bi-list-ol"></i><span>Tất cả thời gian</span>
             </button>
-            <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('teams')" id="rtab-teams"
-                role="tab">
+            <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('teams')" id="rtab-teams" role="tab">
                 <i class="bi bi-people"></i><span>Đội nhóm</span>
             </button>
-            <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('monthly')" id="rtab-monthly"
-                role="tab">
-                <i class="bi bi-calendar"></i><span>Tháng</span>
+            <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('monthly')" id="rtab-monthly" role="tab">
+                <i class="bi bi-calendar-month"></i><span>Tháng</span>
             </button>
-            <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('yearly')" id="rtab-yearly"
-                role="tab">
-                <i class="bi bi-calendar"></i><span>Năm</span>
+            <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('yearly')" id="rtab-yearly" role="tab">
+                <i class="bi bi-calendar2-check"></i><span>Năm</span>
             </button>
         </div>
     </div>
 
-    {{-- ══ SHARED: reusable ranking table macro ═══════════════════════════════
-         Parameters passed via PHP block before each include-like block:
-           $rows         — iterable of employee objects
-           $scoreKey     — attribute name for the score to display ('total_score'|'display_score')
-           $showZone     — bool: show zone badge next to score
-           $showTeam     — bool: show team column
-           $colSpan      — total column count for empty state
-           $emptyMsg     — empty state message
-    ──────────────────────────────────────────────────────────────────────── --}}
+    {{-- ══ Zone legend ════════════════════════════════════════════════════════ --}}
+    <div class="flex flex-wrap items-center gap-3 mb-5 px-1">
+        <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Zone:</span>
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">🟢 An toàn</span>
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">🟡 Cần cố gắng</span>
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300">🟠 Cảnh báo</span>
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">🔴 Redzone</span>
+    </div>
 
     {{-- ══ TAB: ALL-TIME ══════════════════════════════════════════════════════ --}}
     <div id="ranking-panel-alltime" class="ranking-panel">
-        <div class="card overflow-hidden">
-            <div class="card-header">
-                <h3 class="font-semibold text-slate-900 dark:text-white">Xếp hạng điểm tích luỹ</h3>
-                <p class="text-xs text-slate-400 mt-0.5">Zone hiển thị theo tháng hiện tại</p>
+        <div class="card">
+            <div class="card-header flex items-center justify-between">
+                <div>
+                    <h3 class="font-semibold text-slate-900 dark:text-white">Xếp hạng điểm tích luỹ</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Zone hiển thị theo tháng hiện tại</p>
+                </div>
+                <span class="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-full">
+                    {{ $employees->count() }} nhân viên
+                </span>
             </div>
-
-            {{-- Desktop table --}}
-            <div class="hidden sm:block">
-                <table class="table-base">
-                    <thead>
-                        <tr>
-                            <th class="table-th w-14 pl-4">#</th>
-                            <th class="table-th">Nhân viên</th>
-                            <th class="table-th">Chi nhánh · Đội</th>
-                            <th class="table-th text-center">Tổng điểm</th>
-                            <th class="table-th text-center w-28">Zone tháng này</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($employees as $index => $emp)
+            <div class="card-body max-h-[90vh] overflow-y-auto">
+                @if($employees->isEmpty())
+                    <div class="py-14 text-center">
+                        <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                            <i class="bi bi-trophy text-2xl text-slate-400"></i>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Chưa có dữ liệu xếp hạng</p>
+                    </div>
+                @else
+                    <div class="ranking-scroll-list grid grid-cols-1 sm:grid-cols-1 gap-3">
+                        @foreach($employees as $index => $emp)
                             @php
-                                $zone = $emp->zone ?: 'green';
+                                $zone  = $emp->zone ?: 'green';
                                 $score = $emp->total_score ?: 0;
                                 $isTop = $index < 3;
-                                $rowBg = $isTop ? $podiumRowBg[$index] : $zoneRowBg($zone);
-                                $bdCls = 'border-l-4 ' . ($isTop ? $podiumBorder[$index] : $zoneBorder($zone));
+                                $pct   = min(100, max(0, $score));
+                                $delay = min(0.04 + $index * 0.03, 0.55);
                             @endphp
-                            <tr class="{{ $rowBg }} transition-colors" style="animation-delay:{{ $index * 30 }}ms">
-                                {{-- Rank cell with left border --}}
-                                <td class="table-td pl-4 {{ $bdCls }}">
+                            <a href="{{ route('employees.show', $emp) }}"
+                               class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : '' }}"
+                               style="animation-delay:{{ $delay }}s">
+
+                                {{-- Rank --}}
+                                <div class="leaderboard-card-rank leaderboard-medal w-8 text-center flex-shrink-0">
                                     @if ($isTop)
-                                        <div
-                                            class="flex items-center justify-center w-9 h-9 rounded-full
-                                        {{ $index === 0 ? 'bg-amber-100 dark:bg-amber-900/40' : ($index === 1 ? 'bg-slate-200 dark:bg-slate-700' : 'bg-orange-100 dark:bg-orange-900/30') }}
-                                        text-xl select-none">
-                                            {{ $podiumMedal[$index] }}</div>
+                                        <span class="text-xl select-none">{{ $podiumMedal[$index] }}</span>
                                     @else
-                                        <span
-                                            class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400">{{ $index + 1 }}</span>
+                                        <span class="text-sm font-bold text-slate-400 dark:text-slate-500">{{ $index + 1 }}</span>
                                     @endif
-                                </td>
-                                {{-- Name --}}
-                                <td class="table-td">
-                                    <div class="flex items-center gap-2.5">
-                                        <div
-                                            class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
-                                        {{ $isTop ? $podiumAvatarBg[$index] : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }}">
-                                            {{ strtoupper(mb_substr($emp->name, 0, 2)) }}
-                                        </div>
-                                        <div>
-                                            <a href="{{ route('employees.show', $emp) }}"
-                                                class="font-semibold text-sm hover:underline
-                                            {{ $isTop ? ($index === 0 ? 'text-amber-700 dark:text-amber-400' : ($index === 1 ? 'text-slate-600 dark:text-slate-300' : 'text-orange-700 dark:text-orange-400')) : 'text-slate-900 dark:text-white' }}">
-                                                {{ $emp->name }}
-                                            </a>
-                                            @if ($isTop)
-                                                <div
-                                                    class="text-[10px] font-semibold uppercase tracking-wider mt-0.5
-                                                {{ $index === 0 ? 'text-amber-500' : ($index === 1 ? 'text-slate-400' : 'text-orange-500') }}">
-                                                    {{ $podiumLabel[$index] }}
-                                                </div>
-                                            @else
-                                                <div class="text-xs text-slate-400">{{ $emp->code }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </td>
-                                {{-- Branch · Team --}}
-                                <td class="table-td text-sm text-slate-500 dark:text-slate-400">
-                                    {{ $emp->branch->name ?? '—' }}
-                                    @if ($emp->team)
-                                        · {{ $emp->team->name }}
-                                    @endif
-                                </td>
-                                {{-- Score --}}
-                                <td class="table-td text-center">
-                                    <span
-                                        class="text-lg font-extrabold {{ $isTop ? ($index === 0 ? 'text-amber-600 dark:text-amber-400' : ($index === 1 ? 'text-slate-500 dark:text-slate-300' : 'text-orange-600 dark:text-orange-400')) : $zoneScoreColor($zone) }}">
-                                        {{ number_format($score) }}
-                                    </span>
-                                </td>
-                                {{-- Zone badge --}}
-                                <td class="table-td text-center">
-                                    <span
-                                        class="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold {{ $zoneBadgeCss($zone) }}">
-                                        {{ $zone === 'green' ? '🟢' : ($zone === 'yellow' ? '🟡' : ($zone === 'orange' ? '🟠' : '🔴')) }}
-                                        {{ \App\Models\MonthlyEmployeeScore::zoneLabel($zone) }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="table-td text-center py-10 text-slate-400"><i
-                                        class="ph-trophy text-3xl mb-2 block"></i>Chưa có dữ liệu</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Mobile cards --}}
-            <div class="sm:hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                @forelse($employees as $index => $emp)
-                    @php
-                        $zone = $emp->zone ?? 'green';
-                        $score = $emp->total_score ?? 0;
-                        $isTop = $index < 3;
-                    @endphp
-                    <a href="{{ route('employees.show', $emp) }}"
-                        class="flex items-center gap-3 px-4 py-3 {{ $isTop ? $podiumRowBg[$index] : $zoneRowBg($zone) }} border-l-4 {{ $isTop ? $podiumBorder[$index] : $zoneBorder($zone) }}">
-                        <div class="flex-shrink-0">
-                            @if ($isTop)
-                                <div
-                                    class="w-10 h-10 rounded-full flex items-center justify-center text-2xl
-                                {{ $index === 0 ? 'bg-amber-100 dark:bg-amber-900/40' : ($index === 1 ? 'bg-slate-200 dark:bg-slate-700' : 'bg-orange-100 dark:bg-orange-900/30') }}">
-                                    {{ $podiumMedal[$index] }}
                                 </div>
-                            @else
-                                <div
-                                    class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-500">
-                                    {{ $index + 1 }}</div>
-                            @endif
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-semibold text-sm text-slate-900 dark:text-white truncate">{{ $emp->name }}
-                            </div>
-                            <div class="text-xs text-slate-400 truncate">{{ $emp->branch->name ?? '—' }} ·
-                                {{ $emp->team->name ?? '—' }}</div>
-                        </div>
-                        <div class="text-right flex-shrink-0">
-                            <div
-                                class="font-extrabold text-base {{ $isTop ? ($index === 0 ? 'text-amber-600 dark:text-amber-400' : ($index === 1 ? 'text-slate-500' : 'text-orange-600 dark:text-orange-400')) : $zoneScoreColor($zone) }}">
-                                {{ number_format($score) }}
-                            </div>
-                            <div
-                                class="text-[10px] mt-0.5 {{ $zoneBadgeCss($zone) }} inline-block px-1.5 py-0.5 rounded-full font-medium">
-                                {{ \App\Models\MonthlyEmployeeScore::zoneLabel($zone) }}
-                            </div>
-                        </div>
-                    </a>
-                @empty
-                    <div class="text-center py-10 text-slate-400"><i class="ph-trophy text-3xl mb-2 block"></i>Chưa có dữ
-                        liệu</div>
-                @endforelse
-            </div>
 
-            @if ($employees->hasPages())
-                <div class="card-footer">{{ $employees->links() }}</div>
-            @endif
+                                {{-- Avatar --}}
+                                <div class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold {{ $zoneAvatarCss($zone, $isTop, $index) }}">
+                                    {{ strtoupper(mb_substr($emp->name, 0, 2)) }}
+                                </div>
+
+                                {{-- Info --}}
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $emp->name }}</span>
+                                        <span class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($zone) }}">
+                                            {{ $zoneEmoji($zone) }} {{ \App\Models\MonthlyEmployeeScore::zoneLabel($zone) }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 truncate mt-0.5">
+                                        {{ $emp->branch->name ?? '—' }}@if($emp->team)<span class="opacity-40 mx-1">·</span>{{ $emp->team->name }}@endif
+                                    </p>
+                                    @if($isTop)
+                                        <p class="text-[10px] font-bold uppercase tracking-wider mt-0.5 {{ $podiumScoreCls[$index] }}">{{ $podiumLabel[$index] }}</p>
+                                    @else
+                                        <p class="text-[10px] text-slate-400 mt-0.5">{{ $emp->code }}</p>
+                                    @endif
+                                </div>
+
+                                {{-- Score + bar --}}
+                                <div class="leaderboard-card-score flex-shrink-0">
+                                    <p class="font-extrabold text-base {{ $isTop ? $podiumScoreCls[$index] : $zoneScoreColor($zone) }}">
+                                        {{ number_format($score) }}
+                                        <span class="text-xs font-normal text-slate-400">pts</span>
+                                    </p>
+
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
 
     {{-- ══ TAB: TEAMS ═════════════════════════════════════════════════════════ --}}
     <div id="ranking-panel-teams" class="ranking-panel hidden">
-        <div class="card overflow-hidden">
+        <div class="card">
             <div class="card-header">
                 <h3 class="font-semibold text-slate-900 dark:text-white">Xếp hạng đội nhóm</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Theo điểm trung bình thành viên</p>
             </div>
-            <div class="hidden sm:block">
-                <table class="table-base">
-                    <thead>
-                        <tr>
-                            <th class="table-th w-14 pl-4">#</th>
-                            <th class="table-th">Đội nhóm</th>
-                            <th class="table-th">Chi nhánh</th>
-                            <th class="table-th text-center">Số NV</th>
-                            <th class="table-th text-center">Điểm TB</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($teams as $index => $team)
+            <div class="card-body">
+                @if(isset($teams) && $teams->isNotEmpty())
+                    <div class="grid grid-cols-1 sm:grid-cols-1 gap-3">
+                        @foreach($teams as $index => $team)
                             @php $isTop = $index < 3; @endphp
-                            <tr class="{{ $isTop ? $podiumRowBg[$index] : 'table-tr-hover' }}">
-                                <td
-                                    class="table-td pl-4 border-l-4 {{ $isTop ? $podiumBorder[$index] : 'border-l-transparent' }}">
-                                    @if ($isTop)
-                                        <div
-                                            class="flex items-center justify-center w-9 h-9 rounded-full
-                                        {{ $index === 0 ? 'bg-amber-100 dark:bg-amber-900/40' : ($index === 1 ? 'bg-slate-200 dark:bg-slate-700' : 'bg-orange-100 dark:bg-orange-900/30') }}
-                                        text-xl select-none">
-                                            {{ $podiumMedal[$index] }}</div>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-bold text-slate-500">{{ $index + 1 }}</span>
-                                    @endif
-                                </td>
-                                <td
-                                    class="table-td font-semibold text-sm {{ $isTop && $index === 0 ? 'text-amber-700 dark:text-amber-400' : ($isTop && $index === 1 ? 'text-slate-600 dark:text-slate-300' : ($isTop ? 'text-orange-700 dark:text-orange-400' : 'text-slate-900 dark:text-white')) }}">
-                                    {{ $team->name }}
-                                    @if ($isTop)
-                                        <div
-                                            class="text-[10px] font-semibold uppercase tracking-wider mt-0.5 {{ $index === 0 ? 'text-amber-500' : ($index === 1 ? 'text-slate-400' : 'text-orange-500') }}">
-                                            {{ $podiumLabel[$index] }}</div>
-                                    @endif
-                                </td>
-                                <td class="table-td text-sm text-slate-500 dark:text-slate-400">
-                                    {{ $team->branch->name ?? '—' }}</td>
-                                <td class="table-td text-center text-sm">{{ $team->employees_count ?? 0 }}</td>
-                                <td class="table-td text-center">
-                                    <span
-                                        class="text-lg font-extrabold {{ $isTop ? ($index === 0 ? 'text-amber-600 dark:text-amber-400' : ($index === 1 ? 'text-slate-500 dark:text-slate-300' : 'text-orange-600 dark:text-orange-400')) : 'text-slate-900 dark:text-white' }}">
-                                        {{ number_format($team->average_score, 1) }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="table-td text-center py-10 text-slate-400"><i
-                                        class="ph-user-squares text-3xl mb-2 block"></i>Chưa có đội nhóm</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                            <div class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : '' }}"
+                                 style="animation-delay:{{ 0.04 + $index * 0.04 }}s">
 
-            <div class="sm:hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                @forelse($teams as $index => $team)
-                    @php $isTop = $index < 3; @endphp
-                    <div
-                        class="flex items-center gap-3 px-4 py-3 {{ $isTop ? $podiumRowBg[$index] : '' }} border-l-4 {{ $isTop ? $podiumBorder[$index] : 'border-l-transparent' }}">
-                        <div class="flex-shrink-0">
-                            @if ($isTop)
-                                <div
-                                    class="w-10 h-10 rounded-full flex items-center justify-center text-2xl
-                                {{ $index === 0 ? 'bg-amber-100 dark:bg-amber-900/40' : ($index === 1 ? 'bg-slate-200 dark:bg-slate-700' : 'bg-orange-100 dark:bg-orange-900/30') }}">
-                                    {{ $podiumMedal[$index] }}
+                                {{-- Rank --}}
+                                <div class="leaderboard-card-rank leaderboard-medal w-8 text-center flex-shrink-0">
+                                    @if ($isTop)
+                                        <span class="text-xl select-none">{{ $podiumMedal[$index] }}</span>
+                                    @else
+                                        <span class="text-sm font-bold text-slate-400 dark:text-slate-500">{{ $index + 1 }}</span>
+                                    @endif
                                 </div>
-                            @else
-                                <div
-                                    class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-sm font-bold text-slate-500">
-                                    {{ $index + 1 }}</div>
-                            @endif
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-semibold text-sm text-slate-900 dark:text-white truncate">{{ $team->name }}
+
+                                {{-- Team avatar --}}
+                                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold
+                                    {{ $isTop ? match($index) {
+                                        0 => 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 ring-2 ring-amber-300 dark:ring-amber-700',
+                                        1 => 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 ring-2 ring-slate-300 dark:ring-slate-600',
+                                        2 => 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 ring-2 ring-orange-300 dark:ring-orange-700',
+                                        default => 'bg-pcrm-100 dark:bg-pcrm-900/30 text-pcrm-700 dark:text-pcrm-300',
+                                    } : 'bg-pcrm-100 dark:bg-pcrm-900/30 text-pcrm-700 dark:text-pcrm-300' }}">
+                                    <i class="bi bi-people-fill text-sm"></i>
+                                </div>
+
+                                {{-- Info --}}
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $team->name }}</p>
+                                    <p class="text-xs text-slate-400 truncate mt-0.5">
+                                        {{ $team->branch->name ?? '—' }}
+                                        <span class="opacity-40 mx-1">·</span>{{ $team->employees_count ?? 0 }} thành viên
+                                    </p>
+                                    @if($isTop)
+                                        <p class="text-[10px] font-bold uppercase tracking-wider mt-0.5 {{ $podiumScoreCls[$index] }}">{{ $podiumLabel[$index] }}</p>
+                                    @endif
+                                </div>
+
+                                {{-- Score --}}
+                                <div class="leaderboard-card-score flex-shrink-0">
+                                    <p class="font-extrabold text-base {{ $isTop ? $podiumScoreCls[$index] : 'text-slate-700 dark:text-slate-300' }}">
+                                        {{ number_format($team->average_score, 1) }}
+                                        <span class="text-xs font-normal text-slate-400">TB</span>
+                                    </p>
+                                </div>
                             </div>
-                            <div class="text-xs text-slate-400 truncate">{{ $team->branch->name ?? '—' }} ·
-                                {{ $team->employees_count ?? 0 }} người</div>
-                        </div>
-                        <div class="text-right flex-shrink-0">
-                            <div
-                                class="font-extrabold text-base {{ $isTop ? ($index === 0 ? 'text-amber-600 dark:text-amber-400' : ($index === 1 ? 'text-slate-500' : 'text-orange-600 dark:text-orange-400')) : 'text-slate-900 dark:text-white' }}">
-                                {{ number_format($team->average_score, 1) }}
-                            </div>
-                            <div class="text-[10px] text-slate-400">điểm TB</div>
-                        </div>
+                        @endforeach
                     </div>
-                @empty
-                    <div class="text-center py-10 text-slate-400"><i class="ph-user-squares text-3xl mb-2 block"></i>Chưa
-                        có đội nhóm</div>
-                @endforelse
+                @else
+                    <div class="py-14 text-center">
+                        <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                            <i class="bi bi-people text-2xl text-slate-400"></i>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Chưa có dữ liệu đội nhóm</p>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
 
-    {{-- ══ TAB: MONTHLY AWARD ═════════════════════════════════════════════════ --}}
+    {{-- ══ TAB: MONTHLY ═══════════════════════════════════════════════════════ --}}
     <div id="ranking-panel-monthly" class="ranking-panel hidden">
         <div class="card mb-4">
             <div class="card-body py-3">
@@ -367,7 +258,7 @@
                         <input type="hidden" name="eval_year" id="eval_year_hidden" value="{{ $evalYear }}">
                     </div>
                     <button type="submit" onclick="setTab('monthly')" class="btn-primary text-sm">
-                        <i class="ph-magnifying-glass"></i> Xem
+                        <i class="bi bi-search"></i> Xem
                     </button>
                 </form>
             </div>
@@ -377,38 +268,30 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
                 {{-- Spotlight --}}
                 <div class="lg:col-span-1">
-                    <div
-                        class="card bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/40 dark:to-yellow-950/20 border-amber-200 dark:border-amber-800 border h-full">
+                    <div class="card bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/40 dark:to-yellow-950/20 border border-amber-200 dark:border-amber-800">
                         <div class="card-body text-center py-8">
-                            <div class="text-6xl mb-2 select-none">🏆</div>
-                            <div
-                                class="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-3">
-                                Nhân viên xuất sắc tháng
-                                {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}
+                            <div class="text-6xl mb-3 select-none">🏆</div>
+                            <div class="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-3">
+                                Nhân viên xuất sắc tháng {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}
                             </div>
-                            <div
-                                class="w-16 h-16 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-2xl font-black text-amber-800 dark:text-amber-200 mx-auto mb-3">
+                            <div class="w-16 h-16 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-2xl font-black text-amber-800 dark:text-amber-200 mx-auto mb-3">
                                 {{ strtoupper(mb_substr($employeeOfMonth->name, 0, 2)) }}
                             </div>
-                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-0.5">
-                                {{ $employeeOfMonth->name }}</h3>
+                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-0.5">{{ $employeeOfMonth->name }}</h3>
                             <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
                                 {{ $employeeOfMonth->branch->name ?? '—' }} · {{ $employeeOfMonth->team->name ?? '—' }}
                             </p>
                             @php $mzone = $employeeOfMonth->zone; @endphp
-                            <div
-                                class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-4 py-2 mb-3">
-                                <span
-                                    class="text-2xl font-extrabold {{ $zoneScoreColor($mzone) }}">{{ $employeeOfMonth->display_score }}</span>
+                            <div class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-4 py-2 mb-3">
+                                <span class="text-2xl font-extrabold {{ $zoneScoreColor($mzone) }}">{{ $employeeOfMonth->display_score }}</span>
                                 <span class="text-xs text-slate-500">điểm</span>
                                 <span class="text-xs px-2 py-0.5 rounded-full font-semibold {{ $zoneBadgeCss($mzone) }}">
-                                    {{ \App\Models\MonthlyEmployeeScore::zoneLabel($mzone) }}
+                                    {{ $zoneEmoji($mzone) }} {{ \App\Models\MonthlyEmployeeScore::zoneLabel($mzone) }}
                                 </span>
                             </div>
                             <div>
-                                <a href="{{ route('employees.show', $employeeOfMonth) }}"
-                                    class="btn-secondary btn-sm text-xs">
-                                    <i class="ph-eye"></i> Xem hồ sơ
+                                <a href="{{ route('employees.show', $employeeOfMonth) }}" class="btn-secondary btn-sm text-xs">
+                                    <i class="bi bi-eye"></i> Xem hồ sơ
                                 </a>
                             </div>
                         </div>
@@ -417,95 +300,81 @@
 
                 {{-- Monthly leaderboard --}}
                 <div class="lg:col-span-2">
-                    <div class="card overflow-hidden h-full">
+                    <div class="card h-full">
                         <div class="card-header">
                             <h3 class="font-semibold text-slate-900 dark:text-white">
                                 Top nhân viên tháng {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}
                             </h3>
                         </div>
-                        <table class="table-base">
-                            <thead>
-                                <tr>
-                                    <th class="table-th w-14 pl-4">#</th>
-                                    <th class="table-th">Nhân viên</th>
-                                    <th class="table-th text-center">Điểm · Zone</th>
-                                    <th class="table-th text-center hidden sm:table-cell">Trừ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($monthlyRanking->take(10) as $i => $emp)
-                                    @php
-                                        $z = $emp->zone ?? 'green';
-                                        $isTop = $i < 3;
-                                        $rowBg = $isTop ? $podiumRowBg[$i] : $zoneRowBg($z);
-                                        $bdCls = 'border-l-4 ' . ($isTop ? $podiumBorder[$i] : $zoneBorder($z));
-                                    @endphp
-                                    <tr class="{{ $rowBg }}">
-                                        <td class="table-td pl-4 {{ $bdCls }}">
-                                            @if ($isTop)
-                                                <div
-                                                    class="flex items-center justify-center w-8 h-8 rounded-full text-lg
-                                            {{ $i === 0 ? 'bg-amber-100 dark:bg-amber-900/40' : ($i === 1 ? 'bg-slate-200 dark:bg-slate-700' : 'bg-orange-100 dark:bg-orange-900/30') }}">
-                                                    {{ $podiumMedal[$i] }}
-                                                </div>
-                                            @else
-                                                <span
-                                                    class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-bold text-slate-500">{{ $i + 1 }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="table-td">
+                        <div class="card-body max-h-[90vh] overflow-y-auto">
+                            <div class="ranking-scroll-list-sm grid grid-cols-1 sm:grid-cols-1 gap-3">
+                            @forelse($monthlyRanking as $i => $emp)
+                                @php
+                                    $z     = $emp->zone ?? 'green';
+                                    $isTop = $i < 3;
+                                    $pct   = min(100, max(0, $emp->display_score ?? 0));
+                                    $delay = min(0.05 + $i * 0.04, 0.5);
+                                @endphp
+                                <div class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : '' }}"
+                                     style="animation-delay:{{ $delay }}s">
+
+                                    <div class="leaderboard-card-rank leaderboard-medal w-7 text-center flex-shrink-0">
+                                        @if ($isTop)
+                                            <span class="text-lg select-none">{{ $podiumMedal[$i] }}</span>
+                                        @else
+                                            <span class="text-sm font-bold text-slate-400">{{ $i + 1 }}</span>
+                                        @endif
+                                    </div>
+
+                                    <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold {{ $zoneAvatarCss($z, $isTop, $i) }}">
+                                        {{ strtoupper(mb_substr($emp->name, 0, 2)) }}
+                                    </div>
+
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
                                             <a href="{{ route('employees.show', $emp) }}"
-                                                class="font-semibold text-sm hover:underline
-                                        {{ $isTop ? ($i === 0 ? 'text-amber-700 dark:text-amber-400' : ($i === 1 ? 'text-slate-600 dark:text-slate-300' : 'text-orange-700 dark:text-orange-400')) : 'text-slate-900 dark:text-white' }}">
+                                               class="text-sm font-semibold hover:underline truncate {{ $isTop ? $podiumScoreCls[$i] : 'text-slate-800 dark:text-slate-200' }}">
                                                 {{ $emp->name }}
                                             </a>
-                                            <div class="text-xs text-slate-400">{{ $emp->code }}</div>
-                                        </td>
-                                        <td class="table-td text-center">
-                                            <span
-                                                class="font-extrabold text-base {{ $isTop ? ($i === 0 ? 'text-amber-600 dark:text-amber-400' : ($i === 1 ? 'text-slate-500 dark:text-slate-300' : 'text-orange-600 dark:text-orange-400')) : $zoneScoreColor($z) }}">
-                                                {{ $emp->display_score }}
+                                            <span class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($z) }}">
+                                                {{ $zoneEmoji($z) }} {{ \App\Models\MonthlyEmployeeScore::zoneLabel($z) }}
                                             </span>
-                                            <div class="mt-0.5">
-                                                <span
-                                                    class="text-[10px] px-1.5 py-0.5 rounded-full font-medium {{ $zoneBadgeCss($z) }}">
-                                                    {{ $z === 'green' ? '🟢' : ($z === 'yellow' ? '🟡' : ($z === 'orange' ? '🟠' : '🔴')) }}
-                                                    {{ \App\Models\MonthlyEmployeeScore::zoneLabel($z) }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="table-td text-center hidden sm:table-cell text-sm">
-                                            @if (($emp->deducted ?? 0) > 0)
-                                                <span class="text-red-500 font-medium">-{{ $emp->deducted }}</span>
-                                            @else
-                                                <span class="text-slate-300 dark:text-slate-600">—</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="table-td text-center py-8 text-slate-400">Chưa có dữ
-                                            liệu tháng này</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">{{ $emp->code }}</p>
+                                    </div>
+
+                                    <div class="leaderboard-card-score flex-shrink-0">
+                                        <p class="font-extrabold text-base {{ $isTop ? $podiumScoreCls[$i] : $zoneScoreColor($z) }}">
+                                            {{ $emp->display_score }}
+
+                                        </p>
+
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="py-10 text-center text-slate-400">
+                                    <p class="text-sm">Chưa có dữ liệu tháng này</p>
+                                </div>
+                            @endforelse
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         @else
             <div class="card">
                 <div class="card-body text-center py-12 text-slate-400">
-                    <i class="ph-trophy text-4xl mb-2 block"></i>
-                    <p>Chưa có dữ liệu điểm tháng {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}</p>
-                    <p class="text-xs mt-1">Chạy <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">php artisan
-                            scores:reset-monthly</code> để khởi tạo.</p>
+                    <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                        <i class="bi bi-trophy text-2xl text-slate-400"></i>
+                    </div>
+                    <p class="text-sm">Chưa có dữ liệu điểm tháng {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}</p>
+                    <p class="text-xs mt-1 text-slate-300 dark:text-slate-600">Chạy <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">php artisan scores:reset-monthly</code> để khởi tạo.</p>
                 </div>
             </div>
         @endif
     </div>
 
-    {{-- ══ TAB: YEARLY AWARD ══════════════════════════════════════════════════ --}}
+    {{-- ══ TAB: YEARLY ════════════════════════════════════════════════════════ --}}
     <div id="ranking-panel-yearly" class="ranking-panel hidden">
         <div class="card mb-4">
             <div class="card-body py-3">
@@ -516,13 +385,12 @@
                         <label class="form-label text-xs mb-1">Chọn năm</label>
                         <select name="eval_year_only" class="form-select text-sm w-28">
                             @foreach ($yearOptions as $y)
-                                <option value="{{ $y }}" {{ $y == $evalYearOnly ? 'selected' : '' }}>
-                                    {{ $y }}</option>
+                                <option value="{{ $y }}" {{ $y == $evalYearOnly ? 'selected' : '' }}>{{ $y }}</option>
                             @endforeach
                         </select>
                     </div>
                     <button type="submit" onclick="setTab('yearly')" class="btn-primary text-sm">
-                        <i class="ph-magnifying-glass"></i> Xem
+                        <i class="bi bi-search"></i> Xem
                     </button>
                 </form>
             </div>
@@ -532,39 +400,32 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {{-- Yearly spotlight --}}
                 <div class="lg:col-span-1">
-                    <div
-                        class="card bg-gradient-to-br from-pcrm-50 to-indigo-100 dark:from-pcrm-950/40 dark:to-indigo-950/20 border-pcrm-200 dark:border-pcrm-800 border h-full">
+                    <div class="card bg-gradient-to-br from-pcrm-50 to-indigo-100 dark:from-pcrm-950/40 dark:to-indigo-950/20 border border-pcrm-200 dark:border-pcrm-800">
                         <div class="card-body text-center py-8">
-                            <div class="text-6xl mb-2 select-none">🥇</div>
-                            <div
-                                class="text-[11px] font-bold uppercase tracking-widest text-pcrm-600 dark:text-pcrm-400 mb-3">
+                            <div class="text-6xl mb-3 select-none">🥇</div>
+                            <div class="text-[11px] font-bold uppercase tracking-widest text-pcrm-600 dark:text-pcrm-400 mb-3">
                                 Nhân viên xuất sắc năm {{ $evalYearOnly }}
                             </div>
-                            <div
-                                class="w-16 h-16 rounded-full bg-pcrm-200 dark:bg-pcrm-800 flex items-center justify-center text-2xl font-black text-pcrm-800 dark:text-pcrm-200 mx-auto mb-3">
+                            <div class="w-16 h-16 rounded-full bg-pcrm-200 dark:bg-pcrm-800 flex items-center justify-center text-2xl font-black text-pcrm-800 dark:text-pcrm-200 mx-auto mb-3">
                                 {{ strtoupper(mb_substr($employeeOfYear->name, 0, 2)) }}
                             </div>
-                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-0.5">
-                                {{ $employeeOfYear->name }}</h3>
+                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-0.5">{{ $employeeOfYear->name }}</h3>
                             <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
                                 {{ $employeeOfYear->branch->name ?? '—' }} · {{ $employeeOfYear->team->name ?? '—' }}
                             </p>
                             @php $yzone = $employeeOfYear->zone; @endphp
-                            <div
-                                class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-4 py-2 mb-1">
-                                <span
-                                    class="text-2xl font-extrabold {{ $zoneScoreColor($yzone) }}">{{ $employeeOfYear->display_score }}</span>
+                            <div class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-4 py-2 mb-1">
+                                <span class="text-2xl font-extrabold {{ $zoneScoreColor($yzone) }}">{{ $employeeOfYear->display_score }}</span>
                                 <span class="text-xs text-slate-500">điểm TB</span>
                             </div>
                             <div class="text-xs text-slate-400 mb-3">
                                 {{ $employeeOfYear->months_logged }} tháng ghi nhận
                                 @if ($employeeOfYear->months_in_red > 0)
-                                    · <span class="text-red-500">{{ $employeeOfYear->months_in_red }}🔴 redzone</span>
+                                    · <span class="text-red-500">{{ $employeeOfYear->months_in_red }} 🔴 redzone</span>
                                 @endif
                             </div>
-                            <a href="{{ route('employees.show', $employeeOfYear) }}"
-                                class="btn-secondary btn-sm text-xs">
-                                <i class="ph-eye"></i> Xem hồ sơ
+                            <a href="{{ route('employees.show', $employeeOfYear) }}" class="btn-secondary btn-sm text-xs">
+                                <i class="bi bi-eye"></i> Xem hồ sơ
                             </a>
                         </div>
                     </div>
@@ -572,87 +433,78 @@
 
                 {{-- Yearly leaderboard --}}
                 <div class="lg:col-span-2">
-                    <div class="card overflow-hidden h-full">
+                    <div class="card h-full">
                         <div class="card-header">
                             <h3 class="font-semibold text-slate-900 dark:text-white">
                                 Bảng xếp hạng năm {{ $evalYearOnly }} (điểm trung bình/tháng)
                             </h3>
                         </div>
-                        <table class="table-base">
-                            <thead>
-                                <tr>
-                                    <th class="table-th w-14 pl-4">#</th>
-                                    <th class="table-th">Nhân viên</th>
-                                    <th class="table-th text-center">Điểm TB · Zone</th>
-                                    <th class="table-th text-center hidden sm:table-cell">Tháng</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($yearlyRanking->take(10) as $i => $emp)
-                                    @php
-                                        $z = $emp->zone ?? 'green';
-                                        $isTop = $i < 3;
-                                        $rowBg = $isTop ? $podiumRowBg[$i] : $zoneRowBg($z);
-                                        $bdCls = 'border-l-4 ' . ($isTop ? $podiumBorder[$i] : $zoneBorder($z));
-                                    @endphp
-                                    <tr class="{{ $rowBg }}">
-                                        <td class="table-td pl-4 {{ $bdCls }}">
-                                            @if ($isTop)
-                                                <div
-                                                    class="flex items-center justify-center w-8 h-8 rounded-full text-lg
-                                            {{ $i === 0 ? 'bg-amber-100 dark:bg-amber-900/40' : ($i === 1 ? 'bg-slate-200 dark:bg-slate-700' : 'bg-orange-100 dark:bg-orange-900/30') }}">
-                                                    {{ $podiumMedal[$i] }}
-                                                </div>
-                                            @else
-                                                <span
-                                                    class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-bold text-slate-500">{{ $i + 1 }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="table-td">
+                        <div class="card-body max-h-[90vh] overflow-y-auto">
+                            <div class="ranking-scroll-list-sm grid grid-cols-1 sm:grid-cols-1 gap-3">
+                            @forelse($yearlyRanking as $i => $emp)
+                                @php
+                                    $z     = $emp->zone ?? 'green';
+                                    $isTop = $i < 3;
+                                    $pct   = min(100, max(0, $emp->display_score ?? 0));
+                                    $delay = min(0.05 + $i * 0.04, 0.5);
+                                @endphp
+                                <div class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : '' }}"
+                                     style="animation-delay:{{ $delay }}s">
+
+                                    <div class="leaderboard-card-rank leaderboard-medal w-7 text-center flex-shrink-0">
+                                        @if ($isTop)
+                                            <span class="text-lg select-none">{{ $podiumMedal[$i] }}</span>
+                                        @else
+                                            <span class="text-sm font-bold text-slate-400">{{ $i + 1 }}</span>
+                                        @endif
+                                    </div>
+
+                                    <div class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold {{ $zoneAvatarCss($z, $isTop, $i) }}">
+                                        {{ strtoupper(mb_substr($emp->name, 0, 2)) }}
+                                    </div>
+
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
                                             <a href="{{ route('employees.show', $emp) }}"
-                                                class="font-semibold text-sm hover:underline
-                                        {{ $isTop ? ($i === 0 ? 'text-amber-700 dark:text-amber-400' : ($i === 1 ? 'text-slate-600 dark:text-slate-300' : 'text-orange-700 dark:text-orange-400')) : 'text-slate-900 dark:text-white' }}">
+                                               class="text-sm font-semibold hover:underline truncate {{ $isTop ? $podiumScoreCls[$i] : 'text-slate-800 dark:text-slate-200' }}">
                                                 {{ $emp->name }}
                                             </a>
-                                            <div class="text-xs text-slate-400">{{ $emp->code }}</div>
-                                        </td>
-                                        <td class="table-td text-center">
-                                            <span
-                                                class="font-extrabold text-base {{ $isTop ? ($i === 0 ? 'text-amber-600 dark:text-amber-400' : ($i === 1 ? 'text-slate-500 dark:text-slate-300' : 'text-orange-600 dark:text-orange-400')) : $zoneScoreColor($z) }}">
-                                                {{ $emp->display_score }}
+                                            <span class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($z) }}">
+                                                {{ $zoneEmoji($z) }} {{ \App\Models\MonthlyEmployeeScore::zoneLabel($z) }}
                                             </span>
-                                            <div class="mt-0.5">
-                                                <span
-                                                    class="text-[10px] px-1.5 py-0.5 rounded-full font-medium {{ $zoneBadgeCss($z) }}">
-                                                    {{ $z === 'green' ? '🟢' : ($z === 'yellow' ? '🟡' : ($z === 'orange' ? '🟠' : '🔴')) }}
-                                                    {{ \App\Models\MonthlyEmployeeScore::zoneLabel($z) }}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="table-td text-center hidden sm:table-cell">
-                                            <span class="text-sm text-slate-500">{{ $emp->months_logged }}</span>
-                                            @if ($emp->months_in_red > 0)
-                                                <span class="ml-1 text-xs text-red-500">·
-                                                    {{ $emp->months_in_red }}🔴</span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">
+                                            {{ $emp->months_logged }} tháng
+                                            @if($emp->months_in_red > 0)
+                                                · <span class="text-red-400">{{ $emp->months_in_red }} 🔴</span>
                                             @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="table-td text-center py-8 text-slate-400">Chưa có dữ
-                                            liệu năm {{ $evalYearOnly }}</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                        </p>
+                                    </div>
+
+                                    <div class="leaderboard-card-score flex-shrink-0">
+                                        <p class="font-extrabold text-base {{ $isTop ? $podiumScoreCls[$i] : $zoneScoreColor($z) }}">
+                                            {{ $emp->display_score }}
+                                            <span class="text-xs font-normal text-slate-400">TB</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="py-10 text-center text-slate-400">
+                                    <p class="text-sm">Chưa có dữ liệu năm {{ $evalYearOnly }}</p>
+                                </div>
+                            @endforelse
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         @else
             <div class="card">
                 <div class="card-body text-center py-12 text-slate-400">
-                    <i class="ph-medal text-4xl mb-2 block"></i>
-                    <p>Chưa có dữ liệu điểm năm {{ $evalYearOnly }}</p>
+                    <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                        <i class="bi bi-trophy text-2xl text-slate-400"></i>
+                    </div>
+                    <p class="text-sm">Chưa có dữ liệu điểm năm {{ $evalYearOnly }}</p>
                 </div>
             </div>
         @endif
@@ -678,7 +530,7 @@
             document.getElementById('eval_year_hidden').value = sel.options[sel.selectedIndex].getAttribute('data-year');
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const saved = sessionStorage.getItem('rankingTab') || 'alltime';
             showRankTab(saved);
             sessionStorage.removeItem('rankingTab');

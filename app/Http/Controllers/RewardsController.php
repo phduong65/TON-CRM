@@ -10,7 +10,9 @@ use App\Models\MonthlyEmployeeScore;
 use App\Models\Reward;
 use App\Models\RewardMember;
 use App\Models\RewardType;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RewardsController extends Controller
 {
@@ -46,13 +48,15 @@ class RewardsController extends Controller
         $rewards = $query->paginate(15)->withQueryString();
 
         $rewardTypes = RewardType::active()->orderBy('name')->get();
-        $employees   = Employee::where('is_active', true)->with('branch')->orderBy('name')->get();
+        $employees   = Employee::where('is_active', true)->with(['branch', 'team'])->orderBy('name')->get();
+        $branches    = \App\Models\Branch::where('is_active', true)->orderBy('name')->get();
+        $teams       = \App\Models\Team::where('is_active', true)->orderBy('name')->get();
 
         $rewardTypeDefaults = $rewardTypes->mapWithKeys(fn($rt) => [
             $rt->id => ['points' => $rt->default_points],
         ]);
 
-        return view('rewards.index', compact('rewards', 'rewardTypes', 'employees', 'rewardTypeDefaults'));
+        return view('rewards.index', compact('rewards', 'rewardTypes', 'employees', 'branches', 'teams', 'rewardTypeDefaults'));
     }
 
     public function store(StoreRewardRequest $request)
@@ -97,6 +101,8 @@ class RewardsController extends Controller
                 'points'        => $reward->total_points_awarded,
             ])
             ->log('Tạo phiếu thưởng ' . $reward->code . ' — ' . ($reward->employee?->name ?? '—'));
+
+        app(NotificationService::class)->notifyRewardCreated($reward);
 
         return redirect()->route('rewards.show', $reward)
             ->with('success', 'Tạo phiếu thưởng thành công!');
@@ -169,43 +175,86 @@ class RewardsController extends Controller
             ->with('success', 'Đã xóa phiếu thưởng!');
     }
 
+    public function detailJson(Reward $reward)
+    {
+        $reward->load(['employee.branch', 'rewardType', 'approver', 'members.employee']);
+        $user = auth()->user();
+
+        return response()->json([
+            'id'                   => $reward->id,
+            'code'                 => $reward->code,
+            'status'               => $reward->status,
+            'status_label'         => match ($reward->status) {
+                'pending'  => 'Chờ duyệt',
+                'approved' => 'Đã duyệt',
+                'rejected' => 'Từ chối',
+                default    => $reward->status,
+            },
+            'employee'             => [
+                'id'     => $reward->employee?->id,
+                'name'   => $reward->employee?->name,
+                'code'   => $reward->employee?->code,
+                'branch' => $reward->employee?->branch?->name,
+            ],
+            'reward_type'          => $reward->rewardType?->name,
+            'total_points_awarded' => $reward->total_points_awarded,
+            'description'          => $reward->description,
+            'rejected_reason'      => $reward->rejected_reason,
+            'approved_at'          => $reward->approved_at?->format('d/m/Y H:i'),
+            'approver'             => $reward->approver?->name,
+            'created_at'           => $reward->created_at->format('d/m/Y H:i'),
+            'members'              => $reward->members->map(fn($m) => [
+                'employee_name'  => $m->employee?->name,
+                'employee_code'  => $m->employee?->code,
+                'points_awarded' => $m->points_awarded,
+                'note'           => $m->note,
+            ]),
+            'can_approve'          => $user->can('approve-rewards'),
+            'can_edit'             => $user->can('create-rewards'),
+            'employee_id'          => $reward->employee_id,
+            'reward_type_id'       => $reward->reward_type_id,
+        ]);
+    }
+
     public function approve(Reward $reward)
     {
-        abort_if($reward->status !== 'pending', 403, 'Phiếu thưởng không ở trạng thái chờ duyệt.');
+        DB::transaction(function () use ($reward) {
+            // Re-fetch with row lock to prevent concurrent double-approval
+            $reward = Reward::lockForUpdate()->findOrFail($reward->id);
+            abort_if($reward->status !== 'pending', 403, 'Phiếu thưởng không ở trạng thái chờ duyệt.');
 
-        $reward->update([
-            'status'      => 'approved',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
-
-        // Add points to primary employee
-        if ($reward->total_points_awarded > 0) {
-            EmployeeScore::create([
-                'employee_id'    => $reward->employee_id,
-                'points'         => $reward->total_points_awarded,
-                'reason'         => 'Thưởng điểm: ' . ($reward->rewardType?->name ?? 'Khen thưởng'),
-                'type'           => 'reward',
-                'reference_type' => Reward::class,
-                'reference_id'   => $reward->id,
+            $reward->update([
+                'status'      => 'approved',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
             ]);
-            $this->applyMonthlyReward($reward->employee_id, $reward->total_points_awarded);
-        }
 
-        // Add points to additional members
-        foreach ($reward->members as $member) {
-            if ($member->points_awarded > 0) {
+            if ($reward->total_points_awarded > 0) {
                 EmployeeScore::create([
-                    'employee_id'    => $member->employee_id,
-                    'points'         => $member->points_awarded,
-                    'reason'         => 'Thưởng điểm liên đới: ' . ($reward->rewardType?->name ?? 'Khen thưởng'),
+                    'employee_id'    => $reward->employee_id,
+                    'points'         => $reward->total_points_awarded,
+                    'reason'         => 'Thưởng điểm: ' . ($reward->rewardType?->name ?? 'Khen thưởng'),
                     'type'           => 'reward',
                     'reference_type' => Reward::class,
                     'reference_id'   => $reward->id,
                 ]);
-                $this->applyMonthlyReward($member->employee_id, $member->points_awarded);
+                $this->applyMonthlyReward($reward->employee_id, $reward->total_points_awarded);
             }
-        }
+
+            foreach ($reward->members as $member) {
+                if ($member->points_awarded > 0) {
+                    EmployeeScore::create([
+                        'employee_id'    => $member->employee_id,
+                        'points'         => $member->points_awarded,
+                        'reason'         => 'Thưởng điểm liên đới: ' . ($reward->rewardType?->name ?? 'Khen thưởng'),
+                        'type'           => 'reward',
+                        'reference_type' => Reward::class,
+                        'reference_id'   => $reward->id,
+                    ]);
+                    $this->applyMonthlyReward($member->employee_id, $member->points_awarded);
+                }
+            }
+        });
 
         $reward->loadMissing(['rewardType', 'employee']);
         activity()->causedBy(auth()->user())
@@ -221,6 +270,8 @@ class RewardsController extends Controller
             ->log('Duyệt phiếu thưởng ' . $reward->code
                 . ' — Cộng ' . $reward->total_points_awarded . ' điểm'
                 . ' — NV: ' . ($reward->employee?->name ?? '—'));
+
+        app(NotificationService::class)->notifyRewardApproved($reward);
 
         return back()->with('success', 'Đã duyệt phiếu thưởng!');
     }
@@ -249,19 +300,13 @@ class RewardsController extends Controller
                 . ' — NV: ' . ($reward->employee?->name ?? '—')
                 . ' — Lý do: ' . \Illuminate\Support\Str::limit($request->rejected_reason, 60));
 
+        app(NotificationService::class)->notifyRewardRejected($reward, $request->rejected_reason);
+
         return back()->with('success', 'Đã từ chối phiếu thưởng!');
     }
 
     private function applyMonthlyReward(int $employeeId, int $points): void
     {
-        try {
-            MonthlyEmployeeScore::ensureExists($employeeId, now()->month, now()->year)->reward($points);
-        } catch (\Throwable $e) {
-            \Log::error('applyMonthlyReward failed', [
-                'employee_id' => $employeeId,
-                'points'      => $points,
-                'error'       => $e->getMessage(),
-            ]);
-        }
+        MonthlyEmployeeScore::ensureExists($employeeId, now()->month, now()->year)->reward($points);
     }
 }

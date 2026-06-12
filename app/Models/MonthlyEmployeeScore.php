@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class MonthlyEmployeeScore extends Model
 {
@@ -99,25 +100,27 @@ class MonthlyEmployeeScore extends Model
         );
     }
 
-    /**
-     * Apply point deduction and recalculate zone.
-     */
     public function deduct(int $points): void
     {
-        $this->deducted_points = $this->deducted_points + $points;
-        $this->final_score     = max(0, $this->initial_score + $this->rewarded_points - $this->deducted_points);
-        $this->zone            = static::computeZone($this->final_score);
-        $this->save();
+        DB::transaction(function () use ($points) {
+            $fresh = static::lockForUpdate()->findOrFail($this->id);
+            $fresh->deducted_points += $points;
+            $fresh->final_score      = max(0, $fresh->initial_score + $fresh->rewarded_points - $fresh->deducted_points);
+            $fresh->zone             = static::computeZone($fresh->final_score);
+            $fresh->save();
+            $this->fill($fresh->getAttributes());
+        });
     }
 
-    /**
-     * Apply point reward and recalculate zone.
-     */
     public function reward(int $points): void
     {
-        $this->rewarded_points = $this->rewarded_points + $points;
-        $this->final_score     = max(0, $this->initial_score + $this->rewarded_points - $this->deducted_points);
-        $this->zone            = static::computeZone($this->final_score);
-        $this->save();
+        DB::transaction(function () use ($points) {
+            $fresh = static::lockForUpdate()->findOrFail($this->id);
+            $fresh->rewarded_points += $points;
+            $fresh->final_score      = max(0, $fresh->initial_score + $fresh->rewarded_points - $fresh->deducted_points);
+            $fresh->zone             = static::computeZone($fresh->final_score);
+            $fresh->save();
+            $this->fill($fresh->getAttributes());
+        });
     }
 }

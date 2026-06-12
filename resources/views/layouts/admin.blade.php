@@ -30,6 +30,14 @@
         <!-- Main content scroll area -->
         <div class="flex-1 overflow-y-auto flex flex-col">
             <main class="flex-1 p-5 md:p-6 pcrm-animate-in">
+                @hasSection('page-title')
+                <div class="mb-5">
+                    @hasSection('breadcrumb')
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-0.5">@yield('breadcrumb')</p>
+                    @endif
+                    <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">@yield('page-title')</h1>
+                </div>
+                @endif
                 @yield('content')
             </main>
         </div>

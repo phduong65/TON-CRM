@@ -16,19 +16,19 @@ class RankingsController extends Controller
     {
         $defaultScore = (int) Setting::getValue('default_score_per_month', 100);
 
-        // ── All-time employee ranking (existing, paginated) ──────────────────
+        // ── All-time employee ranking (all records, scroll in view) ──────────
         $employees = Employee::select('employees.*', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
             ->leftJoin('employee_scores', 'employees.id', '=', 'employee_scores.employee_id')
             ->with(['branch', 'team'])
             ->groupBy('employees.id')
             ->orderByDesc('total_score')
-            ->paginate(20);
+            ->get();
 
         // Attach current-month zone to each all-time employee row
         $monthlyZoneMap = MonthlyEmployeeScore::where('month', now()->month)
             ->where('year', now()->year)
             ->pluck('zone', 'employee_id');
-        $employees->getCollection()->transform(function ($emp) use ($monthlyZoneMap) {
+        $employees->transform(function ($emp) use ($monthlyZoneMap) {
             $emp->zone = $monthlyZoneMap->get($emp->id, 'green');
             return $emp;
         });

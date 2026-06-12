@@ -7,12 +7,11 @@
 @section('content')
     {{-- Page header --}}
     <div class="page-header">
-        <div class="flex items-center gap-2.5">
-            <h1 class="text-lg font-bold text-slate-900 dark:text-white">Thông báo</h1>
+        <div class="flex items-center gap-2">
             @if($unreadCount > 0)
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">
-                    {{ $unreadCount }}
-                </span>
+                <span class="badge badge-danger">{{ $unreadCount }} chưa đọc</span>
+            @else
+                <p class="page-subtitle">Tất cả đã được đọc</p>
             @endif
         </div>
         <div class="flex items-center gap-2">
@@ -46,9 +45,22 @@
             <select name="type" class="form-input w-auto h-8 text-sm py-0" onchange="this.form.submit()">
                 <option value="">Tất cả loại</option>
                 <option value="general"          @selected(request('type') === 'general')>Thông báo chung</option>
-                <option value="penalty_created"  @selected(request('type') === 'penalty_created')>Phiếu phạt mới</option>
-                <option value="penalty_approved" @selected(request('type') === 'penalty_approved')>Phiếu phạt duyệt</option>
-                <option value="penalty_rejected" @selected(request('type') === 'penalty_rejected')>Phiếu phạt từ chối</option>
+                <optgroup label="Phiếu phạt">
+                    <option value="penalty_created"  @selected(request('type') === 'penalty_created')>Phiếu phạt mới</option>
+                    <option value="penalty_approved" @selected(request('type') === 'penalty_approved')>Phiếu phạt duyệt</option>
+                    <option value="penalty_rejected" @selected(request('type') === 'penalty_rejected')>Phiếu phạt từ chối</option>
+                </optgroup>
+                <optgroup label="Phiếu thưởng">
+                    <option value="reward_created"   @selected(request('type') === 'reward_created')>Phiếu thưởng mới</option>
+                    <option value="reward_approved"  @selected(request('type') === 'reward_approved')>Phiếu thưởng duyệt</option>
+                    <option value="reward_rejected"  @selected(request('type') === 'reward_rejected')>Phiếu thưởng từ chối</option>
+                </optgroup>
+                <option value="redzone_alert"    @selected(request('type') === 'redzone_alert')>Cảnh báo Redzone</option>
+                <optgroup label="Báo cáo chéo">
+                    <option value="report_created"   @selected(request('type') === 'report_created')>Báo cáo mới</option>
+                    <option value="report_approved"  @selected(request('type') === 'report_approved')>Báo cáo duyệt</option>
+                    <option value="report_rejected"  @selected(request('type') === 'report_rejected')>Báo cáo từ chối</option>
+                </optgroup>
             </select>
             @if(request()->anyFilled(['status', 'type']))
                 <a href="{{ route('notifications.index') }}"
@@ -95,19 +107,13 @@
                                         : 'font-medium text-slate-500 dark:text-slate-400' }}">
                                     {{ $notif->title }}
                                 </p>
-                                <span class="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md
-                                    {{ match($notif->type) {
-                                        'penalty_created'  => 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
-                                        'penalty_approved' => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
-                                        'penalty_rejected' => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-                                        default            => 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
-                                    } }}">
+                                <span class="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md {{ $notif->typeBadgeClass() }}">
                                     {{ $notif->typeLabel() }}
                                 </span>
                             </div>
                             {{-- Body snippet --}}
                             @if($notif->body)
-                                <p class="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{{ $notif->body }}</p>
+                                <p class="text-xs text-slate-400 dark:text-slate-500 truncate mt-2">{{ $notif->body }}</p>
                             @endif
                         </div>
 

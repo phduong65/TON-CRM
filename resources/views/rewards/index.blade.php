@@ -17,9 +17,9 @@
         @endcan
     </div>
 
-    <div class="card">
-        {{-- Filter bar --}}
-        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+    {{-- Filter bar --}}
+    <div class="card mb-4">
+        <div class="px-4 py-3">
             <form action="{{ route('rewards.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
@@ -69,98 +69,132 @@
                 </div>
             </form>
         </div>
+    </div>
 
-        <div class="card-body p-0">
-            <div class="table-container border-0 rounded-none">
-                <table class="table-base">
-                    <thead>
-                        <tr>
-                            <th class="table-th w-32">Mã phiếu</th>
-                            <th class="table-th">Nhân viên</th>
-                            <th class="table-th">Loại thưởng</th>
-                            <th class="table-th text-center">Điểm thưởng</th>
-                            <th class="table-th text-center">Thành viên thêm</th>
-                            <th class="table-th text-center">Trạng thái</th>
-                            <th class="table-th">Ngày tạo</th>
-                            <th class="table-th text-center">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($rewards as $reward)
-                        <tr class="table-tr-hover">
-                            <td class="table-td">
-                                <a href="{{ route('rewards.show', $reward) }}"
-                                   class="font-mono text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline">
-                                    {{ $reward->code }}
-                                </a>
-                            </td>
-                            <td class="table-td">
-                                <div class="font-medium text-sm">{{ $reward->employee?->name }}</div>
-                                <div class="text-xs text-slate-400">{{ $reward->employee?->code }} · {{ $reward->employee?->branch?->name }}</div>
-                            </td>
-                            <td class="table-td text-sm text-slate-700 dark:text-slate-300">{{ $reward->rewardType?->name }}</td>
-                            <td class="table-td text-center">
-                                <span class="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
-                                    <i class="bi bi-star-fill text-xs"></i>
-                                    +{{ number_format($reward->total_points_awarded) }}
-                                </span>
-                            </td>
-                            <td class="table-td text-center text-slate-500 dark:text-slate-400 text-sm">
-                                {{ $reward->members->count() > 0 ? '+' . $reward->members->count() . ' NV' : '—' }}
-                            </td>
-                            <td class="table-td text-center">
-                                @php
-                                    $statusMap = [
-                                        'pending'  => ['badge-warning', 'Chờ duyệt'],
-                                        'approved' => ['badge-success', 'Đã duyệt'],
-                                        'rejected' => ['badge-danger',  'Từ chối'],
-                                    ];
-                                    [$cls, $lbl] = $statusMap[$reward->status] ?? ['badge-neutral', $reward->status];
-                                @endphp
-                                <span class="{{ $cls }}">{{ $lbl }}</span>
-                            </td>
-                            <td class="table-td text-sm text-slate-500 dark:text-slate-400">
-                                {{ $reward->created_at->format('d/m/Y') }}
-                            </td>
-                            <td class="table-td text-center">
-                                <div class="flex items-center justify-center gap-1">
-                                    <a href="{{ route('rewards.show', $reward) }}"
-                                       class="btn-ghost btn-sm" title="Chi tiết">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    @if($reward->status === 'pending')
-                                        @can('delete-rewards')
-                                        <button onclick="openDeleteRewardModal({{ $reward->id }}, '{{ $reward->code }}')"
-                                                class="btn-ghost btn-sm text-red-600 dark:text-red-400" title="Xóa">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                        @endcan
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="table-td text-center py-8 text-slate-400">
-                                <i class="bi bi-gift text-3xl mb-2 block opacity-40"></i>
-                                <p>Chưa có phiếu thưởng nào. Hãy tạo phiếu thưởng đầu tiên!</p>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+    {{-- Reward Cards --}}
+    @if($rewards->isEmpty())
+        <div class="card">
+            <div class="py-16 text-center text-slate-400 dark:text-slate-500">
+                <i class="bi bi-gift text-4xl mb-3 block"></i>
+                <p class="text-sm font-medium">Chưa có phiếu thưởng nào</p>
+                @can('create-rewards')
+                    <button onclick="openModal('createRewardModal')"
+                        class="mt-4 inline-flex items-center gap-1.5 text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline">
+                        <i class="bi bi-plus-circle"></i> Tạo phiếu đầu tiên
+                    </button>
+                @endcan
             </div>
         </div>
+    @else
+        <div class="space-y-2">
+            @foreach($rewards as $reward)
+                @php
+                    $borderColor = match($reward->status) {
+                        'pending'  => 'border-l-amber-400 dark:border-l-amber-500',
+                        'approved' => 'border-l-emerald-500 dark:border-l-emerald-400',
+                        'rejected' => 'border-l-red-500 dark:border-l-red-400',
+                        default    => 'border-l-slate-300',
+                    };
+                    $dotColor = match($reward->status) {
+                        'pending'  => 'bg-amber-400',
+                        'approved' => 'bg-emerald-500',
+                        'rejected' => 'bg-red-500',
+                        default    => 'bg-slate-300',
+                    };
+                    $statusMap = [
+                        'pending'  => ['badge-warning', 'Chờ duyệt'],
+                        'approved' => ['badge-success text-[#6ee7b7]', 'Đã duyệt'],
+                        'rejected' => ['badge-danger',  'Từ chối'],
+                    ];
+                    [$badgeCls, $badgeLbl] = $statusMap[$reward->status] ?? ['badge-neutral', $reward->status];
+                @endphp
 
-        @if($rewards->hasPages())
-        <div class="card-footer">
-            {{ $rewards->links() }}
+                <div class="card border-l-4 {{ $borderColor }} cursor-pointer
+                    hover:shadow-md hover:-translate-y-px transition-all duration-150 group"
+                    onclick="openRewardDetail({{ $reward->id }})"
+                    <div class="px-5 py-4 flex items-start gap-4">
+
+                        {{-- Status dot --}}
+                        <div class="shrink-0 mt-1">
+                            <div class="w-2.5 h-2.5 rounded-full {{ $dotColor }}
+                                @if($reward->status === 'pending') animate-pulse @endif">
+                            </div>
+                        </div>
+
+                        {{-- Main content --}}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <span class="font-semibold text-slate-900 dark:text-white text-sm">
+                                    {{ $reward->employee?->name ?? 'N/A' }}
+                                </span>
+                                @if($reward->employee?->code)
+                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                                        {{ $reward->employee->code }}
+                                    </span>
+                                @endif
+                                <span class="{{ $badgeCls }} text-xs">{{ $badgeLbl }}</span>
+                            </div>
+
+                            <p class="text-sm text-slate-600 dark:text-slate-300 mb-0.5">
+                                <i class="bi bi-award text-xs text-slate-400 mr-0.5"></i>
+                                {{ $reward->rewardType?->name ?? 'N/A' }}
+                            </p>
+
+                            @if($reward->description)
+                                <p class="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                                    {{ $reward->description }}
+                                </p>
+                            @endif
+
+                            @if($reward->members->count() > 0)
+                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                                    <i class="bi bi-people text-xs mr-0.5"></i>
+                                    +{{ $reward->members->count() }} thành viên đi kèm
+                                </p>
+                            @endif
+                        </div>
+
+                        {{-- Right: points + date + actions --}}
+                        <div class="shrink-0 text-right flex flex-col items-end gap-1.5">
+                            <span class="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                                +{{ number_format($reward->total_points_awarded) }}đ
+                            </span>
+
+                            <span class="text-xs text-slate-400 dark:text-slate-500">
+                                {{ $reward->created_at->format('d/m/Y') }}
+                            </span>
+
+                            {{-- Quick actions (pending only, stop propagation) --}}
+                            @if($reward->status === 'pending')
+                                <div class="flex items-center gap-1 transition-opacity" onclick="event.stopPropagation()">
+                                    @can('delete-rewards')
+                                        <button type="button" title="Xóa"
+                                            onclick="openDeleteRewardModal({{ $reward->id }}, '{{ $reward->code }}')"
+                                            class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                            <i class="bi bi-trash-fill text-sm"></i>
+                                        </button>
+                                    @endcan
+                                </div>
+                            @endif
+                        </div>
+
+                    </div>
+                </div>
+            @endforeach
         </div>
+
+        {{-- Pagination --}}
+        @if($rewards->hasPages())
+            <div class="mt-4">
+                {{ $rewards->links() }}
+            </div>
         @endif
-    </div>
+    @endif
+
 @endsection
 
 @push('modals')
+    @include('rewards.partials.detail-modal')
     @include('rewards.partials.create-modal')
     @include('rewards.partials.delete-modal')
 @endpush
@@ -171,26 +205,82 @@ const rewardTypeDefaults = @json($rewardTypeDefaults);
 
 let rewardMemberIndex = {{ old('members') ? count(old('members')) : 0 }};
 
+function _buildRwEmpOptions() {
+    const sel = document.getElementById('rw_main_employee');
+    if (!sel) return '';
+    return Array.from(sel.options).slice(1).map(o =>
+        `<option value="${o.value}" data-branch="${o.dataset.branch||''}" data-team="${o.dataset.team||''}">${o.textContent.trim()}</option>`
+    ).join('');
+}
+
+function rwOnBranchFilter() {
+    const branchId = document.getElementById('rw_filter_branch').value;
+    const teamSel  = document.getElementById('rw_filter_team');
+    Array.from(teamSel.options).forEach(opt => {
+        if (!opt.value) return;
+        const match = !branchId || String(opt.dataset.branch) === String(branchId);
+        opt.hidden = !match; opt.disabled = !match;
+    });
+    const cur = teamSel.options[teamSel.selectedIndex];
+    if (cur && cur.value && cur.hidden) teamSel.value = '';
+    rwFilterEmployees();
+}
+
+function rwFilterEmployees() {
+    const branchId = document.getElementById('rw_filter_branch').value;
+    const teamId   = document.getElementById('rw_filter_team').value;
+    const search   = (document.getElementById('rw_emp_search').value || '').toLowerCase().trim();
+    const sel      = document.getElementById('rw_main_employee');
+    Array.from(sel.options).forEach(opt => {
+        if (!opt.value) return;
+        const show = (!branchId || String(opt.dataset.branch) === String(branchId))
+                  && (!teamId   || String(opt.dataset.team)   === String(teamId))
+                  && (!search   || opt.textContent.toLowerCase().includes(search));
+        opt.hidden = !show; opt.disabled = !show;
+    });
+    const cur = sel.options[sel.selectedIndex];
+    if (cur && cur.value && cur.hidden) sel.value = '';
+}
+
+function rwFilterMemberSelect(input) {
+    const search = (input.value || '').toLowerCase().trim();
+    const row    = input.closest('.reward-member-row');
+    const sel    = row ? row.querySelector('select') : null;
+    if (!sel) return;
+    Array.from(sel.options).forEach(opt => {
+        if (!opt.value) return;
+        const match = !search || opt.textContent.toLowerCase().includes(search);
+        opt.hidden = !match; opt.disabled = !match;
+    });
+    const cur = sel.options[sel.selectedIndex];
+    if (cur && cur.value && cur.hidden) sel.value = '';
+}
+
 function addRewardMemberRow() {
-    const idx = rewardMemberIndex++;
+    const idx  = rewardMemberIndex++;
     const container = document.getElementById('rewardMembersContainer');
-    const row = document.createElement('div');
-    row.className = 'flex items-center gap-2 reward-member-row';
+    const row  = document.createElement('div');
+    row.className = 'reward-member-row rounded-lg border border-slate-200 dark:border-slate-700 p-2 space-y-1.5';
     row.innerHTML = `
-        <select name="members[${idx}][employee_id]" class="form-input flex-1 text-sm">
-            <option value="">-- Chọn nhân viên --</option>
-            @foreach($employees as $emp)
-            <option value="{{ $emp->id }}">{{ $emp->name }} ({{ $emp->code }})</option>
-            @endforeach
-        </select>
-        <input type="number" name="members[${idx}][points_awarded]"
-               class="form-input w-24 text-sm" value="10" min="0" placeholder="Điểm">
-        <input type="text" name="members[${idx}][note]"
-               class="form-input flex-1 text-sm" placeholder="Ghi chú...">
-        <button type="button" onclick="this.closest('.reward-member-row').remove()"
-                class="text-red-400 hover:text-red-600 shrink-0">
-            <i class="bi bi-x-circle"></i>
-        </button>
+        <div class="relative">
+            <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+            <input type="text" class="form-input pl-7 text-sm py-1.5" placeholder="Tìm nhân viên..."
+                   oninput="rwFilterMemberSelect(this)">
+        </div>
+        <div class="flex items-center gap-2">
+            <select name="members[${idx}][employee_id]" class="form-input flex-1 text-sm">
+                <option value="">-- Chọn nhân viên --</option>
+                ${_buildRwEmpOptions()}
+            </select>
+            <input type="number" name="members[${idx}][points_awarded]"
+                   class="form-input w-24 text-sm" value="10" min="0" placeholder="Điểm">
+            <input type="text" name="members[${idx}][note]"
+                   class="form-input flex-1 text-sm" placeholder="Ghi chú...">
+            <button type="button" onclick="this.closest('.reward-member-row').remove()"
+                    class="text-red-400 hover:text-red-600 shrink-0">
+                <i class="bi bi-x-circle"></i>
+            </button>
+        </div>
     `;
     container.appendChild(row);
 }

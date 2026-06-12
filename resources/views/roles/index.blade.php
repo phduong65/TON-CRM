@@ -1,14 +1,15 @@
 @extends('layouts.admin')
 
 @section('title', 'Vai trò & Quyền hạn')
+@section('page-title', 'Vai trò & Quyền hạn')
+@section('breadcrumb', 'Quản trị')
 
 @section('content')
 <div class="space-y-5">
 
-    <div class="flex items-center justify-between">
+    <div class="page-header">
         <div>
-            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Vai trò & Quyền hạn</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Quản lý các nhóm quyền và chức năng được phép</p>
+            <p class="page-subtitle">Quản lý các nhóm quyền và chức năng được phép</p>
         </div>
         <button onclick="openModal('createRoleModal')" class="btn-primary">
             <i class="bi bi-shield-plus text-sm"></i>

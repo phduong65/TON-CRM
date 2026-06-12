@@ -629,6 +629,30 @@
         }
     }
 
+    /* Ranking scroll list — full employee list, scrollable, no visible scrollbar */
+    .ranking-scroll-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-height: 68vh;
+        overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .ranking-scroll-list::-webkit-scrollbar { display: none; }
+
+    /* Fixed-height scroll list for monthly/yearly panels (~10 cards visible) */
+    .ranking-scroll-list-sm {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        max-height: 720px;
+        overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .ranking-scroll-list-sm::-webkit-scrollbar { display: none; }
+
     /* Global page entrance animation (applies to all blades via layout) */
     .pcrm-animate-in {
         animation: pcrm-fadeInUp 420ms ease both;

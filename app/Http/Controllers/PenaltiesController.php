@@ -13,6 +13,7 @@ use App\Models\Violation;
 use App\Services\AttachmentService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PenaltiesController extends Controller
 {
@@ -53,9 +54,11 @@ class PenaltiesController extends Controller
             ->get();
 
         $employees = Employee::where('is_active', true)
-            ->with('branch')
+            ->with(['branch', 'team'])
             ->orderBy('name')
             ->get();
+
+        $branches = \App\Models\Branch::where('is_active', true)->orderBy('name')->get();
 
         $teams = \App\Models\Team::with(['employees' => fn($q) => $q->where('is_active', true)->orderBy('name'), 'branch'])
             ->where('is_active', true)
@@ -91,7 +94,7 @@ class PenaltiesController extends Controller
         ]);
 
         return view('penalties.index', compact(
-            'penalties', 'violations', 'regulations', 'employees', 'teams',
+            'penalties', 'violations', 'regulations', 'employees', 'branches', 'teams',
             'regulationViolationsMap', 'teamEmployeesMap', 'violationDefaults'
         ));
     }
@@ -306,41 +309,43 @@ class PenaltiesController extends Controller
 
     public function approve(Penalty $penalty)
     {
-        abort_if($penalty->status !== 'pending', 403, 'Phiếu phạt không ở trạng thái chờ duyệt.');
+        DB::transaction(function () use ($penalty) {
+            // Re-fetch with row lock to prevent concurrent double-approval
+            $penalty = Penalty::lockForUpdate()->findOrFail($penalty->id);
+            abort_if($penalty->status !== 'pending', 403, 'Phiếu phạt không ở trạng thái chờ duyệt.');
 
-        $penalty->update([
-            'status'      => 'approved',
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
-
-        // Deduct points from primary employee
-        if ($penalty->total_points_deducted > 0) {
-            EmployeeScore::create([
-                'employee_id'    => $penalty->employee_id,
-                'points'         => -$penalty->total_points_deducted,
-                'reason'         => 'Xử phạt: ' . ($penalty->violation?->name ?? 'Vi phạm'),
-                'type'           => 'penalty',
-                'reference_type' => Penalty::class,
-                'reference_id'   => $penalty->id,
+            $penalty->update([
+                'status'      => 'approved',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
             ]);
-            $this->applyMonthlyDeduction($penalty->employee_id, $penalty->total_points_deducted);
-        }
 
-        // Deduct points from additional members
-        foreach ($penalty->members as $member) {
-            if ($member->points_deducted > 0) {
+            if ($penalty->total_points_deducted > 0) {
                 EmployeeScore::create([
-                    'employee_id'    => $member->employee_id,
-                    'points'         => -$member->points_deducted,
-                    'reason'         => 'Xử phạt liên đới: ' . ($penalty->violation?->name ?? 'Vi phạm'),
+                    'employee_id'    => $penalty->employee_id,
+                    'points'         => -$penalty->total_points_deducted,
+                    'reason'         => 'Xử phạt: ' . ($penalty->violation?->name ?? 'Vi phạm'),
                     'type'           => 'penalty',
                     'reference_type' => Penalty::class,
                     'reference_id'   => $penalty->id,
                 ]);
-                $this->applyMonthlyDeduction($member->employee_id, $member->points_deducted);
+                $this->applyMonthlyDeduction($penalty->employee_id, $penalty->total_points_deducted);
             }
-        }
+
+            foreach ($penalty->members as $member) {
+                if ($member->points_deducted > 0) {
+                    EmployeeScore::create([
+                        'employee_id'    => $member->employee_id,
+                        'points'         => -$member->points_deducted,
+                        'reason'         => 'Xử phạt liên đới: ' . ($penalty->violation?->name ?? 'Vi phạm'),
+                        'type'           => 'penalty',
+                        'reference_type' => Penalty::class,
+                        'reference_id'   => $penalty->id,
+                    ]);
+                    $this->applyMonthlyDeduction($member->employee_id, $member->points_deducted);
+                }
+            }
+        });
 
         $penalty->loadMissing(['violation', 'employee']);
         activity()->causedBy(auth()->user())
@@ -366,15 +371,7 @@ class PenaltiesController extends Controller
 
     private function applyMonthlyDeduction(int $employeeId, int $points): void
     {
-        try {
-            MonthlyEmployeeScore::ensureExists($employeeId, now()->month, now()->year)->deduct($points);
-        } catch (\Throwable $e) {
-            \Log::error('applyMonthlyDeduction failed', [
-                'employee_id' => $employeeId,
-                'points'      => $points,
-                'error'       => $e->getMessage(),
-            ]);
-        }
+        MonthlyEmployeeScore::ensureExists($employeeId, now()->month, now()->year)->deduct($points);
     }
 
     public function reject(Request $request, Penalty $penalty)

@@ -35,7 +35,7 @@
                 @endforeach
             </select>
             <input type="hidden" name="year" id="yearInput" value="{{ $year }}">
-            <button type="submit" class="btn btn-primary text-sm">
+            <button type="submit" class="btn-primary text-sm">
                 <i class="bi bi-filter"></i> Lọc
             </button>
         </form>

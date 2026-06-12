@@ -23,6 +23,7 @@ class PcrmSeeder extends Seeder
         Setting::create(['key' => 'consecutive_redzone_months', 'value' => '2',   'description' => 'Số tháng Redzone liên tiếp để kích hoạt cảnh báo xử phạt đặc biệt']);
         Setting::create(['key' => 'company_name',               'value' => 'Công ty TNHH F&B', 'description' => 'Tên công ty']);
         Setting::create(['key' => 'rows_per_page',              'value' => '15',  'description' => 'Số dòng mỗi trang']);
+        Setting::create(['key' => 'report_reward_points',       'value' => '5',   'description' => 'Điểm thưởng cho nhân viên khi báo cáo chéo được duyệt']);
 
         // 2. Admin user
         $admin = User::create([
@@ -31,14 +32,20 @@ class PcrmSeeder extends Seeder
             'password' => Hash::make('admin123'),
         ]);
 
-        // 2b. Roles & Permissions
-        $permissions = [
+        // 2b. Roles & Permissions — dùng firstOrCreate để tránh conflict với migrations
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $allPermissions = [
             'view-employees', 'create-employees', 'edit-employees', 'delete-employees',
             'view-teams', 'create-teams', 'edit-teams', 'delete-teams',
             'view-branches', 'create-branches', 'edit-branches', 'delete-branches',
             'view-violations', 'create-violations', 'edit-violations', 'delete-violations',
             'view-penalties', 'create-penalties', 'approve-penalties', 'import-attendance',
             'view-regulations', 'create-regulations', 'edit-regulations', 'delete-regulations',
+            'view-rewards', 'create-rewards', 'delete-rewards', 'approve-rewards',
+            'view-reward-types', 'create-reward-types', 'edit-reward-types', 'delete-reward-types',
+            'view-reward-categories', 'create-reward-categories', 'edit-reward-categories', 'delete-reward-categories',
+            'view-reports', 'create-reports', 'approve-reports',
             'view-activity-log',
             'manage-settings',
             'manage-users',
@@ -47,36 +54,48 @@ class PcrmSeeder extends Seeder
             'create-notifications',
         ];
 
-        foreach ($permissions as $perm) {
-            Permission::create(['name' => $perm, 'guard_name' => 'web']);
+        foreach ($allPermissions as $perm) {
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
 
-        $adminRole = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $adminRole->givePermissionTo($permissions);
+        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $adminRole->syncPermissions($allPermissions);
 
-        $managerRole = Role::create(['name' => 'manager', 'guard_name' => 'web']);
-        $managerRole->givePermissionTo([
+        $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        $managerRole->syncPermissions([
             'view-employees', 'create-employees', 'edit-employees',
             'view-teams', 'view-branches',
             'view-violations',
             'view-penalties', 'create-penalties', 'approve-penalties', 'import-attendance',
             'view-regulations',
+            'view-rewards', 'create-rewards', 'approve-rewards',
+            'view-reward-types',
+            'view-reward-categories',
+            'view-reports', 'create-reports', 'approve-reports',
             'view-activity-log',
             'view-notifications', 'create-notifications',
         ]);
 
-        $teamLeaderRole = Role::create(['name' => 'team_leader', 'guard_name' => 'web']);
-        $teamLeaderRole->givePermissionTo([
+        $teamLeaderRole = Role::firstOrCreate(['name' => 'team_leader', 'guard_name' => 'web']);
+        $teamLeaderRole->syncPermissions([
             'view-employees', 'view-teams', 'view-branches',
             'view-penalties', 'create-penalties',
+            'view-rewards', 'create-rewards',
+            'view-reward-types',
+            'view-reward-categories',
+            'view-reports', 'create-reports',
             'view-notifications',
         ]);
 
-        $staffRole = Role::create(['name' => 'staff', 'guard_name' => 'web']);
-        $staffRole->givePermissionTo([
+        $staffRole = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
+        $staffRole->syncPermissions([
             'view-employees', 'view-penalties',
+            'view-rewards',
+            'view-reports', 'create-reports',
             'view-notifications',
         ]);
+
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         $admin->assignRole('admin');
 

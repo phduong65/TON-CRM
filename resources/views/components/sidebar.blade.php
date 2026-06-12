@@ -123,6 +123,14 @@
             </a>
         @endcan
 
+        @can('view-reports')
+            <a href="{{ route('reports.index') }}"
+                class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-flag text-base"></i>
+                <span>Báo cáo chéo</span>
+            </a>
+        @endcan
+
         @can('import-attendance')
             <a href="{{ route('attendance-import.index') }}"
                 class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -154,21 +162,7 @@
             <a href="{{ route('violations.index') }}"
                 class="sidebar-link {{ $isActive(['violations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-book text-base"></i>
-                <span>Danh sách vi phạm</span>
-            </a>
-        @endcan
-        @can('view-regulations')
-        <a href="{{ route('regulations.index') }}"
-            class="sidebar-link {{ $isActive(['regulations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-            <i class="bi bi-journal-check text-base"></i>
-            <span>Quy chế</span>
-        </a>
-        @endcan
-        @can('view-reward-categories')
-            <a href="{{ route('reward-categories.index') }}"
-                class="sidebar-link {{ $isActive(['reward-categories']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-folder-check text-base"></i>
-                <span>Danh mục thưởng</span>
+                <span>Vi phạm</span>
             </a>
         @endcan
         @can('view-reward-types')
@@ -178,6 +172,21 @@
                 <span>Loại thưởng</span>
             </a>
         @endcan
+        @can('view-regulations')
+        <a href="{{ route('regulations.index') }}"
+            class="sidebar-link {{ $isActive(['regulations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+            <i class="bi bi-journal-check text-base"></i>
+            <span>Danh sách quy chế</span>
+        </a>
+        @endcan
+        @can('view-reward-categories')
+            <a href="{{ route('reward-categories.index') }}"
+                class="sidebar-link {{ $isActive(['reward-categories']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-folder-check text-base"></i>
+                <span>Danh mục thưởng</span>
+            </a>
+        @endcan
+
         {{-- ── HỆ THỐNG ──────────────────────────────── --}}
         @canany(['manage-settings', 'view-activity-log'])
             <p
@@ -301,6 +310,12 @@
             <a href="{{ route('rewards.index') }}"
                 class="sidebar-link {{ $isActive(['rewards']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-gift text-base"></i><span>Thưởng điểm</span>
+            </a>
+        @endcan
+        @can('view-reports')
+            <a href="{{ route('reports.index') }}"
+                class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-flag text-base"></i><span>Báo cáo chéo</span>
             </a>
         @endcan
         @can('import-attendance')

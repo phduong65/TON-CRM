@@ -1,14 +1,15 @@
 @extends('layouts.admin')
 
 @section('title', 'Quản lý người dùng')
+@section('page-title', 'Quản lý người dùng')
+@section('breadcrumb', 'Quản trị')
 
 @section('content')
 <div class="space-y-5">
 
-    <div class="flex items-center justify-between">
+    <div class="page-header">
         <div>
-            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Quản lý người dùng</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Tài khoản đăng nhập hệ thống và phân quyền</p>
+            <p class="page-subtitle">Tài khoản đăng nhập hệ thống và phân quyền</p>
         </div>
         @can('manage-users')
         <button onclick="openModal('createUserModal')" class="btn-primary">

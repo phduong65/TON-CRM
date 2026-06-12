@@ -22,6 +22,8 @@ use App\Http\Controllers\AttendanceImportRulesController;
 use App\Http\Controllers\RewardCategoriesController;
 use App\Http\Controllers\RewardTypesController;
 use App\Http\Controllers\RewardsController;
+use App\Http\Controllers\EmployeeReportsController;
+use App\Http\Controllers\Dev\TestRunnerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +31,14 @@ use App\Http\Controllers\RewardsController;
 |--------------------------------------------------------------------------
 | Giao diện tiếng Việt — Blade thuần + Tailwind CSS
 */
+
+// Dev-only: Test Runner (local environment only)
+if (app()->isLocal()) {
+    Route::middleware('auth')->prefix('dev')->name('dev.')->group(function () {
+        Route::get('/test-runner', [TestRunnerController::class, 'index'])->name('test-runner.index');
+        Route::post('/test-runner/run', [TestRunnerController::class, 'run'])->name('test-runner.run');
+    });
+}
 
 // Root: redirect to dashboard if authenticated, else to login
 Route::get('/', function () {
@@ -134,6 +144,16 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{reward}', [RewardsController::class, 'destroy'])->name('destroy')->middleware('can:delete-rewards');
         Route::post('/{reward}/approve', [RewardsController::class, 'approve'])->name('approve')->middleware('can:approve-rewards');
         Route::post('/{reward}/reject', [RewardsController::class, 'reject'])->name('reject')->middleware('can:approve-rewards');
+        Route::get('/{reward}/detail-json', [RewardsController::class, 'detailJson'])->name('detail-json')->middleware('can:view-rewards');
+    });
+
+    // Employee Reports — báo cáo chéo nhân viên
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [EmployeeReportsController::class, 'index'])->name('index')->middleware('can:view-reports');
+        Route::post('/', [EmployeeReportsController::class, 'store'])->name('store')->middleware('can:create-reports');
+        Route::get('/{report}', [EmployeeReportsController::class, 'show'])->name('show')->middleware('can:view-reports');
+        Route::post('/{report}/approve', [EmployeeReportsController::class, 'approve'])->name('approve')->middleware('can:approve-reports');
+        Route::post('/{report}/reject', [EmployeeReportsController::class, 'reject'])->name('reject')->middleware('can:approve-reports');
     });
 
     // Rankings — xem được bởi mọi người đã đăng nhập

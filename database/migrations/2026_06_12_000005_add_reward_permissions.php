@@ -20,25 +20,25 @@ return new class extends Migration
         }
 
         // Admin gets all
-        $admin = Role::findByName('admin', 'web');
+        $admin = Role::where('name', 'admin')->where('guard_name', 'web')->first();
         $admin?->givePermissionTo($rewardPermissions);
 
         // Manager: tạo + duyệt thưởng, xem loại thưởng
-        $manager = Role::findByName('manager', 'web');
+        $manager = Role::where('name', 'manager')->where('guard_name', 'web')->first();
         $manager?->givePermissionTo([
             'view-rewards', 'create-rewards', 'approve-rewards',
             'view-reward-types',
         ]);
 
         // Team leader: tạo phiếu thưởng
-        $teamLeader = Role::findByName('team_leader', 'web');
+        $teamLeader = Role::where('name', 'team_leader')->where('guard_name', 'web')->first();
         $teamLeader?->givePermissionTo([
             'view-rewards', 'create-rewards',
             'view-reward-types',
         ]);
 
         // Staff: xem thưởng của mình
-        $staff = Role::findByName('staff', 'web');
+        $staff = Role::where('name', 'staff')->where('guard_name', 'web')->first();
         $staff?->givePermissionTo(['view-rewards']);
 
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();

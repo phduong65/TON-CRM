@@ -64,6 +64,7 @@ class UsersController extends Controller
         if ($request->filled('permissions')) {
             $user->syncPermissions($request->permissions);
         }
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         activity()->causedBy(auth()->user())
             ->performedOn($user)
@@ -121,6 +122,7 @@ class UsersController extends Controller
         $user->update($updateData);
         $user->syncRoles([$request->role]);
         $user->syncPermissions($request->permissions ?? []);
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         activity()->causedBy(auth()->user())
             ->performedOn($user)
