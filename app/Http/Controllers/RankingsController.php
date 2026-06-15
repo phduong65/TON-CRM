@@ -16,12 +16,16 @@ class RankingsController extends Controller
         $defaultScore = (int) Setting::getValue('default_score_per_month', 100);
 
         // ── All-time employee ranking (sum of monthly final_score + surplus) ──
-        $employees = Employee::with(['branch', 'team', 'monthlyScores'])
+        $employees = Employee::where('is_active', true)
+            ->with(['branch', 'team', 'monthlyScores'])
             ->get()
-            ->map(function ($emp) {
-                $emp->alltime_score   = $emp->monthlyScores->sum('final_score');
-                $emp->alltime_surplus = $emp->monthlyScores->sum('surplus_points');
-                $currentRecord = $emp->monthlyScores
+            ->map(function ($emp) use ($defaultScore) {
+                $scores = $emp->monthlyScores;
+                // Employees with no records yet default to the current default score
+                // (prevents non-penalised employees from showing 0 and ranking last)
+                $emp->alltime_score   = $scores->isEmpty() ? $defaultScore : $scores->sum('final_score');
+                $emp->alltime_surplus = $scores->sum('surplus_points');
+                $currentRecord = $scores
                     ->where('month', now()->month)
                     ->where('year', now()->year)
                     ->first();
