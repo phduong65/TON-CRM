@@ -15,6 +15,7 @@ class MonthlyEmployeeScore extends Model
         'initial_score',
         'deducted_points',
         'rewarded_points',
+        'surplus_points',
         'final_score',
         'zone',
     ];
@@ -27,6 +28,7 @@ class MonthlyEmployeeScore extends Model
             'initial_score'    => 'integer',
             'deducted_points'  => 'integer',
             'rewarded_points'  => 'integer',
+            'surplus_points'   => 'integer',
             'final_score'      => 'integer',
         ];
     }
@@ -94,6 +96,8 @@ class MonthlyEmployeeScore extends Model
             [
                 'initial_score'   => $initialScore,
                 'deducted_points' => 0,
+                'rewarded_points' => 0,
+                'surplus_points'  => 0,
                 'final_score'     => $initialScore,
                 'zone'            => 'green',
             ]
@@ -105,8 +109,9 @@ class MonthlyEmployeeScore extends Model
         DB::transaction(function () use ($points) {
             $fresh = static::lockForUpdate()->findOrFail($this->id);
             $fresh->deducted_points += $points;
-            $fresh->final_score      = max(0, $fresh->initial_score + $fresh->rewarded_points - $fresh->deducted_points);
-            $fresh->zone             = static::computeZone($fresh->final_score);
+            // Deductions always come from the base score (final_score), never from surplus_points
+            $fresh->final_score = max(0, $fresh->final_score - $points);
+            $fresh->zone        = static::computeZone($fresh->final_score);
             $fresh->save();
             $this->fill($fresh->getAttributes());
         });
@@ -117,8 +122,11 @@ class MonthlyEmployeeScore extends Model
         DB::transaction(function () use ($points) {
             $fresh = static::lockForUpdate()->findOrFail($this->id);
             $fresh->rewarded_points += $points;
-            $fresh->final_score      = max(0, $fresh->initial_score + $fresh->rewarded_points - $fresh->deducted_points);
-            $fresh->zone             = static::computeZone($fresh->final_score);
+            // Rewards first fill the base score up to initial_score (cap); excess goes to surplus_points
+            $pointsForBase      = min($points, max(0, $fresh->initial_score - $fresh->final_score));
+            $fresh->final_score = min($fresh->initial_score, $fresh->final_score + $pointsForBase);
+            $fresh->surplus_points += ($points - $pointsForBase);
+            $fresh->zone        = static::computeZone($fresh->final_score);
             $fresh->save();
             $this->fill($fresh->getAttributes());
         });

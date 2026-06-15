@@ -116,8 +116,10 @@ class RewardApproveTest extends TestCase
             ->where('year', now()->year)
             ->first();
 
+        // base score is capped at 100; reward overflow goes to surplus_points
         $this->assertNotNull($score);
-        $this->assertEquals(120, $score->final_score);
+        $this->assertEquals(100, $score->final_score);
+        $this->assertEquals(20, $score->surplus_points);
         $this->assertEquals(20, $score->rewarded_points);
     }
 
@@ -131,11 +133,16 @@ class RewardApproveTest extends TestCase
         $this->actingAs($this->approver)
             ->post(route('rewards.approve', $reward));
 
-        $this->assertEquals(110, MonthlyEmployeeScore::where('employee_id', $this->employee->id)
-            ->where('month', now()->month)->where('year', now()->year)->first()->final_score);
+        $mainScore    = MonthlyEmployeeScore::where('employee_id', $this->employee->id)
+            ->where('month', now()->month)->where('year', now()->year)->first();
+        $memberScore  = MonthlyEmployeeScore::where('employee_id', $member1->id)
+            ->where('month', now()->month)->where('year', now()->year)->first();
 
-        $this->assertEquals(105, MonthlyEmployeeScore::where('employee_id', $member1->id)
-            ->where('month', now()->month)->where('year', now()->year)->first()->final_score);
+        $this->assertEquals(100, $mainScore->final_score);
+        $this->assertEquals(10, $mainScore->surplus_points);
+
+        $this->assertEquals(100, $memberScore->final_score);
+        $this->assertEquals(5, $memberScore->surplus_points);
     }
 
     // ── Race condition prevention ─────────────────────────────────────────────
@@ -154,8 +161,9 @@ class RewardApproveTest extends TestCase
             ->where('year', now()->year)
             ->first();
 
-        // Should be 120 (rewarded only once), NOT 140
-        $this->assertEquals(120, $score->final_score);
+        // Should be rewarded only once: final_score=100 (capped), surplus=20; NOT surplus=40
+        $this->assertEquals(100, $score->final_score);
+        $this->assertEquals(20, $score->surplus_points);
         $this->assertEquals(20, $score->rewarded_points);
     }
 
@@ -172,7 +180,9 @@ class RewardApproveTest extends TestCase
             ->where('year', now()->year)
             ->first();
 
-        $this->assertEquals(125, $score->final_score);
+        // Both rewards overflow into surplus: final_score=100 (capped), surplus=10+15=25
+        $this->assertEquals(100, $score->final_score);
+        $this->assertEquals(25, $score->surplus_points);
         $this->assertEquals(25, $score->rewarded_points);
     }
 

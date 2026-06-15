@@ -30,6 +30,7 @@ class MonthlyEmployeeScoreTest extends TestCase
             'initial_score'  => $initial,
             'deducted_points' => 0,
             'rewarded_points' => 0,
+            'surplus_points'  => 0,
             'final_score'    => $initial,
             'zone'           => 'green',
         ]);
@@ -99,20 +100,34 @@ class MonthlyEmployeeScoreTest extends TestCase
         $this->assertEquals('red', $score->zone);
     }
 
-    // ── reward() ─────────────────────────────────────────────────────────────
-
-    public function test_reward_increases_final_score(): void
+    public function test_deduct_does_not_reduce_surplus(): void
     {
         $score = $this->makeScore($this->makeEmployee());
+        $score->reward(50); // base=100, surplus=50
+        $score->refresh();
+
+        $score->deduct(30); // base=70, surplus untouched
+
+        $score->refresh();
+        $this->assertEquals(70, $score->final_score);
+        $this->assertEquals(50, $score->surplus_points);
+    }
+
+    // ── reward() ─────────────────────────────────────────────────────────────
+
+    public function test_reward_when_base_is_full_goes_to_surplus(): void
+    {
+        $score = $this->makeScore($this->makeEmployee()); // starts at 100 (full)
 
         $score->reward(10);
 
         $score->refresh();
-        $this->assertEquals(110, $score->final_score);
+        $this->assertEquals(100, $score->final_score);   // capped at initial_score
+        $this->assertEquals(10, $score->surplus_points); // overflow → surplus
         $this->assertEquals(10, $score->rewarded_points);
     }
 
-    public function test_sequential_rewards_accumulate_correctly(): void
+    public function test_sequential_rewards_accumulate_in_surplus(): void
     {
         $score = $this->makeScore($this->makeEmployee());
 
@@ -121,20 +136,48 @@ class MonthlyEmployeeScoreTest extends TestCase
         $score->reward(5);
         $score->refresh();
 
-        $this->assertEquals(110, $score->final_score);
+        $this->assertEquals(100, $score->final_score);
+        $this->assertEquals(10, $score->surplus_points);
         $this->assertEquals(10, $score->rewarded_points);
+    }
+
+    public function test_reward_partially_fills_base_remainder_goes_to_surplus(): void
+    {
+        $score = $this->makeScore($this->makeEmployee());
+        $score->deduct(20); // base = 80
+        $score->refresh();
+
+        $score->reward(30); // 20 fills base to 100, remaining 10 → surplus
+
+        $score->refresh();
+        $this->assertEquals(100, $score->final_score);
+        $this->assertEquals(10, $score->surplus_points);
+    }
+
+    public function test_reward_fills_base_without_surplus_when_short(): void
+    {
+        $score = $this->makeScore($this->makeEmployee());
+        $score->deduct(30); // base = 70
+        $score->refresh();
+
+        $score->reward(20); // fills to 90, not enough to reach 100
+
+        $score->refresh();
+        $this->assertEquals(90, $score->final_score);
+        $this->assertEquals(0, $score->surplus_points);
     }
 
     public function test_deduct_and_reward_interact_correctly(): void
     {
         $score = $this->makeScore($this->makeEmployee());
 
-        $score->deduct(30); // 100 - 30 = 70
+        $score->deduct(30); // base = 70, surplus = 0
         $score->refresh();
-        $score->reward(10); // 100 + 10 - 30 = 80
-        $score->refresh();
+        $score->reward(10); // fills base to 80, surplus stays 0
 
+        $score->refresh();
         $this->assertEquals(80, $score->final_score);
+        $this->assertEquals(0, $score->surplus_points);
     }
 
     // ── computeZone() ────────────────────────────────────────────────────────
@@ -191,6 +234,7 @@ class MonthlyEmployeeScoreTest extends TestCase
         $this->assertInstanceOf(MonthlyEmployeeScore::class, $score);
         $this->assertEquals(100, $score->initial_score);
         $this->assertEquals(0, $score->deducted_points);
+        $this->assertEquals(0, $score->surplus_points);
         $this->assertDatabaseHas('monthly_employee_scores', [
             'employee_id' => $employee->id,
             'month'       => now()->month,

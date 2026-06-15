@@ -8,7 +8,6 @@ use App\Models\Setting;
 use App\Models\Team;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class RankingsController extends Controller
 {
@@ -16,22 +15,36 @@ class RankingsController extends Controller
     {
         $defaultScore = (int) Setting::getValue('default_score_per_month', 100);
 
-        // ── All-time employee ranking (all records, scroll in view) ──────────
-        $employees = Employee::select('employees.*', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
-            ->leftJoin('employee_scores', 'employees.id', '=', 'employee_scores.employee_id')
-            ->with(['branch', 'team'])
-            ->groupBy('employees.id')
-            ->orderByDesc('total_score')
-            ->get();
+        // ── All-time employee ranking (sum of monthly final_score + surplus) ──
+        $employees = Employee::with(['branch', 'team', 'monthlyScores'])
+            ->get()
+            ->map(function ($emp) {
+                $emp->alltime_score   = $emp->monthlyScores->sum('final_score');
+                $emp->alltime_surplus = $emp->monthlyScores->sum('surplus_points');
+                $currentRecord = $emp->monthlyScores
+                    ->where('month', now()->month)
+                    ->where('year', now()->year)
+                    ->first();
+                $emp->zone = $currentRecord ? $currentRecord->zone : 'green';
+                return $emp;
+            })
+            ->sortBy([
+                ['alltime_score', 'desc'],
+                ['alltime_surplus', 'desc'],
+            ])
+            ->values();
 
-        // Attach current-month zone to each all-time employee row
-        $monthlyZoneMap = MonthlyEmployeeScore::where('month', now()->month)
-            ->where('year', now()->year)
-            ->pluck('zone', 'employee_id');
-        $employees->transform(function ($emp) use ($monthlyZoneMap) {
-            $emp->zone = $monthlyZoneMap->get($emp->id, 'green');
-            return $emp;
-        });
+        // Assign rank numbers for all-time (tied = same rank)
+        [$rank, $prevScore, $prevSurplus, $count] = [0, null, null, 0];
+        foreach ($employees as $emp) {
+            $count++;
+            if ($emp->alltime_score !== $prevScore || $emp->alltime_surplus !== $prevSurplus) {
+                $rank = $count;
+            }
+            $emp->rank     = $rank;
+            $prevScore     = $emp->alltime_score;
+            $prevSurplus   = $emp->alltime_surplus;
+        }
 
         // ── Team ranking ──────────────────────────────────────────────────────
         $teams = Team::select('teams.*')
@@ -48,11 +61,11 @@ class RankingsController extends Controller
         $evalMonth = (int) ($request->eval_month ?? now()->month);
         $evalYear  = (int) ($request->eval_year  ?? now()->year);
 
-        $monthlyRanking = $this->buildMonthlyRanking($evalMonth, $evalYear, $defaultScore);
+        $monthlyRanking  = $this->buildMonthlyRanking($evalMonth, $evalYear, $defaultScore);
         $employeeOfMonth = $monthlyRanking->first();
 
         // ── Yearly award ──────────────────────────────────────────────────────
-        $evalYearOnly = (int) ($request->eval_year_only ?? now()->year);
+        $evalYearOnly  = (int) ($request->eval_year_only ?? now()->year);
         $yearlyRanking = $this->buildYearlyRanking($evalYearOnly, $defaultScore);
         $employeeOfYear = $yearlyRanking->first();
 
@@ -79,47 +92,84 @@ class RankingsController extends Controller
 
     private function buildMonthlyRanking(int $month, int $year, int $defaultScore)
     {
-        return Employee::where('is_active', true)
+        // Pre-fetch all monthly records for this month to avoid N+1
+        $scoreMap = MonthlyEmployeeScore::where('month', $month)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('employee_id');
+
+        $ranked = Employee::where('is_active', true)
             ->with(['branch', 'team'])
             ->get()
-            ->map(function ($emp) use ($month, $year, $defaultScore) {
-                $record = MonthlyEmployeeScore::where([
-                    'employee_id' => $emp->id,
-                    'month'       => $month,
-                    'year'        => $year,
-                ])->first();
+            ->map(function ($emp) use ($scoreMap, $defaultScore) {
+                $record = $scoreMap->get($emp->id);
 
                 $emp->display_score  = $record ? $record->final_score     : $defaultScore;
-                $emp->deducted       = $record ? $record->deducted_points  : 0;
-                $emp->rewarded       = $record ? ($record->rewarded_points ?? 0) : 0;
-                $emp->zone           = $record ? $record->zone             : 'green';
+                $emp->surplus_points = $record ? $record->surplus_points  : 0;
+                $emp->deducted       = $record ? $record->deducted_points : 0;
+                $emp->rewarded       = $record ? $record->rewarded_points : 0;
+                $emp->zone           = $record ? $record->zone            : 'green';
                 return $emp;
             })
-            ->sortByDesc('display_score')
+            ->sortBy([
+                ['display_score', 'desc'],
+                ['surplus_points', 'desc'],
+            ])
             ->values();
+
+        // Assign rank numbers (tied employees get same rank)
+        [$rank, $prevScore, $prevSurplus, $count] = [0, null, null, 0];
+        foreach ($ranked as $emp) {
+            $count++;
+            if ($emp->display_score !== $prevScore || $emp->surplus_points !== $prevSurplus) {
+                $rank = $count;
+            }
+            $emp->rank   = $rank;
+            $prevScore   = $emp->display_score;
+            $prevSurplus = $emp->surplus_points;
+        }
+
+        return $ranked;
     }
 
     private function buildYearlyRanking(int $year, int $defaultScore)
     {
-        return Employee::where('is_active', true)
-            ->with(['branch', 'team'])
+        $ranked = Employee::where('is_active', true)
+            ->with(['branch', 'team', 'monthlyScores' => fn($q) => $q->where('year', $year)])
             ->get()
-            ->map(function ($emp) use ($year, $defaultScore) {
-                $records = MonthlyEmployeeScore::where('employee_id', $emp->id)
-                    ->where('year', $year)
-                    ->get();
+            ->map(function ($emp) use ($defaultScore) {
+                $records = $emp->monthlyScores;
 
-                $avgScore     = $records->count() > 0 ? round($records->avg('final_score'), 1) : $defaultScore;
+                $avgScore    = $records->count() > 0 ? round($records->avg('final_score'), 1)    : $defaultScore;
+                $avgSurplus  = $records->count() > 0 ? round($records->avg('surplus_points'), 1) : 0;
                 $monthsInRed  = $records->where('zone', 'red')->count();
                 $monthsLogged = $records->count();
 
                 $emp->display_score  = $avgScore;
+                $emp->surplus_points = $avgSurplus;
                 $emp->months_logged  = $monthsLogged;
                 $emp->months_in_red  = $monthsInRed;
                 $emp->zone           = MonthlyEmployeeScore::computeZone((int) $avgScore);
                 return $emp;
             })
-            ->sortByDesc('display_score')
+            ->sortBy([
+                ['display_score', 'desc'],
+                ['surplus_points', 'desc'],
+            ])
             ->values();
+
+        // Assign rank numbers (tied employees get same rank)
+        [$rank, $prevScore, $prevSurplus, $count] = [0, null, null, 0];
+        foreach ($ranked as $emp) {
+            $count++;
+            if ($emp->display_score !== $prevScore || $emp->surplus_points !== $prevSurplus) {
+                $rank = $count;
+            }
+            $emp->rank   = $rank;
+            $prevScore   = $emp->display_score;
+            $prevSurplus = $emp->surplus_points;
+        }
+
+        return $ranked;
     }
 }
