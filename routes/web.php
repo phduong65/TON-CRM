@@ -147,7 +147,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{reward}/detail-json', [RewardsController::class, 'detailJson'])->name('detail-json')->middleware('can:view-rewards');
     });
 
-    // Employee Reports — báo cáo chéo nhân viên
+    // Employee Reports — báo cáo vi phạm nhân viên
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [EmployeeReportsController::class, 'index'])->name('index')->middleware('can:view-reports');
         Route::post('/', [EmployeeReportsController::class, 'store'])->name('store')->middleware('can:create-reports');

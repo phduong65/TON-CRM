@@ -3,14 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEmployeeReportRequest;
+use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\EmployeeReport;
 use App\Models\EmployeeScore;
 use App\Models\MonthlyEmployeeScore;
+use App\Models\Regulation;
 use App\Models\Setting;
+use App\Models\Team;
 use App\Models\Violation;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -47,11 +51,18 @@ class EmployeeReportsController extends Controller
 
         $reports = $query->paginate(15)->withQueryString();
 
-        $violations      = Violation::where('is_active', true)->orderBy('name')->get();
-        $employees       = Employee::where('is_active', true)->with('branch')->orderBy('name')->get();
+        $branches    = Branch::where('is_active', true)->orderBy('name')->get();
+        $teams       = Team::where('is_active', true)->orderBy('name')->get();
+        $regulations = Regulation::where('is_active', true)->orderBy('name')->get();
+        $violations  = Violation::where('is_active', true)->orderBy('name')->get();
+        $employees   = Employee::where('is_active', true)->with('branch')->orderBy('name')->get();
+
         $currentEmployee = auth()->user()->employee;
 
-        return view('reports.index', compact('reports', 'violations', 'employees', 'currentEmployee', 'canApprove'));
+        return view('reports.index', compact(
+            'reports', 'violations', 'employees', 'currentEmployee',
+            'canApprove', 'branches', 'teams', 'regulations'
+        ));
     }
 
     public function store(StoreEmployeeReportRequest $request)
@@ -76,7 +87,8 @@ class EmployeeReportsController extends Controller
             ->count() + 1;
         $code = 'RPT-' . now()->format('Ym') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
 
-        $rewardPoints = (int) Setting::getValue('report_reward_points', 5);
+        $rewardPoints  = (int) Setting::getValue('report_reward_points', 5);
+        $evidenceFiles = $this->processEvidenceFiles($request);
 
         $report = EmployeeReport::create([
             'code'                  => $code,
@@ -85,6 +97,7 @@ class EmployeeReportsController extends Controller
             'violation_id'          => $request->violation_id ?: null,
             'description'           => $request->description,
             'evidence_note'         => $request->evidence_note ?: null,
+            'evidence_files'        => $evidenceFiles ?: null,
             'status'                => 'pending',
             'reward_points'         => $rewardPoints,
             'created_by'            => auth()->id(),
@@ -95,10 +108,11 @@ class EmployeeReportsController extends Controller
             ->performedOn($report)
             ->inLog('report')
             ->withProperties([
-                'code'     => $report->code,
-                'reporter' => $report->reporter?->name,
-                'reported' => $report->reported?->name,
-                'violation' => $report->violation?->name,
+                'code'           => $report->code,
+                'reporter'       => $report->reporter?->name,
+                'reported'       => $report->reported?->name,
+                'violation'      => $report->violation?->name,
+                'evidence_count' => count($evidenceFiles),
             ])
             ->log('Tạo báo cáo ' . $report->code
                 . ' — ' . ($report->reporter?->name ?? '—')
@@ -134,7 +148,6 @@ class EmployeeReportsController extends Controller
 
             $fresh->load('violation');
 
-            // Cộng điểm cho reporter
             if ($fresh->reward_points > 0 && $fresh->reporter_employee_id) {
                 EmployeeScore::create([
                     'employee_id'    => $fresh->reporter_employee_id,
@@ -151,7 +164,6 @@ class EmployeeReportsController extends Controller
                 )->reward($fresh->reward_points);
             }
 
-            // Trừ điểm cho nhân viên bị báo cáo theo violation
             if ($fresh->violation_id && $fresh->violation?->points_deducted > 0) {
                 EmployeeScore::create([
                     'employee_id'    => $fresh->reported_employee_id,
@@ -168,7 +180,6 @@ class EmployeeReportsController extends Controller
                 )->deduct($fresh->violation->points_deducted);
             }
 
-            // Sync outer $report for post-transaction work
             $report->fill($fresh->getAttributes());
             $report->setRelation('violation', $fresh->violation);
         });
@@ -222,5 +233,89 @@ class EmployeeReportsController extends Controller
         app(NotificationService::class)->notifyReportRejected($report, $request->rejection_reason);
 
         return back()->with('success', 'Đã từ chối báo cáo!');
+    }
+
+    // ── File handling ────────────────────────────────────────────────────────
+
+    private function processEvidenceFiles(Request $request): array
+    {
+        if (!$request->hasFile('evidence_files')) {
+            return [];
+        }
+
+        $paths     = [];
+        $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        foreach ($request->file('evidence_files') as $file) {
+            $ext = strtolower($file->getClientOriginalExtension());
+
+            if (in_array($ext, $imageExts)) {
+                $paths[] = $this->resizeAndStoreImage($file, $ext);
+            } else {
+                $paths[] = $file->store('reports/evidence', 'public');
+            }
+        }
+
+        return $paths;
+    }
+
+    private function resizeAndStoreImage(UploadedFile $file, string $ext): string
+    {
+        $maxDim = 1000;
+
+        [$origW, $origH] = @getimagesize($file->getRealPath()) ?: [0, 0];
+
+        // Skip resize if GD info unavailable or image already within bounds
+        if ($origW === 0 || ($origW <= $maxDim && $origH <= $maxDim)) {
+            return $file->store('reports/evidence', 'public');
+        }
+
+        try {
+            $ratio = min($maxDim / $origW, $maxDim / $origH);
+            $newW  = max(1, (int) round($origW * $ratio));
+            $newH  = max(1, (int) round($origH * $ratio));
+
+            $src = match ($ext) {
+                'png'  => imagecreatefrompng($file->getRealPath()),
+                'gif'  => imagecreatefromgif($file->getRealPath()),
+                'webp' => imagecreatefromwebp($file->getRealPath()),
+                default => imagecreatefromjpeg($file->getRealPath()),
+            };
+
+            $dst = imagecreatetruecolor($newW, $newH);
+
+            if ($ext === 'png') {
+                imagealphablending($dst, false);
+                imagesavealpha($dst, true);
+                imagefilledrectangle($dst, 0, 0, $newW, $newH,
+                    imagecolorallocatealpha($dst, 0, 0, 0, 127));
+            }
+
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+            imagedestroy($src);
+
+            $storageDir = storage_path('app/public/reports/evidence');
+            if (!is_dir($storageDir)) {
+                mkdir($storageDir, 0755, true);
+            }
+
+            $outputExt = in_array($ext, ['png', 'gif', 'webp']) ? $ext : 'jpg';
+            $filename  = Str::uuid() . '.' . $outputExt;
+            $fullPath  = $storageDir . '/' . $filename;
+
+            match ($ext) {
+                'png'  => imagepng($dst, $fullPath, 6),
+                'gif'  => imagegif($dst, $fullPath),
+                'webp' => imagewebp($dst, $fullPath, 85),
+                default => imagejpeg($dst, $fullPath, 85),
+            };
+
+            imagedestroy($dst);
+
+            return 'reports/evidence/' . $filename;
+        } catch (\Throwable) {
+            // Fallback: store original without resize
+            return $file->store('reports/evidence', 'public');
+        }
     }
 }

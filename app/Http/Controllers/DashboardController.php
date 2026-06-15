@@ -51,6 +51,9 @@ class DashboardController extends Controller
             ->whereYear('created_at', $now->year)
             ->count();
 
+        $totalMoneyDeducted = (float) Penalty::where('status', 'approved')
+            ->sum('total_money_deducted');
+
         $redzoneThreshold = Setting::getValue('redzone_threshold', 50);
 
         $redzoneEmployees = Employee::select('employees.*', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
@@ -246,6 +249,7 @@ class DashboardController extends Controller
             'totalTeams',
             'totalBranches',
             'totalViolations',
+            'totalMoneyDeducted',
             'totalPenaltiesThisMonth',
             'totalPenaltiesLastMonth',
             'pendingPenalties',

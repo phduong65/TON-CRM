@@ -54,17 +54,17 @@
 
         {{-- Table --}}
         <div class="overflow-x-auto">
-            <table class="table-auto w-full text-sm">
+            <table class="table-base">
                 <thead>
-                    <tr class="border-b border-slate-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        <th class="px-4 py-2.5 text-left font-medium">Mã báo cáo</th>
-                        <th class="px-4 py-2.5 text-left font-medium">Người báo cáo</th>
-                        <th class="px-4 py-2.5 text-left font-medium">Nhân viên bị báo cáo</th>
-                        <th class="px-4 py-2.5 text-left font-medium">Vi phạm</th>
-                        <th class="px-4 py-2.5 text-left font-medium">Điểm thưởng</th>
-                        <th class="px-4 py-2.5 text-left font-medium">Trạng thái</th>
-                        <th class="px-4 py-2.5 text-left font-medium">Ngày tạo</th>
-                        <th class="px-4 py-2.5 text-left font-medium">Thao tác</th>
+                    <tr class="border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 tracking-wider">
+                        <th class="px-4 py-2.5 text-left table-th">Mã báo cáo</th>
+                        <th class="px-4 py-2.5 text-left table-th">Người báo cáo</th>
+                        <th class="px-4 py-2.5 text-left table-th">Nhân viên bị báo cáo</th>
+                        <th class="px-4 py-2.5 text-left table-th">Vi phạm</th>
+                        <th class="px-4 py-2.5 text-left table-th">Điểm thưởng</th>
+                        <th class="px-4 py-2.5 text-left table-th">Trạng thái</th>
+                        <th class="px-4 py-2.5 text-left table-th">Ngày tạo</th>
+                        <th class="px-4 py-2.5 text-left table-th">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -75,15 +75,15 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ $report->reporter?->name ?? '—' }}</div>
-                                <div class="text-xs text-slate-400">{{ $report->reporter?->code }}</div>
+                                <div class="text-xs text-slate-400 mt-1">{{ $report->reporter?->code }}</div>
                             </td>
                             <td class="px-4 py-3">
                                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ $report->reported?->name ?? '—' }}</div>
-                                <div class="text-xs text-slate-400">{{ $report->reported?->branch?->name }}</div>
+                                <div class="text-xs text-slate-400 mt-1">{{ $report->reported?->branch?->name }}</div>
                             </td>
                             <td class="px-4 py-3">
                                 @if($report->violation)
-                                    <span class="text-xs text-slate-600 dark:text-slate-400">{{ $report->violation->name }}</span>
+                                    <span class="text-xs text-red-600 dark:text-slate-400 font-semibold">{{ $report->violation->name }}</span>
                                 @else
                                     <span class="text-xs text-slate-400 italic">Không chọn</span>
                                 @endif

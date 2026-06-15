@@ -127,7 +127,7 @@
             <a href="{{ route('reports.index') }}"
                 class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-flag text-base"></i>
-                <span>Báo cáo chéo</span>
+                <span>Báo cáo vi phạm</span>
             </a>
         @endcan
 
@@ -315,7 +315,7 @@
         @can('view-reports')
             <a href="{{ route('reports.index') }}"
                 class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-flag text-base"></i><span>Báo cáo chéo</span>
+                <i class="bi bi-flag text-base"></i><span>Báo cáo vi phạm</span>
             </a>
         @endcan
         @can('import-attendance')

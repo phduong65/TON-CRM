@@ -17,6 +17,7 @@ class EmployeeReport extends Model
         'violation_id',
         'description',
         'evidence_note',
+        'evidence_files',
         'status',
         'reward_points',
         'reviewed_by',
@@ -28,8 +29,9 @@ class EmployeeReport extends Model
     protected function casts(): array
     {
         return [
-            'reviewed_at'   => 'datetime',
-            'reward_points' => 'integer',
+            'reviewed_at'    => 'datetime',
+            'reward_points'  => 'integer',
+            'evidence_files' => 'array',
         ];
     }
 

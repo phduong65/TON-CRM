@@ -56,7 +56,7 @@
                     <option value="reward_rejected"  @selected(request('type') === 'reward_rejected')>Phiếu thưởng từ chối</option>
                 </optgroup>
                 <option value="redzone_alert"    @selected(request('type') === 'redzone_alert')>Cảnh báo Redzone</option>
-                <optgroup label="Báo cáo chéo">
+                <optgroup label="Báo cáo vi phạm">
                     <option value="report_created"   @selected(request('type') === 'report_created')>Báo cáo mới</option>
                     <option value="report_approved"  @selected(request('type') === 'report_approved')>Báo cáo duyệt</option>
                     <option value="report_rejected"  @selected(request('type') === 'report_rejected')>Báo cáo từ chối</option>

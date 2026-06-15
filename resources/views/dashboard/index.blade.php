@@ -68,29 +68,30 @@
                 </div>
             </a>
 
-            {{-- Đội nhóm --}}
-            <a href="{{ route('teams.index') }}" class="stat-card flex flex-col gap-3 group">
+            {{-- Tổng tiền đã trừ --}}
+            <a href="{{ route('penalties.index') }}" class="stat-card flex flex-col gap-3 group">
                 <div class="flex items-start justify-between">
-                    <div class="stat-icon-wrap bg-amber-50 dark:bg-amber-900/30">
-                        <i class="bi bi-trophy-fill text-2xl text-amber-600 dark:text-amber-400"></i>
+                    <div class="stat-icon-wrap bg-rose-50 dark:bg-rose-900/30">
+                        <i class="bi bi-cash-stack text-2xl text-rose-600 dark:text-rose-400"></i>
                     </div>
                     <span
-                        class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                        <i class="bi bi-star-fill text-xs"></i> {{ $totalViolations ?? 0 }} loại lỗi
+                        class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
+                        <i class="bi bi-check-circle-fill text-xs"></i> Đã duyệt
                     </span>
                 </div>
                 <div>
-                    <p class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ $totalTeams ?? 0 }}
+                    <p class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        {{ number_format($totalMoneyDeducted ?? 0, 0, ',', '.') }}
                     </p>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tổng đội nhóm</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tổng tiền đã trừ (VNĐ)</p>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1.5 text-xs text-slate-400">
-                        <i class="bi bi-diagram-3-fill text-sm"></i>
-                        <span>Bar · Service · Kitchen · Security</span>
+                        <i class="bi bi-receipt-cutoff text-sm"></i>
+                        <span>Từ {{ $approvedPenalties ?? 0 }} phiếu phạt đã duyệt</span>
                     </div>
                     <span
-                        class="text-xs text-amber-500 dark:text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                        class="text-xs text-rose-500 dark:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
                         Xem <i class="bi bi-arrow-right text-xs"></i>
                     </span>
                 </div>
@@ -1082,11 +1083,18 @@
             $roleName = ucfirst(auth()->user()->getRoleNames()->first() ?? 'Nhân viên');
             $days = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
             $dateLabel = $days[$now->dayOfWeek] . ', ' . $now->format('d/m/Y');
+
+            $heroGradient = match (true) {
+                ($myTotalScore ?? 100) >= 90 => 'linear-gradient(135deg, #059669 0%, #047857 45%, #064e3b 100%)',
+                ($myTotalScore ?? 100) >= 80 => 'linear-gradient(135deg, #ca8a04 0%, #a16207 45%, #713f12 100%)',
+                ($myTotalScore ?? 100) >= 70 => 'linear-gradient(135deg, #ea580c 0%, #c2410c 45%, #7c2d12 100%)',
+                default                       => 'linear-gradient(135deg, #e11d48 0%, #be123c 45%, #881337 100%)',
+            };
         @endphp
 
         {{-- ─── Hero Welcome Banner ────────────────────────────────────────────── --}}
         <div class="rounded-2xl overflow-hidden mb-6 shadow-lg dash-hero"
-            style="background: linear-gradient(135deg, #059669 0%, #047857 45%, #064e3b 100%);">
+            style="background: {{ $heroGradient }};">
             <div class="relative px-6 py-8 md:px-10 md:py-10 overflow-hidden">
 
                 {{-- Decorative blobs --}}
@@ -1156,44 +1164,36 @@
                         {{-- Avatar circle --}}
                         <div class="flex flex-row justify-end items-center gap-2">
                             @if ($employee)
-                                <div class="w-32 h-32 p-3 rounded-full dash-avatar flex items-center justify-center font-black text-xl md:text-2xl text-white select-none"
+                                <div class="w-48 h-48 p-3 rounded-full dash-avatar flex items-center justify-center font-black text-xl md:text-2xl text-white select-none"
                                     style="background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.45);">
                                     <div class="text-center">
-                                        <p class="text-white font-black text-3xl leading-none tracking-tight">
+                                        <p class="text-white font-black text-6xl leading-none tracking-tight">
                                             {{ number_format($myTotalScore) }}</p>
                                         <p class="text-xs" style="color:rgba(255,255,255,0.6)">điểm</p>
                                         {{-- Status badge --}}
                                         @if ($employee)
+                                            @php
+                                                [$zoneBadgeLabel, $zoneBadgeIcon, $zoneBadgeBg, $zoneBadgeBorder, $zoneSubLabel, $zoneBadgeClass] = match (true) {
+                                                    $myTotalScore >= 90 => ['Greenzone', 'bi-shield-fill-check', 'rgba(16,185,129,0.75)', 'rgba(52,211,153,0.5)', 'Xuất sắc', ''],
+                                                    $myTotalScore >= 80 => ['Yellowzone', 'bi-star-fill', 'rgba(202,138,4,0.8)', 'rgba(234,179,8,0.5)', 'Tốt', ''],
+                                                    $myTotalScore >= 70 => ['Orangezone', 'bi-exclamation-triangle-fill', 'rgba(234,88,12,0.8)', 'rgba(249,115,22,0.5)', 'Cần chú ý', ''],
+                                                    default             => ['Redzone', 'bi-exclamation-octagon-fill', 'rgba(244,63,94,0.85)', 'rgba(251,113,133,0.5)', 'Cần cải thiện', 'dash-redzone-blink'],
+                                                };
+                                            @endphp
                                             <div class="hidden sm:flex flex-col items-center gap-2 self-center mt-2">
-                                                @if ($isInRedzone)
-                                                    <div class="flex flex-col items-center gap-1.5">
-                                                        <span
-                                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold dash-redzone-blink"
-                                                            style="background:rgba(244,63,94,0.85);border:1px solid rgba(251,113,133,0.5);">
-                                                            <i class="bi bi-exclamation-octagon-fill text-xs"></i> Redzone
-                                                        </span>
-                                                        <span class="text-xs text-center"
-                                                            style="color:rgba(255,255,255,0.55)">Cần cải
-                                                            thiện</span>
-                                                    </div>
-                                                @else
-                                                    <div class="flex flex-col items-center gap-1.5">
-                                                        <span
-                                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold"
-                                                            style="background:rgba(16,185,129,0.75);border:1px solid rgba(52,211,153,0.5);">
-                                                            <i class="bi bi-shield-fill-check text-xs"></i> An toàn
-                                                        </span>
-                                                    </div>
-                                                @endif
+                                                <div class="flex flex-col items-center gap-1.5">
+                                                    <span
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold {{ $zoneBadgeClass }}"
+                                                        style="background:{{ $zoneBadgeBg }};border:1px solid {{ $zoneBadgeBorder }};">
+                                                        <i class="bi {{ $zoneBadgeIcon }} text-xs"></i> {{ $zoneBadgeLabel }}
+                                                    </span>
+                                                </div>
                                             </div>
                                         @endif
                                     </div>
                                 </div>
                             @endif
                         </div>
-
-
-
                     </div>
                 </div>
             </div>

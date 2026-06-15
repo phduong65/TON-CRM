@@ -123,7 +123,7 @@ $propLabels = [
                                 </span>
                             </td>
                             <td class="table-td">
-                                <p class="text-sm text-slate-700 dark:text-slate-300 leading-snug">
+                                <p class="text-xs text-slate-700 dark:text-slate-300 leading-snug">
                                     {{ $log->description }}
                                 </p>
                                 @if($log->properties->isNotEmpty())

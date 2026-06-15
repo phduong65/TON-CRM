@@ -1,82 +1,210 @@
-<div id="createReportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+<div id="createReportModal"
+     class="hidden fixed inset-0 z-50 items-center justify-center bg-black/50 p-4"
+     onclick="if(event.target===this)closeModal('createReportModal')">
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col"
+         style="max-height:90vh">
+
+        {{-- Header --}}
+        <div class="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <i class="bi bi-flag-fill text-pcrm-500"></i>
                 Tạo báo cáo vi phạm
             </h3>
-            <button onclick="closeModal('createReportModal')"
-                    class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
-                <i class="bi bi-x text-lg"></i>
+            <button type="button" onclick="closeModal('createReportModal')"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                <i class="bi bi-x-lg text-sm"></i>
             </button>
         </div>
 
-        <form action="{{ route('reports.store') }}" method="POST" class="px-5 py-4 space-y-4">
+        {{-- Form (wraps scrollable body + sticky footer) --}}
+        <form action="{{ route('reports.store') }}" method="POST"
+              enctype="multipart/form-data"
+              class="flex flex-col flex-1 min-h-0">
             @csrf
             <input type="hidden" name="_modal" value="createReportModal">
 
-            {{-- Reporter info (readonly) --}}
-            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700">
-                <p class="text-xs text-slate-500 dark:text-slate-400">Bạn đang báo cáo với tư cách</p>
-                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-                    {{ $currentEmployee->name }}
-                    <span class="font-normal text-slate-500 dark:text-slate-400 text-xs">({{ $currentEmployee->code }})</span>
-                </p>
-            </div>
+            {{-- Scrollable body --}}
+            <div class="overflow-y-auto flex-1 px-6 py-5 space-y-5">
 
-            {{-- Reported employee --}}
-            <div>
-                <label class="form-label">Nhân viên bị báo cáo <span class="text-red-500">*</span></label>
-                <select name="reported_employee_id"
-                        class="form-select @error('reported_employee_id') border-red-400 @enderror">
-                    <option value="">-- Chọn nhân viên --</option>
-                    @foreach($employees as $emp)
-                        @if($emp->id !== $currentEmployee->id)
-                            <option value="{{ $emp->id }}" @selected(old('reported_employee_id') == $emp->id)>
-                                {{ $emp->name }} ({{ $emp->code }})@if($emp->branch) · {{ $emp->branch->name }}@endif
-                            </option>
-                        @endif
-                    @endforeach
-                </select>
-                @error('reported_employee_id')
-                    <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+                {{-- Reporter info --}}
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-pcrm-50 dark:bg-pcrm-900/20 border border-pcrm-100 dark:border-pcrm-800/30">
+                    <div class="w-8 h-8 rounded-full bg-pcrm-100 dark:bg-pcrm-800/40 flex items-center justify-center flex-shrink-0">
+                        <i class="bi bi-person-fill text-pcrm-600 dark:text-pcrm-400 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Bạn đang báo cáo với tư cách</p>
+                        <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {{ $currentEmployee->name }}
+                            <span class="font-normal text-slate-400 text-xs">({{ $currentEmployee->code }})</span>
+                        </p>
+                    </div>
+                </div>
 
-            {{-- Violation --}}
-            <div>
-                <label class="form-label">Vi phạm <span class="text-slate-400 text-xs font-normal">(tuỳ chọn)</span></label>
-                <select name="violation_id" class="form-select">
-                    <option value="">-- Không chọn vi phạm cụ thể --</option>
-                    @foreach($violations as $v)
-                        <option value="{{ $v->id }}" @selected(old('violation_id') == $v->id)>
-                            {{ $v->name }}@if($v->points_deducted > 0) (trừ {{ $v->points_deducted }} điểm)@endif
-                        </option>
-                    @endforeach
-                </select>
-                <p class="text-xs text-slate-400 mt-1">Chọn loại vi phạm giúp hệ thống tự động tính điểm trừ khi báo cáo được duyệt.</p>
-            </div>
+                {{-- ── Chọn nhân viên bị báo cáo ─────────────────────────── --}}
+                <div class="space-y-3">
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Nhân viên bị báo cáo
+                    </p>
 
-            {{-- Description --}}
-            <div>
-                <label class="form-label">Mô tả sự việc <span class="text-red-500">*</span></label>
-                <textarea name="description" rows="4"
-                          class="form-input @error('description') border-red-400 @enderror"
-                          placeholder="Mô tả chi tiết sự việc vi phạm bạn chứng kiến...">{{ old('description') }}</textarea>
-                @error('description')
-                    <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                @enderror
-            </div>
+                    {{-- Branch + Team filter (không submit) --}}
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="form-label">Lọc theo chi nhánh</label>
+                            <select id="cr_branch" class="form-input" onchange="crFilterTeams()">
+                                <option value="">Tất cả chi nhánh</option>
+                                @foreach($branches as $b)
+                                    <option value="{{ $b->id }}">{{ $b->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Lọc theo team</label>
+                            <select id="cr_team" class="form-input" onchange="crFilterEmployees()">
+                                <option value="">Tất cả team</option>
+                                @foreach($teams as $t)
+                                    <option value="{{ $t->id }}" data-branch="{{ $t->branch_id }}">{{ $t->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
 
-            {{-- Evidence note --}}
-            <div>
-                <label class="form-label">Bằng chứng / Ghi chú <span class="text-slate-400 text-xs font-normal">(tuỳ chọn)</span></label>
-                <textarea name="evidence_note" rows="2"
-                          class="form-input"
-                          placeholder="Camera, nhân chứng, thời gian cụ thể...">{{ old('evidence_note') }}</textarea>
-            </div>
+                    {{-- Employee select (submitted) --}}
+                    <div>
+                        <label class="form-label">Chọn nhân viên <span class="text-red-500">*</span></label>
+                        <select name="reported_employee_id" id="cr_employee"
+                                class="form-input @error('reported_employee_id') border-red-400 @enderror">
+                            <option value="">-- Chọn nhân viên bị báo cáo --</option>
+                            @foreach($employees as $emp)
+                                @if($emp->id !== $currentEmployee->id)
+                                    <option value="{{ $emp->id }}"
+                                            data-branch="{{ $emp->branch_id }}"
+                                            data-team="{{ $emp->team_id }}"
+                                            @selected(old('reported_employee_id') == $emp->id)>
+                                        {{ $emp->name }} ({{ $emp->code }})@if($emp->branch) · {{ $emp->branch->name }}@endif
+                                    </option>
+                                @endif
+                            @endforeach
+                        </select>
+                        @error('reported_employee_id')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
 
-            <div class="pt-2 flex gap-2 justify-end border-t border-slate-100 dark:border-slate-700">
+                <div class="border-t border-slate-100 dark:border-slate-700"></div>
+
+                {{-- ── Loại vi phạm ─────────────────────────────────────── --}}
+                <div class="space-y-3">
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Loại vi phạm
+                        <span class="font-normal normal-case text-slate-400">(tuỳ chọn)</span>
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="form-label">Danh mục / Quy chế</label>
+                            <select id="cr_regulation" class="form-input" onchange="crFilterViolations()">
+                                <option value="">Tất cả danh mục</option>
+                                @foreach($regulations as $reg)
+                                    <option value="{{ $reg->id }}">{{ $reg->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Lỗi vi phạm cụ thể</label>
+                            <select name="violation_id" id="cr_violation" class="form-input">
+                                <option value="">-- Không chọn --</option>
+                                @foreach($violations as $v)
+                                    <option value="{{ $v->id }}"
+                                            data-reg="{{ $v->regulation_id }}"
+                                            @selected(old('violation_id') == $v->id)>
+                                        {{ $v->name }}@if($v->points_deducted > 0) (−{{ $v->points_deducted }} điểm)@endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                                Hệ thống tự trừ điểm khi báo cáo được duyệt.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 dark:border-slate-700"></div>
+
+                {{-- ── Nội dung báo cáo ─────────────────────────────────── --}}
+                <div class="space-y-3">
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Nội dung báo cáo
+                    </p>
+
+                    <div>
+                        <label class="form-label">Mô tả sự việc <span class="text-red-500">*</span></label>
+                        <textarea name="description" rows="3"
+                                  class="form-input @error('description') border-red-400 @enderror"
+                                  placeholder="Mô tả chi tiết sự việc vi phạm bạn chứng kiến...">{{ old('description') }}</textarea>
+                        @error('description')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="form-label">
+                            Ghi chú bổ sung
+                            <span class="text-slate-400 text-xs font-normal">(tuỳ chọn)</span>
+                        </label>
+                        <textarea name="evidence_note" rows="2"
+                                  class="form-input"
+                                  placeholder="Camera số mấy, nhân chứng, thời gian cụ thể...">{{ old('evidence_note') }}</textarea>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 dark:border-slate-700"></div>
+
+                {{-- ── File bằng chứng ──────────────────────────────────── --}}
+                <div class="space-y-3">
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        File bằng chứng
+                        <span class="font-normal normal-case text-slate-400">(tuỳ chọn · tối đa 5 file)</span>
+                    </p>
+
+                    {{-- Dropzone --}}
+                    <div id="cr_dropzone"
+                         class="border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-pcrm-400 dark:hover:border-pcrm-500 hover:bg-pcrm-50/30 dark:hover:bg-pcrm-900/10"
+                         onclick="document.getElementById('cr_files').click()"
+                         ondragover="crDragOver(event)"
+                         ondragleave="crDragLeave()"
+                         ondrop="crDrop(event)">
+                        <i class="bi bi-cloud-arrow-up text-4xl text-slate-300 dark:text-slate-600 pointer-events-none"></i>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 pointer-events-none">
+                            Kéo thả hoặc
+                            <span class="text-pcrm-600 dark:text-pcrm-400 font-medium">nhấp để chọn file</span>
+                        </p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 pointer-events-none">
+                            Ảnh JPG · PNG · WEBP (tự thu nhỏ về 1000×1000) &nbsp;·&nbsp; Video MP4 · MOV dưới 20 MB
+                        </p>
+                        <input type="file" id="cr_files" name="evidence_files[]"
+                               multiple
+                               accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/quicktime,video/webm,video/x-msvideo"
+                               class="hidden"
+                               onchange="crUpdatePreview()">
+                    </div>
+
+                    @error('evidence_files')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
+                    @error('evidence_files.*')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
+
+                    {{-- Preview grid (hidden when empty) --}}
+                    <div id="cr_preview" class="grid grid-cols-5 gap-2 hidden"></div>
+                </div>
+
+            </div>{{-- /scrollable body --}}
+
+            {{-- Footer --}}
+            <div class="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700">
                 <button type="button" onclick="closeModal('createReportModal')" class="btn-secondary">Huỷ</button>
                 <button type="submit" class="btn-primary">
                     <i class="bi bi-send-fill"></i>
@@ -86,3 +214,137 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+// ── Create Report Modal ──────────────────────────────────────────────────────
+
+function crFilterTeams() {
+    var branchId = document.getElementById('cr_branch').value;
+    var teamSel  = document.getElementById('cr_team');
+    teamSel.value = '';
+    Array.from(teamSel.options).forEach(function(opt) {
+        if (!opt.dataset.branch) return;
+        var show     = !branchId || opt.dataset.branch === branchId;
+        opt.hidden   = !show;
+        opt.disabled = !show;
+    });
+    crFilterEmployees();
+}
+
+function crFilterEmployees() {
+    var branchId = document.getElementById('cr_branch').value;
+    var teamId   = document.getElementById('cr_team').value;
+    var empSel   = document.getElementById('cr_employee');
+    empSel.value = '';
+    Array.from(empSel.options).forEach(function(opt) {
+        if (!opt.value) return;
+        var ok       = (!branchId || opt.dataset.branch === branchId)
+                    && (!teamId   || opt.dataset.team   === teamId);
+        opt.hidden   = !ok;
+        opt.disabled = !ok;
+    });
+}
+
+function crFilterViolations() {
+    var regId   = document.getElementById('cr_regulation').value;
+    var violSel = document.getElementById('cr_violation');
+    violSel.value = '';
+    Array.from(violSel.options).forEach(function(opt) {
+        if (!opt.value) return;
+        var show     = !regId || opt.dataset.reg === regId;
+        opt.hidden   = !show;
+        opt.disabled = !show;
+    });
+}
+
+// ── Drag-and-drop ────────────────────────────────────────────────────────────
+
+function crDragOver(e) {
+    e.preventDefault();
+    var dz = document.getElementById('cr_dropzone');
+    dz.style.borderColor = 'var(--color-pcrm-400, #6366f1)';
+    dz.style.background  = 'rgba(99,102,241,0.04)';
+}
+
+function crDragLeave() {
+    var dz = document.getElementById('cr_dropzone');
+    dz.style.borderColor = '';
+    dz.style.background  = '';
+}
+
+function crDrop(e) {
+    e.preventDefault();
+    crDragLeave();
+    var input = document.getElementById('cr_files');
+    var dt    = new DataTransfer();
+    Array.from(input.files).forEach(function(f) { dt.items.add(f); });
+    Array.from(e.dataTransfer.files).forEach(function(f) { dt.items.add(f); });
+    input.files = dt.files;
+    crUpdatePreview();
+}
+
+function crRemoveFile(idx) {
+    var input = document.getElementById('cr_files');
+    var dt    = new DataTransfer();
+    Array.from(input.files).forEach(function(f, i) { if (i !== idx) dt.items.add(f); });
+    input.files = dt.files;
+    crUpdatePreview();
+}
+
+function crUpdatePreview() {
+    var input   = document.getElementById('cr_files');
+    var preview = document.getElementById('cr_preview');
+    var files   = Array.from(input.files);
+
+    // Enforce 5-file limit
+    if (files.length > 5) {
+        var dt = new DataTransfer();
+        files.slice(0, 5).forEach(function(f) { dt.items.add(f); });
+        input.files = dt.files;
+        files = files.slice(0, 5);
+    }
+
+    if (files.length === 0) {
+        preview.classList.add('hidden');
+        preview.innerHTML = '';
+        return;
+    }
+
+    preview.classList.remove('hidden');
+    preview.innerHTML = '';
+
+    files.forEach(function(file, idx) {
+        var item = document.createElement('div');
+        item.className = 'relative rounded-xl overflow-hidden aspect-square bg-slate-100 dark:bg-slate-700/60 group';
+
+        if (file.type.startsWith('image/')) {
+            var img = document.createElement('img');
+            var url = URL.createObjectURL(file);
+            img.src = url;
+            img.className = 'w-full h-full object-cover';
+            img.onload = function() { URL.revokeObjectURL(url); };
+            item.appendChild(img);
+        } else {
+            var sizeMB = (file.size / 1024 / 1024).toFixed(1);
+            var inner  = document.createElement('div');
+            inner.className = 'w-full h-full flex flex-col items-center justify-center gap-1 p-2';
+            inner.innerHTML = '<i class="bi bi-camera-video-fill text-2xl text-slate-400 dark:text-slate-500"></i>'
+                + '<span style="font-size:10px" class="text-slate-500 dark:text-slate-400 text-center leading-tight line-clamp-2 w-full">'
+                + file.name + '</span>'
+                + '<span style="font-size:10px" class="text-slate-400">' + sizeMB + ' MB</span>';
+            item.appendChild(inner);
+        }
+
+        var rmBtn = document.createElement('button');
+        rmBtn.type      = 'button';
+        rmBtn.className = 'absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity';
+        rmBtn.innerHTML = '<i class="bi bi-x" style="font-size:11px"></i>';
+        rmBtn.onclick   = (function(i) { return function(e) { e.stopPropagation(); crRemoveFile(i); }; })(idx);
+        item.appendChild(rmBtn);
+
+        preview.appendChild(item);
+    });
+}
+</script>
+@endpush

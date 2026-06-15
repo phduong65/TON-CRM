@@ -61,6 +61,49 @@
             </div>
         </div>
 
+        {{-- Evidence files --}}
+        @if($report->evidence_files && count($report->evidence_files) > 0)
+        <div class="card">
+            <div class="card-header">
+                <h3 class="font-semibold text-slate-900 dark:text-white">File bằng chứng</h3>
+                <span class="text-xs text-slate-400">{{ count($report->evidence_files) }} file</span>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-3 gap-3">
+                    @foreach($report->evidence_files as $filePath)
+                        @php
+                            $ext     = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                            $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                            $fileUrl = asset('storage/' . $filePath);
+                        @endphp
+                        <div class="relative rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700/60 aspect-square group">
+                            @if($isImage)
+                                <a href="{{ $fileUrl }}" target="_blank" rel="noopener"
+                                   class="block w-full h-full">
+                                    <img src="{{ $fileUrl }}"
+                                         alt="Bằng chứng"
+                                         class="w-full h-full object-cover transition-opacity group-hover:opacity-85"
+                                         loading="lazy">
+                                    <span class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <span class="bg-black/40 rounded-full w-8 h-8 flex items-center justify-center">
+                                            <i class="bi bi-zoom-in text-white text-sm"></i>
+                                        </span>
+                                    </span>
+                                </a>
+                            @else
+                                <video controls preload="metadata"
+                                       class="w-full h-full object-contain bg-black">
+                                    <source src="{{ $fileUrl }}"
+                                            type="{{ $ext === 'mov' ? 'video/quicktime' : 'video/' . $ext }}">
+                                </video>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
         @if($report->status !== 'pending')
         <div class="card">
             <div class="card-header">

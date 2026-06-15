@@ -47,11 +47,11 @@
                         </div>
 
                         <div>
-                            <label for="s_report_reward_points" class="form-label">Điểm thưởng báo cáo chéo</label>
+                            <label for="s_report_reward_points" class="form-label">Điểm thưởng báo cáo vi phạm</label>
                             <input type="number" name="settings[report_reward_points]" id="s_report_reward_points"
                                 class="form-input" value="{{ old('settings.report_reward_points', $settings->get('report_reward_points')->value ?? 5) }}"
                                 min="0" max="100" placeholder="5">
-                            <p class="text-xs text-slate-400 mt-1">Số điểm cộng cho nhân viên khi báo cáo chéo của họ được duyệt.</p>
+                            <p class="text-xs text-slate-400 mt-1">Số điểm cộng cho nhân viên khi báo cáo vi phạm của họ được duyệt.</p>
                         </div>
 
                         <div class="pt-4 border-t border-slate-200 dark:border-slate-700">

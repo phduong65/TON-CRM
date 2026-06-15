@@ -25,7 +25,7 @@ class RewardsController extends Controller
             $s = $request->search;
             $query->where(function ($q) use ($s) {
                 $q->where('code', 'like', "%$s%")
-                  ->orWhereHas('employee', fn($eq) => $eq->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
+                    ->orWhereHas('employee', fn($eq) => $eq->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
             });
         }
 
