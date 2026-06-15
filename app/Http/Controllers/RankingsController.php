@@ -51,12 +51,15 @@ class RankingsController extends Controller
         }
 
         // ── Team ranking ──────────────────────────────────────────────────────
-        $teams = Team::select('teams.*')
+        $teams = Team::select([
+                'teams.id', 'teams.code', 'teams.name', 'teams.branch_id',
+                'teams.description', 'teams.is_active', 'teams.created_at', 'teams.updated_at',
+            ])
             ->selectRaw('COALESCE(SUM(employee_scores.points), 0) / NULLIF(COUNT(DISTINCT employees.id), 0) as average_score')
             ->selectRaw('COUNT(DISTINCT employees.id) as employees_count')
             ->leftJoin('employees', 'employees.team_id', '=', 'teams.id')
             ->leftJoin('employee_scores', 'employee_scores.employee_id', '=', 'employees.id')
-            ->groupBy('teams.id')
+            ->groupBy('teams.id', 'teams.code', 'teams.name', 'teams.branch_id', 'teams.description', 'teams.is_active', 'teams.created_at', 'teams.updated_at')
             ->with('branch')
             ->orderByDesc('average_score')
             ->get();

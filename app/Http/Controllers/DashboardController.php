@@ -56,9 +56,13 @@ class DashboardController extends Controller
 
         $redzoneThreshold = Setting::getValue('redzone_threshold', 50);
 
-        $redzoneEmployees = Employee::select('employees.*', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
-            ->leftJoin('employee_scores', 'employees.id', '=', 'employee_scores.employee_id')
-            ->groupBy('employees.id')
+        $redzoneEmployees = Employee::query()
+            ->with(['user', 'team', 'branch'])
+            ->addSelect([
+                'total_score' => DB::table('employee_scores')
+                    ->selectRaw('COALESCE(SUM(points), 0)')
+                    ->whereColumn('employee_id', 'employees.id'),
+            ])
             ->having('total_score', '<', $redzoneThreshold)
             ->orderBy('total_score')
             ->limit(5)
@@ -89,10 +93,14 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $topEmployees = Employee::select('employees.*', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
-            ->leftJoin('employee_scores', 'employees.id', '=', 'employee_scores.employee_id')
-            ->groupBy('employees.id')
-            ->orderBy('total_score', 'desc')
+        $topEmployees = Employee::query()
+            ->with(['team', 'branch'])
+            ->addSelect([
+                'total_score' => DB::table('employee_scores')
+                    ->selectRaw('COALESCE(SUM(points), 0)')
+                    ->whereColumn('employee_id', 'employees.id'),
+            ])
+            ->orderByDesc('total_score')
             ->limit(10)
             ->get();
 
@@ -320,11 +328,14 @@ class DashboardController extends Controller
             $myRank = $rankIndex !== false ? $rankIndex + 1 : null;
 
             if ($employee->team_id) {
-                $teamLeaderboard = Employee::select('employees.*', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
-                    ->leftJoin('employee_scores', 'employees.id', '=', 'employee_scores.employee_id')
-                    ->where('employees.team_id', $employee->team_id)
-                    ->groupBy('employees.id')
-                    ->orderBy('total_score', 'desc')
+                $teamLeaderboard = Employee::query()
+                    ->where('team_id', $employee->team_id)
+                    ->addSelect([
+                        'total_score' => DB::table('employee_scores')
+                            ->selectRaw('COALESCE(SUM(points), 0)')
+                            ->whereColumn('employee_id', 'employees.id'),
+                    ])
+                    ->orderByDesc('total_score')
                     ->limit(5)
                     ->get();
             }
