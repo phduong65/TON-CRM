@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', config('app.name', 'P-CRM')) — P-CRM</title>
+    <title>@yield('title', config('app.name', 'TON-CMS')) — TON-CMS</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=be-vietnam-pro:300,400,500,600,700,800&display=swap" rel="stylesheet" />
@@ -22,7 +22,7 @@
             <div class="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-pcrm-600 text-white mb-4">
                 <i class="ph-shield-check text-3xl"></i>
             </div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">P-CRM</h1>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">TON-CMS</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Hệ thống Quản lý Kỷ luật Nhân sự</p>
         </div>
 
@@ -46,7 +46,7 @@
         </div>
 
         <p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-6">
-            &copy; {{ date('Y') }} P-CRM. Phiên bản 1.0
+            &copy; {{ date('Y') }} TON-CMS. Phiên bản 1.0
         </p>
     </div>
 </body>

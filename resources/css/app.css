@@ -12,7 +12,7 @@
     --font-sans: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* P-CRM Brand Colors */
+    /* TON-CMS Brand Colors */
     --color-pcrm-50: #ecfdf5;
     --color-pcrm-100: #d1fae5;
     --color-pcrm-200: #a7f3d0;
@@ -694,7 +694,7 @@
         }
     }
 
-    /* ── P-CRM Alert Modal ── */
+    /* ── TON-CMS Alert Modal ── */
     @keyframes pcrm-alert-backdrop-in {
         from { opacity: 0; }
         to   { opacity: 1; }

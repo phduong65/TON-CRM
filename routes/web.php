@@ -27,7 +27,7 @@ use App\Http\Controllers\Dev\TestRunnerController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes — P-CRM Staff Discipline Management System
+| Web Routes — TON-CMS Staff Discipline Management System
 |--------------------------------------------------------------------------
 | Giao diện tiếng Việt — Blade thuần + Tailwind CSS
 */

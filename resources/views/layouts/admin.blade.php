@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', config('app.name', 'P-CRM')) — P-CRM</title>
+    <title>@yield('title', config('app.name', 'TON-CMS')) — TON-CMS</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=be-vietnam-pro:300,400,500,600,700,800&display=swap" rel="stylesheet" />
@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <!-- ── P-CRM Alert Modal ── -->
+    <!-- ── TON-CMS Alert Modal ── -->
     <div id="pcrm-alert-overlay"
          class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4"
          style="background:rgba(0,0,0,0.55); backdrop-filter:blur(2px);">
@@ -87,7 +87,7 @@
             </div>
         </div>
     </div>
-    <!-- ── /P-CRM Alert Modal ── -->
+    <!-- ── /TON-CMS Alert Modal ── -->
 
     @stack('modals')
     @stack('scripts')
@@ -103,7 +103,7 @@
         if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
     }
 
-    // ── P-CRM Alert System ────────────────────────────────────────────────
+    // ── TON-CMS Alert System ────────────────────────────────────────────────
     (function () {
         var _timer = null;
 

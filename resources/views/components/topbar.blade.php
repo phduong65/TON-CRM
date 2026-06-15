@@ -30,10 +30,10 @@
         <a href="{{ route('dashboard') }}"
             class="flex items-center gap-2.5 px-4 shrink-0 border-slate-100 dark:border-slate-700">
             <div
-                class="w-7 h-7 rounded-lg bg-pcrm-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-                P</div>
+                class="px-1.5 w-7 h-7 rounded-lg bg-pcrm-600 flex items-center justify-center text-white font-bold text-xs shrink-0 tracking-tight">
+                T</div>
             <span
-                class="font-bold text-slate-900 dark:text-white text-[15px] tracking-tight hidden sm:block">P-CRM</span>
+                class="font-bold text-slate-900 dark:text-white text-[15px] tracking-tight hidden sm:block">TON-CMS</span>
         </a>
     </div>
 
