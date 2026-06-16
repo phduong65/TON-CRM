@@ -212,6 +212,13 @@
                     <span>Nhật ký hoạt động</span>
                 </a>
             @endcan
+            @can('view-log-viewer')
+                <a href="/log-viewer"
+                    class="sidebar-link {{ str_starts_with(request()->path(), 'log-viewer') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-terminal text-base"></i>
+                    <span>System Logs</span>
+                </a>
+            @endcan
         @endcanany
 
         {{-- ── NGƯỜI DÙNG ────────────────────────────── --}}
@@ -380,6 +387,12 @@
             <a href="{{ route('activity.log') }}"
                 class="sidebar-link {{ $isActive(['activity']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-clipboard-data text-base"></i><span>Nhật ký</span>
+            </a>
+        @endcan
+        @can('view-log-viewer')
+            <a href="/log-viewer"
+                class="sidebar-link {{ str_starts_with(request()->path(), 'log-viewer') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-terminal text-base"></i><span>System Logs</span>
             </a>
         @endcan
 
