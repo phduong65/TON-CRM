@@ -24,6 +24,7 @@ use App\Http\Controllers\RewardTypesController;
 use App\Http\Controllers\RewardsController;
 use App\Http\Controllers\EmployeeReportsController;
 use App\Http\Controllers\Dev\TestRunnerController;
+use App\Http\Controllers\GoogleSheetsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -171,6 +172,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings', [SettingsController::class, 'update'])
         ->name('settings.update')
         ->middleware('can:manage-settings');
+
+    // Google Sheets Sync
+    Route::prefix('google-sheets')->name('google-sheets.')->middleware('can:manage-settings')->group(function () {
+        Route::get('/', [GoogleSheetsController::class, 'index'])->name('index');
+        Route::post('/push', [GoogleSheetsController::class, 'push'])->name('push');
+        Route::post('/import', [GoogleSheetsController::class, 'import'])->name('import');
+    });
 
     // Activity Log
     Route::get('/activity-log', [ActivityLogController::class, 'index'])

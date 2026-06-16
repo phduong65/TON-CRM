@@ -198,6 +198,11 @@
                     <i class="bi bi-gear text-base"></i>
                     <span>Cài đặt</span>
                 </a>
+                <a href="{{ route('google-sheets.index') }}"
+                    class="sidebar-link {{ $isActive(['google-sheets']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-file-earmark-spreadsheet text-base"></i>
+                    <span>Google Sheets</span>
+                </a>
             @endcan
 
             @can('view-activity-log')
@@ -365,6 +370,12 @@
             class="sidebar-link {{ $isActive(['settings']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-gear text-base"></i><span>Cài đặt</span>
         </a>
+        @can('manage-settings')
+        <a href="{{ route('google-sheets.index') }}"
+            class="sidebar-link {{ $isActive(['google-sheets']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+            <i class="bi bi-file-earmark-spreadsheet text-base"></i><span>Google Sheets</span>
+        </a>
+        @endcan
         @can('view-activity-log')
             <a href="{{ route('activity.log') }}"
                 class="sidebar-link {{ $isActive(['activity']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
