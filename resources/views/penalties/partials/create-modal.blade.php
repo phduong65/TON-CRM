@@ -1,3 +1,15 @@
+@push('styles')
+<style>
+#cp_dropzone.cp-dz-over {
+    border-color: var(--color-pcrm-400) !important;
+    background-color: color-mix(in srgb, var(--color-pcrm-50) 50%, transparent) !important;
+}
+.dark #cp_dropzone.cp-dz-over {
+    background-color: color-mix(in srgb, var(--color-pcrm-900) 20%, transparent) !important;
+}
+</style>
+@endpush
+
 {{-- ── Penalty Create Modal ── --}}
 <div id="createPenaltyModal"
      class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
@@ -257,22 +269,38 @@
 
                 {{-- ⑥ Đính kèm --}}
                 <div>
-                    <label class="form-label">Hình ảnh / Video đính kèm</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="form-label mb-0">Hình ảnh / Video đính kèm</label>
+                        <span id="cp_file_count"
+                              class="hidden text-xs font-semibold text-pcrm-700 dark:text-pcrm-300 bg-pcrm-50 dark:bg-pcrm-900/40 px-2 py-0.5 rounded-full tabular-nums"></span>
+                    </div>
 
                     {{-- Drop zone --}}
                     <label for="cp_attachments"
                            id="cp_dropzone"
-                           class="flex flex-col items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 py-5 cursor-pointer hover:border-pcrm-400 dark:hover:border-pcrm-500 transition-colors"
-                           ondragover="event.preventDefault();this.classList.add('border-pcrm-400')"
-                           ondragleave="this.classList.remove('border-pcrm-400')"
+                           class="flex items-center gap-3.5 w-full rounded-xl border-2 border-dashed
+                                  border-slate-200 dark:border-slate-600
+                                  bg-slate-50 dark:bg-slate-700/30
+                                  px-4 py-3.5 cursor-pointer group
+                                  hover:border-pcrm-400 dark:hover:border-pcrm-600
+                                  hover:bg-pcrm-50/30 dark:hover:bg-pcrm-900/10
+                                  transition-all duration-150"
+                           ondragover="event.preventDefault();this.classList.add('cp-dz-over')"
+                           ondragleave="this.classList.remove('cp-dz-over')"
                            ondrop="cpHandleDrop(event)">
-                        <i class="bi bi-cloud-arrow-up text-2xl text-slate-400 dark:text-slate-500"></i>
-                        <p class="text-sm text-slate-500 dark:text-slate-400">
-                            Kéo thả hoặc <span class="text-pcrm-600 dark:text-pcrm-400 font-medium">chọn file</span>
-                        </p>
-                        <p class="text-xs text-slate-400 dark:text-slate-500">
-                            Ảnh: jpg · png · gif · webp · heic (max 10MB) &nbsp;|&nbsp; Video: mp4 · mov · avi · webm (max 20MB)
-                        </p>
+                        <div class="w-9 h-9 rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600
+                                    flex items-center justify-center flex-shrink-0 shadow-sm
+                                    transition-colors group-hover:border-pcrm-300 dark:group-hover:border-pcrm-700">
+                            <i class="bi bi-cloud-arrow-up text-slate-400 group-hover:text-pcrm-500 dark:group-hover:text-pcrm-400 transition-colors"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-slate-600 dark:text-slate-300">
+                                Kéo thả hoặc <span class="text-pcrm-600 dark:text-pcrm-400 font-medium">chọn file</span>
+                            </p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                                Ảnh jpg/png/gif/webp/heic (10 MB) &nbsp;·&nbsp; Video mp4/mov/webm (20 MB)
+                            </p>
+                        </div>
                         <input type="file" id="cp_attachments" name="attachments[]"
                                multiple
                                accept="image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,.heic,.heif,video/mp4,video/quicktime,video/avi,video/webm,.mov,.avi"
@@ -638,36 +666,46 @@
     };
 
     function _renderAttachPreview() {
-        var grid = document.getElementById('cp_attach_preview');
+        var grid    = document.getElementById('cp_attach_preview');
+        var countEl = document.getElementById('cp_file_count');
         if (!grid) return;
 
         grid.innerHTML = '';
-        if (_attachFiles.length === 0) { grid.classList.add('hidden'); return; }
+
+        if (_attachFiles.length === 0) {
+            grid.classList.add('hidden');
+            if (countEl) { countEl.textContent = ''; countEl.classList.add('hidden'); }
+            return;
+        }
+
         grid.classList.remove('hidden');
+        if (countEl) {
+            countEl.textContent = _attachFiles.length + ' file';
+            countEl.classList.remove('hidden');
+        }
 
         _attachFiles.forEach(function (f, idx) {
             var wrap = document.createElement('div');
-            wrap.className = 'relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 aspect-square flex items-center justify-center';
+            wrap.className = 'relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 aspect-square';
 
             if (f.type.startsWith('image/')) {
                 var img = document.createElement('img');
                 img.src = URL.createObjectURL(f);
-                img.className = 'w-full h-full object-cover';
+                img.className = 'absolute inset-0 w-full h-full object-cover';
                 wrap.appendChild(img);
             } else {
-                // Video placeholder
                 var icon = document.createElement('div');
-                icon.className = 'flex flex-col items-center gap-1 p-2 text-center';
-                icon.innerHTML = '<i class="bi bi-film text-2xl text-slate-400"></i>'
-                    + '<p class="text-[10px] text-slate-400 break-all leading-tight">' + f.name + '</p>'
-                    + '<p class="text-[9px] text-slate-300 dark:text-slate-500">' + _fmtSize(f.size) + '</p>';
+                icon.className = 'absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-2 text-center';
+                icon.innerHTML = '<i class="bi bi-play-circle text-2xl text-slate-400 dark:text-slate-500"></i>'
+                    + '<p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight line-clamp-2 break-all">' + f.name + '</p>'
+                    + '<p class="text-[9px] text-slate-400 dark:text-slate-500">' + _fmtSize(f.size) + '</p>';
                 wrap.appendChild(icon);
             }
 
             // Remove button
             var rm = document.createElement('button');
             rm.type = 'button';
-            rm.className = 'absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs';
+            rm.className = 'absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center text-xs opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity';
             rm.innerHTML = '<i class="bi bi-x"></i>';
             rm.dataset.idx = idx;
             rm.onclick = function () {

@@ -27,10 +27,11 @@
 
 #dropZone.drag-over {
     border-color: #6366f1 !important;
-    background-color: rgb(238 242 255 / .6) !important;
+    background-color: rgb(238 242 255 / .5) !important;
 }
 .dark #dropZone.drag-over {
-    background-color: rgb(79 70 229 / .12) !important;
+    border-color: #818cf8 !important;
+    background-color: rgb(79 70 229 / .1) !important;
 }
 </style>
 
@@ -244,34 +245,53 @@
                         File Excel / CSV <span class="text-red-500">*</span>
                     </label>
                     <div id="dropZone"
-                         class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl
-                                cursor-pointer transition-all duration-200 min-h-[180px]
-                                hover:border-indigo-300 dark:hover:border-indigo-600
-                                hover:bg-indigo-50/20 dark:hover:bg-indigo-900/5"
+                         class="relative rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700
+                                cursor-pointer transition-all duration-200 min-h-[210px] overflow-hidden
+                                hover:border-indigo-400 dark:hover:border-indigo-500
+                                hover:bg-indigo-50/30 dark:hover:bg-indigo-900/5"
                          onclick="document.getElementById('fileInput').click()">
 
                         {{-- Empty state --}}
-                        <div id="dzEmpty" class="flex flex-col items-center justify-center gap-3 py-12 px-6">
-                            <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                <i class="bi bi-file-earmark-spreadsheet text-2xl text-slate-400 dark:text-slate-500"></i>
+                        <div id="dzEmpty" class="flex flex-col items-center justify-center gap-4 py-12 px-6 min-h-[210px]">
+                            <div class="relative">
+                                <div class="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center">
+                                    <i class="bi bi-file-earmark-spreadsheet text-2xl text-indigo-400 dark:text-indigo-500"></i>
+                                </div>
+                                <div class="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                                    <i class="bi bi-arrow-up text-white" style="font-size:9px;line-height:1"></i>
+                                </div>
                             </div>
                             <div class="text-center">
-                                <p class="text-sm text-slate-500 dark:text-slate-400">
-                                    Kéo thả file vào đây hoặc
-                                    <span class="text-indigo-600 dark:text-indigo-400 font-medium">nhấn để chọn</span>
+                                <p class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Kéo thả file vào đây
                                 </p>
-                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">.xlsx · .xls · .csv — tối đa 5 MB</p>
+                                <p class="text-sm text-slate-400 dark:text-slate-500 mt-0.5">
+                                    hoặc <span class="text-indigo-600 dark:text-indigo-400 font-semibold">nhấn để chọn</span>
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2 flex-wrap justify-center">
+                                <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-mono">.xlsx</span>
+                                <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-mono">.xls</span>
+                                <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-mono">.csv</span>
+                                <span class="text-slate-300 dark:text-slate-600 select-none">·</span>
+                                <span class="text-xs text-slate-400">tối đa 5 MB</span>
                             </div>
                         </div>
 
                         {{-- File selected state --}}
-                        <div id="dzSelected" class="hidden flex-col items-center justify-center gap-3 py-12 px-6">
-                            <div class="w-14 h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
-                                <i class="bi bi-file-earmark-check text-2xl text-green-500"></i>
+                        <div id="dzSelected" class="hidden flex-col items-center justify-center gap-4 py-12 px-6 min-h-[210px]">
+                            <div class="relative">
+                                <div class="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center">
+                                    <i class="bi bi-file-earmark-check text-2xl text-emerald-500"></i>
+                                </div>
+                                <div class="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                                    <i class="bi bi-check text-white" style="font-size:9px;line-height:1"></i>
+                                </div>
                             </div>
                             <div class="text-center">
-                                <p id="fileNameDisplay" class="text-sm font-semibold text-green-600 dark:text-green-400 max-w-xs truncate"></p>
-                                <p class="text-xs text-slate-400 mt-1">Nhấn để thay đổi file</p>
+                                <p id="fileNameDisplay" class="text-sm font-semibold text-slate-800 dark:text-slate-100 max-w-[220px] truncate"></p>
+                                <p id="fileSizeDisplay" class="text-xs text-slate-400 dark:text-slate-500 mt-0.5"></p>
+                                <p class="text-xs text-indigo-500 dark:text-indigo-400 mt-2">Nhấn để thay đổi file</p>
                             </div>
                         </div>
 
@@ -573,10 +593,16 @@ function showFileName(input) {
     const empty    = document.getElementById('dzEmpty');
     const selected = document.getElementById('dzSelected');
     const nameEl   = document.getElementById('fileNameDisplay');
+    const sizeEl   = document.getElementById('fileSizeDisplay');
     const btn      = document.getElementById('previewBtn');
 
     if (input.files.length > 0) {
-        nameEl.textContent = input.files[0].name;
+        const file = input.files[0];
+        nameEl.textContent = file.name;
+        const s = file.size;
+        sizeEl.textContent = s < 1024 ? s + ' B'
+                           : s < 1048576 ? Math.round(s / 1024) + ' KB'
+                           : (s / 1048576).toFixed(1) + ' MB';
         empty.classList.add('hidden');
         selected.classList.remove('hidden');
         selected.classList.add('flex');
