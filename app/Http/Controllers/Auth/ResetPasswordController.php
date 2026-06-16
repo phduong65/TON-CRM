@@ -7,11 +7,6 @@ use Illuminate\Http\Request;
 
 class ResetPasswordController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('guest');
-    }
-
     public function showResetForm($token)
     {
         return view('auth.passwords.reset', ['token' => $token]);

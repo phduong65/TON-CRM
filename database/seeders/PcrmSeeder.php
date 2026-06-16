@@ -52,6 +52,7 @@ class PcrmSeeder extends Seeder
             'manage-roles',
             'view-notifications',
             'create-notifications',
+            'view-log-viewer',
         ];
 
         foreach ($allPermissions as $perm) {

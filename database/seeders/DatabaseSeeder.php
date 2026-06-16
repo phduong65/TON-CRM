@@ -12,5 +12,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ViolationsSeeder::class);
         $this->call(RewardTypesSeeder::class);
         $this->call(RealEmployeeSeeder::class);
+        $this->call(UserManagementSeeder::class);
+        $this->call(LogViewerSeeder::class);
     }
 }

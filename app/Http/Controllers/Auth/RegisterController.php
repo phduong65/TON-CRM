@@ -11,11 +11,6 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('guest');
-    }
-
     public function showRegistrationForm()
     {
         return view('auth.register');
