@@ -25,6 +25,7 @@ use App\Http\Controllers\RewardsController;
 use App\Http\Controllers\EmployeeReportsController;
 use App\Http\Controllers\Dev\TestRunnerController;
 use App\Http\Controllers\GoogleSheetsController;
+use App\Http\Controllers\LogViewerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -184,6 +185,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/activity-log', [ActivityLogController::class, 'index'])
         ->name('activity.log')
         ->middleware('can:view-activity-log');
+
+    // System Log Viewer (custom)
+    Route::get('/log-viewer', [LogViewerController::class, 'index'])
+        ->name('log-viewer.index')
+        ->middleware('can:view-log-viewer');
 
     // User Management (admin: manage-users) — create/edit via modal
     Route::middleware('can:manage-users')->group(function () {

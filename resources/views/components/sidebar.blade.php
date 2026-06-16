@@ -213,7 +213,7 @@
                 </a>
             @endcan
             @can('view-log-viewer')
-                <a href="/log-viewer"
+                <a href="{{ route('log-viewer.index') }}"
                     class="sidebar-link {{ str_starts_with(request()->path(), 'log-viewer') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                     <i class="bi bi-terminal text-base"></i>
                     <span>System Logs</span>
