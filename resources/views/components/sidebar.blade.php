@@ -16,7 +16,8 @@
 
     try {
         $unreadNotifCount = \App\Models\Notification::where('user_id', auth()->id())
-            ->whereNull('read_at')->count();
+            ->whereNull('read_at')
+            ->count();
     } catch (\Exception $e) {
         $unreadNotifCount = 0;
     }
@@ -66,8 +67,9 @@
             class="sidebar-link {{ $isActive(['notifications']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-bell text-base"></i>
             <span class="flex-1">Thông báo</span>
-            @if($unreadNotifCount > 0)
-                <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white leading-none">
+            @if ($unreadNotifCount > 0)
+                <span
+                    class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white leading-none">
                     {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
                 </span>
             @endif
@@ -155,8 +157,8 @@
             @endif
         </a>
         @canany(['view-violations', 'view-regulations', 'view-reward-types', 'view-reward-categories'])
-        <p class="px-3 pb-1.5 pt-3 text-[10px] font-medium text-slate-300 dark:text-slate-600 uppercase tracking-wider">
-            Danh mục</p>
+            <p class="px-3 pb-1.5 pt-3 text-[10px] font-medium text-slate-300 dark:text-slate-600 uppercase tracking-wider">
+                Danh mục</p>
         @endcanany
         @can('view-violations')
             <a href="{{ route('violations.index') }}"
@@ -173,11 +175,11 @@
             </a>
         @endcan
         @can('view-regulations')
-        <a href="{{ route('regulations.index') }}"
-            class="sidebar-link {{ $isActive(['regulations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-            <i class="bi bi-journal-check text-base"></i>
-            <span>Danh sách quy chế</span>
-        </a>
+            <a href="{{ route('regulations.index') }}"
+                class="sidebar-link {{ $isActive(['regulations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-journal-check text-base"></i>
+                <span>Danh sách quy chế</span>
+            </a>
         @endcan
         @can('view-reward-categories')
             <a href="{{ route('reward-categories.index') }}"
@@ -284,8 +286,9 @@
             class="sidebar-link {{ $isActive(['notifications']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-bell text-base"></i>
             <span class="flex-1">Thông báo</span>
-            @if($unreadNotifCount > 0)
-                <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white leading-none">
+            @if ($unreadNotifCount > 0)
+                <span
+                    class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-red-500 text-white leading-none">
                     {{ $unreadNotifCount > 99 ? '99+' : $unreadNotifCount }}
                 </span>
             @endif
@@ -355,10 +358,12 @@
                 <i class="bi bi-book text-base"></i><span>Vi phạm</span>
             </a>
         @endcan
+        @can('view-regulations')
         <a href="{{ route('regulations.index') }}"
             class="sidebar-link {{ $isActive(['regulations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-journal-check text-base"></i><span>Quy chế</span>
         </a>
+        @endcan
         @can('view-reward-categories')
             <a href="{{ route('reward-categories.index') }}"
                 class="sidebar-link {{ $isActive(['reward-categories']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -372,30 +377,31 @@
             </a>
         @endcan
 
-        <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Hệ thống</p>
-        <a href="{{ route('settings.index') }}"
-            class="sidebar-link {{ $isActive(['settings']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-            <i class="bi bi-gear text-base"></i><span>Cài đặt</span>
-        </a>
-        @can('manage-settings')
-        <a href="{{ route('google-sheets.index') }}"
-            class="sidebar-link {{ $isActive(['google-sheets']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-            <i class="bi bi-file-earmark-spreadsheet text-base"></i><span>Google Sheets</span>
-        </a>
-        @endcan
-        @can('view-activity-log')
-            <a href="{{ route('activity.log') }}"
-                class="sidebar-link {{ $isActive(['activity']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-clipboard-data text-base"></i><span>Nhật ký</span>
-            </a>
-        @endcan
-        @can('view-log-viewer')
-            <a href="/log-viewer"
-                class="sidebar-link {{ str_starts_with(request()->path(), 'log-viewer') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-terminal text-base"></i><span>System Logs</span>
-            </a>
-        @endcan
-
+        @canany(['manage-settings'])
+            <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Hệ thống</p>
+            @can('manage-settings')
+                <a href="{{ route('settings.index') }}"
+                    class="sidebar-link {{ $isActive(['settings']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-gear text-base"></i><span>Cài đặt</span>
+                </a>
+                <a href="{{ route('google-sheets.index') }}"
+                    class="sidebar-link {{ $isActive(['google-sheets']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-file-earmark-spreadsheet text-base"></i><span>Google Sheets</span>
+                </a>
+            @endcan
+            @can('view-activity-log')
+                <a href="{{ route('activity.log') }}"
+                    class="sidebar-link {{ $isActive(['activity']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-clipboard-data text-base"></i><span>Nhật ký</span>
+                </a>
+            @endcan
+            @can('view-log-viewer')
+                <a href="/log-viewer"
+                    class="sidebar-link {{ str_starts_with(request()->path(), 'log-viewer') ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-terminal text-base"></i><span>System Logs</span>
+                </a>
+            @endcan
+        @endcanany
         @canany(['manage-users', 'manage-roles'])
             <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Người dùng</p>
             @can('manage-users')

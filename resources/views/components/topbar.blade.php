@@ -113,7 +113,7 @@
 
             <!-- Notification dropdown -->
             <div id="notif-menu"
-                class="hidden absolute right-0 mt-1.5 w-[360px] bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl z-[300] overflow-hidden">
+                class="hidden max-sm:fixed max-sm:top-14 max-sm:inset-x-2 max-sm:w-auto max-sm:mt-0 sm:absolute sm:right-0 sm:mt-1.5 sm:w-[360px] bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl z-[300] overflow-hidden">
 
                 <!-- Header -->
                 <div class="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 dark:border-slate-700/70">
