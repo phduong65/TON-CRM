@@ -35,40 +35,51 @@
 
     <div class="card">
         {{-- Filter bar --}}
+        @php $notifFilterActive = request()->anyFilled(['status', 'type']); @endphp
         <form action="{{ route('notifications.index') }}" method="GET"
-              class="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2 flex-wrap">
-            <select name="status" class="form-input w-auto h-8 text-sm py-0" onchange="this.form.submit()">
-                <option value="">Tất cả trạng thái</option>
-                <option value="unread" @selected(request('status') === 'unread')>Chưa đọc</option>
-                <option value="read"   @selected(request('status') === 'read')>Đã đọc</option>
-            </select>
-            <select name="type" class="form-input w-auto h-8 text-sm py-0" onchange="this.form.submit()">
-                <option value="">Tất cả loại</option>
-                <option value="general"          @selected(request('type') === 'general')>Thông báo chung</option>
-                <optgroup label="Phiếu phạt">
-                    <option value="penalty_created"  @selected(request('type') === 'penalty_created')>Phiếu phạt mới</option>
-                    <option value="penalty_approved" @selected(request('type') === 'penalty_approved')>Phiếu phạt duyệt</option>
-                    <option value="penalty_rejected" @selected(request('type') === 'penalty_rejected')>Phiếu phạt từ chối</option>
-                </optgroup>
-                <optgroup label="Phiếu thưởng">
-                    <option value="reward_created"   @selected(request('type') === 'reward_created')>Phiếu thưởng mới</option>
-                    <option value="reward_approved"  @selected(request('type') === 'reward_approved')>Phiếu thưởng duyệt</option>
-                    <option value="reward_rejected"  @selected(request('type') === 'reward_rejected')>Phiếu thưởng từ chối</option>
-                </optgroup>
-                <option value="redzone_alert"    @selected(request('type') === 'redzone_alert')>Cảnh báo Redzone</option>
-                <optgroup label="Báo cáo vi phạm">
-                    <option value="report_created"   @selected(request('type') === 'report_created')>Báo cáo mới</option>
-                    <option value="report_approved"  @selected(request('type') === 'report_approved')>Báo cáo duyệt</option>
-                    <option value="report_rejected"  @selected(request('type') === 'report_rejected')>Báo cáo từ chối</option>
-                </optgroup>
-            </select>
-            @if(request()->anyFilled(['status', 'type']))
-                <a href="{{ route('notifications.index') }}"
-                   class="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-600">
-                    <i class="bi bi-x text-sm"></i> Xóa lọc
-                </a>
-            @endif
-            <span class="ml-auto text-xs text-slate-400 dark:text-slate-500">{{ $notifications->total() }} thông báo</span>
+              class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+                <div class="grid grid-cols-2 gap-2 sm:contents">
+                    <div>
+                        <select name="status" class="form-input h-9 text-sm w-full" onchange="this.form.submit()">
+                            <option value="">Tất cả TT</option>
+                            <option value="unread" @selected(request('status') === 'unread')>Chưa đọc</option>
+                            <option value="read"   @selected(request('status') === 'read')>Đã đọc</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select name="type" class="form-input h-9 text-sm w-full" onchange="this.form.submit()">
+                            <option value="">Tất cả loại</option>
+                            <option value="general"          @selected(request('type') === 'general')>Thông báo chung</option>
+                            <optgroup label="Phiếu phạt">
+                                <option value="penalty_created"  @selected(request('type') === 'penalty_created')>Phiếu phạt mới</option>
+                                <option value="penalty_approved" @selected(request('type') === 'penalty_approved')>Đã duyệt</option>
+                                <option value="penalty_rejected" @selected(request('type') === 'penalty_rejected')>Từ chối</option>
+                            </optgroup>
+                            <optgroup label="Phiếu thưởng">
+                                <option value="reward_created"   @selected(request('type') === 'reward_created')>Phiếu thưởng mới</option>
+                                <option value="reward_approved"  @selected(request('type') === 'reward_approved')>Đã duyệt</option>
+                                <option value="reward_rejected"  @selected(request('type') === 'reward_rejected')>Từ chối</option>
+                            </optgroup>
+                            <option value="redzone_alert"    @selected(request('type') === 'redzone_alert')>Cảnh báo Redzone</option>
+                            <optgroup label="Báo cáo vi phạm">
+                                <option value="report_created"   @selected(request('type') === 'report_created')>Báo cáo mới</option>
+                                <option value="report_approved"  @selected(request('type') === 'report_approved')>Đã duyệt</option>
+                                <option value="report_rejected"  @selected(request('type') === 'report_rejected')>Từ chối</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    @if($notifFilterActive)
+                        <a href="{{ route('notifications.index') }}"
+                           class="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-600">
+                            <i class="bi bi-x text-sm"></i> Xóa lọc
+                        </a>
+                    @endif
+                    <span class="text-xs text-slate-400 dark:text-slate-500 {{ $notifFilterActive ? '' : 'sm:ml-0' }} ml-auto">{{ $notifications->total() }} thông báo</span>
+                </div>
+            </div>
         </form>
 
         {{-- Notification list --}}

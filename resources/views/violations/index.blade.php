@@ -20,63 +20,87 @@
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <form action="{{ route('violations.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           class="form-input h-9 text-sm w-44" placeholder="Tên vi phạm...">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Quy chế</label>
-                    <select name="regulation_id" class="form-input h-9 text-sm">
-                        <option value="">Tất cả quy chế</option>
-                        @foreach($regulations as $reg)
-                            <option value="{{ $reg->id }}" @selected(request('regulation_id') == $reg->id)>
-                                {{ $reg->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Hình thức phạt</label>
-                    <select name="penalty_type" class="form-input h-9 text-sm">
-                        <option value="">Tất cả</option>
-                        <option value="points" @selected(request('penalty_type') === 'points')>Trừ điểm</option>
-                        <option value="money"  @selected(request('penalty_type') === 'money')>Phạt tiền</option>
-                        <option value="both"   @selected(request('penalty_type') === 'both')>Cả hai</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Mức độ</label>
-                    <select name="severity" class="form-input h-9 text-sm">
-                        <option value="">Tất cả mức độ</option>
-                        <option value="low"      @selected(request('severity') === 'low')>Nhẹ</option>
-                        <option value="medium"   @selected(request('severity') === 'medium')>Trung bình</option>
-                        <option value="high"     @selected(request('severity') === 'high')>Nặng</option>
-                        <option value="critical" @selected(request('severity') === 'critical')>Nghiêm trọng</option>
-                        <option value="extreme"  @selected(request('severity') === 'extreme')>Đặc biệt NT</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
-                    <select name="status" class="form-input h-9 text-sm">
-                        <option value="">Tất cả</option>
-                        <option value="1" @selected(request('status') === '1')>Hoạt động</option>
-                        <option value="0" @selected(request('status') === '0')>Ngừng hoạt động</option>
-                    </select>
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+            @php
+                $vExtraKeys    = ['regulation_id', 'penalty_type', 'severity', 'status'];
+                $vFilterActive = request()->anyFilled(array_merge(['search'], $vExtraKeys));
+                $vExtraCount   = collect($vExtraKeys)->filter(fn($k) => request($k))->count();
+            @endphp
+            <form action="{{ route('violations.index') }}" method="GET">
+                <div class="flex gap-2 items-center">
+                    <div class="relative flex-1 min-w-0">
+                        <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               class="form-input pl-7 h-9 text-sm w-full" placeholder="Tên vi phạm...">
+                    </div>
+                    <button type="button" onclick="toggleEl('filterPanelViolations')"
+                            class="sm:hidden relative h-9 w-9 flex items-center justify-center rounded-lg border shrink-0 transition-colors
+                                   {{ $vExtraCount > 0 ? 'border-pcrm-400 bg-pcrm-50 text-pcrm-700 dark:border-pcrm-600 dark:bg-pcrm-900/30 dark:text-pcrm-400' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400' }}">
+                        <i class="bi bi-funnel text-sm"></i>
+                        @if($vExtraCount > 0)
+                            <span class="absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-pcrm-600 text-white text-[9px] font-bold">{{ $vExtraCount }}</span>
+                        @endif
+                    </button>
+                    <button type="submit" class="hidden sm:inline-flex btn-primary h-9 px-4 text-sm gap-1.5 shrink-0">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
-                    @if(request()->anyFilled(['search', 'regulation_id', 'penalty_type', 'severity', 'status']))
-                    <a href="{{ route('violations.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
-                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    @if($vFilterActive)
+                    <a href="{{ route('violations.index') }}" class="hidden sm:inline-flex btn-secondary h-9 px-3 text-sm items-center gap-1 shrink-0">
+                        <i class="bi bi-x text-sm"></i>
                     </a>
                     @endif
+                    <span class="hidden sm:block text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">{{ $violations->total() }} kết quả</span>
                 </div>
-                <div class="ml-auto flex items-end">
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $violations->total() }} kết quả</p>
+                <div id="filterPanelViolations" class="filter-panel {{ $vExtraCount > 0 ? 'is-active' : '' }}">
+                    <div class="grid grid-cols-2 gap-2 sm:contents">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Quy chế</label>
+                            <select name="regulation_id" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                @foreach($regulations as $reg)
+                                    <option value="{{ $reg->id }}" @selected(request('regulation_id') == $reg->id)>{{ $reg->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Hình thức</label>
+                            <select name="penalty_type" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                <option value="points" @selected(request('penalty_type') === 'points')>Trừ điểm</option>
+                                <option value="money"  @selected(request('penalty_type') === 'money')>Phạt tiền</option>
+                                <option value="both"   @selected(request('penalty_type') === 'both')>Cả hai</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Mức độ</label>
+                            <select name="severity" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                <option value="low"      @selected(request('severity') === 'low')>Nhẹ</option>
+                                <option value="medium"   @selected(request('severity') === 'medium')>Trung bình</option>
+                                <option value="high"     @selected(request('severity') === 'high')>Nặng</option>
+                                <option value="critical" @selected(request('severity') === 'critical')>Nghiêm trọng</option>
+                                <option value="extreme"  @selected(request('severity') === 'extreme')>Đặc biệt NT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                            <select name="status" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                <option value="1" @selected(request('status') === '1')>Hoạt động</option>
+                                <option value="0" @selected(request('status') === '0')>Ngừng HĐ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-mobile-actions">
+                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                            <i class="bi bi-funnel text-xs"></i> Áp dụng
+                        </button>
+                        @if($vFilterActive)
+                        <a href="{{ route('violations.index') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm shrink-0">
+                            <i class="bi bi-x text-sm"></i> Xóa
+                        </a>
+                        @endif
+                        <span class="ml-auto text-xs text-slate-400 dark:text-slate-500 shrink-0">{{ $violations->total() }}</span>
+                    </div>
                 </div>
             </form>
         </div>

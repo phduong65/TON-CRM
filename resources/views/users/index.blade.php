@@ -22,46 +22,46 @@
     {{-- Filter bar --}}
     <div class="card">
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <form action="{{ route('users.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
+            @php $userFilterActive = request()->anyFilled(['search', 'role', 'status']); @endphp
+            <form action="{{ route('users.index') }}" method="GET"
+                  class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+                <div class="relative min-w-0 sm:flex-1 sm:max-w-xs">
+                    <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                     <input type="text" name="search" value="{{ request('search') }}"
-                           class="form-input h-9 text-sm w-52" placeholder="Tên, email...">
+                           class="form-input pl-7 h-9 text-sm w-full" placeholder="Tên, email...">
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Vai trò</label>
-                    <select name="role" class="form-input h-9 text-sm">
-                        <option value="">Tất cả vai trò</option>
-                        @foreach($roles as $role)
-                            @php
-                                $rLabels = ['admin'=>'Quản trị viên','manager'=>'Quản lý','team_leader'=>'Trưởng nhóm','staff'=>'Nhân viên'];
-                            @endphp
-                            <option value="{{ $role->name }}" @selected(request('role') === $role->name)>
-                                {{ $rLabels[$role->name] ?? $role->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="grid grid-cols-2 gap-2 sm:contents">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Vai trò</label>
+                        <select name="role" class="form-input h-9 text-sm w-full">
+                            <option value="">Tất cả</option>
+                            @foreach($roles as $role)
+                                @php $rLabels = ['admin'=>'Quản trị viên','manager'=>'Quản lý','team_leader'=>'Trưởng nhóm','staff'=>'Nhân viên']; @endphp
+                                <option value="{{ $role->name }}" @selected(request('role') === $role->name)>
+                                    {{ $rLabels[$role->name] ?? $role->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                        <select name="status" class="form-input h-9 text-sm w-full">
+                            <option value="">Tất cả</option>
+                            <option value="active"   @selected(request('status') === 'active')>Hoạt động</option>
+                            <option value="inactive" @selected(request('status') === 'inactive')>Tạm khóa</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái TK</label>
-                    <select name="status" class="form-input h-9 text-sm">
-                        <option value="">Tất cả</option>
-                        <option value="active"   @selected(request('status') === 'active')>Hoạt động</option>
-                        <option value="inactive" @selected(request('status') === 'inactive')>Tạm khóa</option>
-                    </select>
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+                <div class="flex gap-2 items-center">
+                    <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 sm:flex-none gap-1.5">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
-                    @if(request()->anyFilled(['search', 'role', 'status']))
-                    <a href="{{ route('users.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
-                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    @if($userFilterActive)
+                    <a href="{{ route('users.index') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm shrink-0">
+                        <i class="bi bi-x text-sm"></i>
                     </a>
                     @endif
-                </div>
-                <div class="ml-auto flex items-end">
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $users->total() }} kết quả</p>
+                    <span class="text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">{{ $users->total() }} kết quả</span>
                 </div>
             </form>
         </div>

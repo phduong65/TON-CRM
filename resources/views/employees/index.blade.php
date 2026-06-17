@@ -20,54 +20,78 @@
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <form action="{{ route('employees.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           class="form-input h-9 text-sm w-48" placeholder="Tên, mã NV, email...">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Chi nhánh</label>
-                    <select name="branch_id" class="form-input h-9 text-sm">
-                        <option value="">Tất cả chi nhánh</option>
-                        @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>
-                                {{ $branch->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Đội nhóm</label>
-                    <select name="team_id" class="form-input h-9 text-sm">
-                        <option value="">Tất cả đội nhóm</option>
-                        @foreach($teams as $team)
-                            <option value="{{ $team->id }}" @selected(request('team_id') == $team->id)>
-                                {{ $team->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
-                    <select name="status" class="form-input h-9 text-sm">
-                        <option value="">Tất cả</option>
-                        <option value="1" @selected(request('status') === '1')>Đang làm việc</option>
-                        <option value="0" @selected(request('status') === '0')>Đã nghỉ việc</option>
-                    </select>
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+            @php
+                $empExtraKeys   = ['branch_id', 'team_id', 'status'];
+                $empFilterActive = request()->anyFilled(array_merge(['search'], $empExtraKeys));
+                $empExtraCount  = collect($empExtraKeys)->filter(fn($k) => request($k))->count();
+            @endphp
+            <form action="{{ route('employees.index') }}" method="GET">
+                {{-- Top row: search + mobile toggle + desktop actions --}}
+                <div class="flex gap-2 items-center">
+                    <div class="relative flex-1 min-w-0">
+                        <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               class="form-input pl-7 h-9 text-sm w-full" placeholder="Tên, mã NV, email...">
+                    </div>
+                    <button type="button" onclick="toggleEl('filterPanelEmployees')"
+                            class="sm:hidden relative h-9 w-9 flex items-center justify-center rounded-lg border shrink-0 transition-colors
+                                   {{ $empExtraCount > 0 ? 'border-pcrm-400 bg-pcrm-50 text-pcrm-700 dark:border-pcrm-600 dark:bg-pcrm-900/30 dark:text-pcrm-400' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400' }}">
+                        <i class="bi bi-funnel text-sm"></i>
+                        @if($empExtraCount > 0)
+                            <span class="absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-pcrm-600 text-white text-[9px] font-bold">{{ $empExtraCount }}</span>
+                        @endif
+                    </button>
+                    <button type="submit" class="hidden sm:inline-flex btn-primary h-9 px-4 text-sm gap-1.5 shrink-0">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
-                    @if(request()->anyFilled(['search', 'branch_id', 'team_id', 'status']))
-                    <a href="{{ route('employees.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
-                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    @if($empFilterActive)
+                    <a href="{{ route('employees.index') }}" class="hidden sm:inline-flex btn-secondary h-9 px-3 text-sm items-center gap-1 shrink-0">
+                        <i class="bi bi-x text-sm"></i>
                     </a>
                     @endif
+                    <span class="hidden sm:block text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">{{ $employees->total() }} kết quả</span>
                 </div>
-                <div class="ml-auto flex items-end">
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $employees->total() }} kết quả</p>
+                {{-- Collapsible extra filters --}}
+                <div id="filterPanelEmployees" class="filter-panel {{ $empExtraCount > 0 ? 'is-active' : '' }}">
+                    <div class="grid grid-cols-2 gap-2 sm:contents">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Chi nhánh</label>
+                            <select name="branch_id" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả CN</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}" @selected(request('branch_id') == $branch->id)>{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Đội nhóm</label>
+                            <select name="team_id" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả đội</option>
+                                @foreach($teams as $team)
+                                    <option value="{{ $team->id }}" @selected(request('team_id') == $team->id)>{{ $team->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                            <select name="status" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                <option value="1" @selected(request('status') === '1')>Đang làm</option>
+                                <option value="0" @selected(request('status') === '0')>Đã nghỉ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-mobile-actions">
+                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                            <i class="bi bi-funnel text-xs"></i> Áp dụng
+                        </button>
+                        @if($empFilterActive)
+                        <a href="{{ route('employees.index') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm shrink-0">
+                            <i class="bi bi-x text-sm"></i> Xóa
+                        </a>
+                        @endif
+                        <span class="ml-auto text-xs text-slate-400 dark:text-slate-500 shrink-0">{{ $employees->total() }}</span>
+                    </div>
                 </div>
             </form>
         </div>

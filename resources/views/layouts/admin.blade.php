@@ -117,6 +117,11 @@
         const el = document.getElementById(id);
         if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
     }
+    // ── Filter panel toggle (mobile collapsible filter bar) ────────────
+    function toggleEl(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('is-open');
+    }
 
     // ── TON-HR Alert System ────────────────────────────────────────────────
     (function () {

@@ -20,32 +20,44 @@
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <form action="{{ route('branches.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
+            @php $branchFilterActive = request()->anyFilled(['search', 'status']); @endphp
+            <form action="{{ route('branches.index') }}" method="GET"
+                  class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+                <div class="relative min-w-0 sm:flex-1 sm:max-w-xs">
+                    <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                     <input type="text" name="search" value="{{ request('search') }}"
-                           class="form-input h-9 text-sm w-52" placeholder="Tên, mã chi nhánh...">
+                           class="form-input pl-7 h-9 text-sm w-full" placeholder="Tên, mã chi nhánh...">
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
-                    <select name="status" class="form-input h-9 text-sm">
-                        <option value="">Tất cả</option>
-                        <option value="1" @selected(request('status') === '1')>Hoạt động</option>
-                        <option value="0" @selected(request('status') === '0')>Ngừng hoạt động</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-2 sm:contents">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                        <select name="status" class="form-input h-9 text-sm w-full">
+                            <option value="">Tất cả</option>
+                            <option value="1" @selected(request('status') === '1')>Hoạt động</option>
+                            <option value="0" @selected(request('status') === '0')>Ngừng HĐ</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2 items-end sm:hidden">
+                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                            <i class="bi bi-funnel text-xs"></i> Lọc
+                        </button>
+                        @if($branchFilterActive)
+                        <a href="{{ route('branches.index') }}" class="btn-secondary h-9 w-9 inline-flex items-center justify-center shrink-0">
+                            <i class="bi bi-x text-sm"></i>
+                        </a>
+                        @endif
+                    </div>
                 </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+                <div class="hidden sm:flex items-end gap-2">
+                    <button type="submit" class="btn-primary h-9 px-4 text-sm gap-1.5">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
-                    @if(request()->anyFilled(['search', 'status']))
-                    <a href="{{ route('branches.index') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
-                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    @if($branchFilterActive)
+                    <a href="{{ route('branches.index') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm">
+                        <i class="bi bi-x text-sm"></i>
                     </a>
                     @endif
-                </div>
-                <div class="ml-auto flex items-end">
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $branches->total() }} kết quả</p>
+                    <span class="text-xs text-slate-400 dark:text-slate-500 ml-2">{{ $branches->total() }} kết quả</span>
                 </div>
             </form>
         </div>

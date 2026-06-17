@@ -20,54 +20,78 @@
     {{-- Filter bar --}}
     <div class="card mb-4">
         <div class="px-4 py-3">
-            <form action="{{ route('rewards.index') }}" method="GET" class="flex flex-wrap gap-2 items-end">
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-input h-9 text-sm w-48"
-                        placeholder="Tên NV, mã phiếu...">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Loại thưởng</label>
-                    <select name="reward_type_id" class="form-input h-9 text-sm">
-                        <option value="">Tất cả loại</option>
-                        @foreach ($rewardTypes as $rt)
-                            <option value="{{ $rt->id }}" @selected(request('reward_type_id') == $rt->id)>
-                                {{ $rt->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
-                    <select name="status" class="form-input h-9 text-sm">
-                        <option value="">Tất cả</option>
-                        <option value="pending" @selected(request('status') === 'pending')>Chờ duyệt</option>
-                        <option value="approved" @selected(request('status') === 'approved')>Đã duyệt</option>
-                        <option value="rejected" @selected(request('status') === 'rejected')>Từ chối</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Từ ngày</label>
-                    <input type="date" name="date_from" value="{{ request('date_from') }}"
-                        class="form-input h-9 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Đến ngày</label>
-                    <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-input h-9 text-sm">
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+            @php
+                $rwExtraKeys    = ['reward_type_id', 'status', 'date_from', 'date_to'];
+                $rwFilterActive = request()->anyFilled(array_merge(['search'], $rwExtraKeys));
+                $rwExtraCount   = collect($rwExtraKeys)->filter(fn($k) => request($k))->count();
+            @endphp
+            <form action="{{ route('rewards.index') }}" method="GET">
+                <div class="flex gap-2 items-center">
+                    <div class="relative flex-1 min-w-0">
+                        <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               class="form-input pl-7 h-9 text-sm w-full" placeholder="Tên NV, mã phiếu...">
+                    </div>
+                    <button type="button" onclick="toggleEl('filterPanelRewards')"
+                            class="sm:hidden relative h-9 w-9 flex items-center justify-center rounded-lg border shrink-0 transition-colors
+                                   {{ $rwExtraCount > 0 ? 'border-pcrm-400 bg-pcrm-50 text-pcrm-700 dark:border-pcrm-600 dark:bg-pcrm-900/30 dark:text-pcrm-400' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400' }}">
+                        <i class="bi bi-funnel text-sm"></i>
+                        @if($rwExtraCount > 0)
+                            <span class="absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-pcrm-600 text-white text-[9px] font-bold">{{ $rwExtraCount }}</span>
+                        @endif
+                    </button>
+                    <button type="submit" class="hidden sm:inline-flex btn-primary h-9 px-4 text-sm gap-1.5 shrink-0">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
-                    @if (request()->anyFilled(['search', 'status', 'reward_type_id', 'date_from', 'date_to']))
-                        <a href="{{ route('rewards.index') }}"
-                            class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
-                            <i class="bi bi-x-circle text-xs"></i> Xóa lọc
-                        </a>
+                    @if($rwFilterActive)
+                    <a href="{{ route('rewards.index') }}" class="hidden sm:inline-flex btn-secondary h-9 px-3 text-sm items-center gap-1 shrink-0">
+                        <i class="bi bi-x text-sm"></i>
+                    </a>
                     @endif
+                    <span class="hidden sm:block text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">{{ $rewards->total() }} kết quả</span>
                 </div>
-                <div class="ml-auto flex items-end">
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $rewards->total() }} kết quả</p>
+                <div id="filterPanelRewards" class="filter-panel {{ $rwExtraCount > 0 ? 'is-active' : '' }}">
+                    <div class="grid grid-cols-2 gap-2 sm:contents">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Loại thưởng</label>
+                            <select name="reward_type_id" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                @foreach ($rewardTypes as $rt)
+                                    <option value="{{ $rt->id }}" @selected(request('reward_type_id') == $rt->id)>{{ $rt->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
+                            <select name="status" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                <option value="pending"  @selected(request('status') === 'pending')>Chờ duyệt</option>
+                                <option value="approved" @selected(request('status') === 'approved')>Đã duyệt</option>
+                                <option value="rejected" @selected(request('status') === 'rejected')>Từ chối</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Từ ngày</label>
+                            <input type="date" name="date_from" value="{{ request('date_from') }}"
+                                   class="form-input h-9 text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Đến ngày</label>
+                            <input type="date" name="date_to" value="{{ request('date_to') }}"
+                                   class="form-input h-9 text-sm w-full">
+                        </div>
+                    </div>
+                    <div class="filter-mobile-actions">
+                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                            <i class="bi bi-funnel text-xs"></i> Áp dụng
+                        </button>
+                        @if($rwFilterActive)
+                        <a href="{{ route('rewards.index') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm shrink-0">
+                            <i class="bi bi-x text-sm"></i> Xóa
+                        </a>
+                        @endif
+                        <span class="ml-auto text-xs text-slate-400 dark:text-slate-500 shrink-0">{{ $rewards->total() }}</span>
+                    </div>
                 </div>
             </form>
         </div>

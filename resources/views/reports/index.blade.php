@@ -28,28 +28,46 @@
 
     <div class="card">
         {{-- Filter bar --}}
+        @php $rptFilterActive = request()->anyFilled(['search', 'status']); @endphp
         <form action="{{ route('reports.index') }}" method="GET"
-              class="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2 flex-wrap">
-            <div class="relative">
-                <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
+            <div class="relative flex-1 min-w-0 sm:max-w-xs">
+                <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                 <input type="text" name="search" value="{{ request('search') }}"
                        placeholder="Tìm mã, tên nhân viên..."
-                       class="form-input pl-7 h-8 text-sm py-0 w-48">
+                       class="form-input pl-7 h-9 text-sm w-full">
             </div>
-            <select name="status" class="form-input w-auto h-8 text-sm py-0" onchange="this.form.submit()">
-                <option value="">Tất cả trạng thái</option>
-                <option value="pending"  @selected(request('status') === 'pending')>Chờ duyệt</option>
-                <option value="approved" @selected(request('status') === 'approved')>Đã duyệt</option>
-                <option value="rejected" @selected(request('status') === 'rejected')>Từ chối</option>
-            </select>
-            <button type="submit" class="btn-secondary h-8 text-sm px-3">Lọc</button>
-            @if(request()->anyFilled(['search', 'status']))
-                <a href="{{ route('reports.index') }}"
-                   class="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-600">
-                    <i class="bi bi-x text-sm"></i> Xóa lọc
+            <div class="grid grid-cols-2 gap-2 sm:contents">
+                <div>
+                    <select name="status" class="form-input h-9 text-sm w-full">
+                        <option value="">Tất cả TT</option>
+                        <option value="pending"  @selected(request('status') === 'pending')>Chờ duyệt</option>
+                        <option value="approved" @selected(request('status') === 'approved')>Đã duyệt</option>
+                        <option value="rejected" @selected(request('status') === 'rejected')>Từ chối</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 items-center sm:hidden">
+                    <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                        <i class="bi bi-funnel text-xs"></i> Lọc
+                    </button>
+                    @if($rptFilterActive)
+                    <a href="{{ route('reports.index') }}" class="btn-secondary h-9 w-9 inline-flex items-center justify-center shrink-0">
+                        <i class="bi bi-x text-sm"></i>
+                    </a>
+                    @endif
+                </div>
+            </div>
+            <div class="hidden sm:flex gap-2 items-center">
+                <button type="submit" class="btn-primary h-9 px-4 text-sm gap-1.5">
+                    <i class="bi bi-funnel text-xs"></i> Lọc
+                </button>
+                @if($rptFilterActive)
+                <a href="{{ route('reports.index') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm">
+                    <i class="bi bi-x text-sm"></i>
                 </a>
-            @endif
-            <span class="ml-auto text-xs text-slate-400 dark:text-slate-500">{{ $reports->total() }} báo cáo</span>
+                @endif
+                <span class="ml-2 text-xs text-slate-400 dark:text-slate-500">{{ $reports->total() }} báo cáo</span>
+            </div>
         </form>
 
         {{-- Table --}}

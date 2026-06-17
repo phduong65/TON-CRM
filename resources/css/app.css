@@ -872,6 +872,43 @@
         .dash-sect-l, .dash-sect-r, .dash-score-bar,
         .dash-avatar, .dash-redzone-blink { animation: none !important; }
     }
+
+    /* ── Responsive filter bar ─────────────────────────────────────── */
+    /*
+     * .filter-panel   — collapsible extra-filter panel
+     *   mobile  : hidden by default; .is-open (JS toggle) or .is-active (filters active) makes it visible
+     *   sm+     : always visible as a flex-wrap row (uses !important to override .hidden state)
+     *
+     * .filter-mobile-actions — submit / clear / count row inside the panel, mobile only
+     */
+    .filter-panel {
+        display: none;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .filter-panel.is-open,
+    .filter-panel.is-active {
+        display: flex;
+    }
+    @media (min-width: 640px) {
+        .filter-panel {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+    }
+    .filter-mobile-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    @media (min-width: 640px) {
+        .filter-mobile-actions { display: none; }
+    }
 }
 
 /* Custom scrollbar */

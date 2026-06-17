@@ -46,43 +46,72 @@ $propLabels = [
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <form action="{{ route('activity.log') }}" method="GET" class="flex flex-wrap gap-2 items-end">
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Tìm kiếm</label>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           class="form-input h-9 text-sm w-52" placeholder="Mô tả hoặc người thực hiện...">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Phân loại</label>
-                    <select name="event" class="form-input h-9 text-sm">
-                        <option value="">Tất cả</option>
-                        @foreach($eventTypes as $evt)
-                            <option value="{{ $evt }}" @selected(request('event') === $evt)>
-                                {{ $logLabels[$evt] ?? $evt }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Từ ngày</label>
-                    <input type="date" name="date_from" value="{{ request('date_from') }}" class="form-input h-9 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Đến ngày</label>
-                    <input type="date" name="date_to" value="{{ request('date_to') }}" class="form-input h-9 text-sm">
-                </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+            @php
+                $actExtraKeys    = ['event', 'date_from', 'date_to'];
+                $actFilterActive = request()->anyFilled(array_merge(['search'], $actExtraKeys));
+                $actExtraCount   = collect($actExtraKeys)->filter(fn($k) => request($k))->count();
+            @endphp
+            <form action="{{ route('activity.log') }}" method="GET">
+                <div class="flex gap-2 items-center">
+                    <div class="relative flex-1 min-w-0">
+                        <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               class="form-input pl-7 h-9 text-sm w-full" placeholder="Mô tả hoặc người thực hiện...">
+                    </div>
+                    <button type="button" onclick="toggleEl('filterPanelActivity')"
+                            class="sm:hidden relative h-9 w-9 flex items-center justify-center rounded-lg border shrink-0 transition-colors
+                                   {{ $actExtraCount > 0 ? 'border-pcrm-400 bg-pcrm-50 text-pcrm-700 dark:border-pcrm-600 dark:bg-pcrm-900/30 dark:text-pcrm-400' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400' }}">
+                        <i class="bi bi-funnel text-sm"></i>
+                        @if($actExtraCount > 0)
+                            <span class="absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-pcrm-600 text-white text-[9px] font-bold">{{ $actExtraCount }}</span>
+                        @endif
+                    </button>
+                    <button type="submit" class="hidden sm:inline-flex btn-primary h-9 px-4 text-sm gap-1.5 shrink-0">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
-                    @if(request()->anyFilled(['search', 'event', 'date_from', 'date_to']))
-                    <a href="{{ route('activity.log') }}" class="btn-secondary h-9 px-4 text-sm inline-flex items-center gap-1">
-                        <i class="bi bi-x-circle text-xs"></i> Xóa lọc
+                    @if($actFilterActive)
+                    <a href="{{ route('activity.log') }}" class="hidden sm:inline-flex btn-secondary h-9 px-3 text-sm items-center gap-1 shrink-0">
+                        <i class="bi bi-x text-sm"></i>
                     </a>
                     @endif
+                    <span class="hidden sm:block text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">{{ $activities->total() }} kết quả</span>
                 </div>
-                <div class="ml-auto flex items-end">
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $activities->total() }} kết quả</p>
+                <div id="filterPanelActivity" class="filter-panel {{ $actExtraCount > 0 ? 'is-active' : '' }}">
+                    <div class="grid grid-cols-2 gap-2 sm:contents">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Phân loại</label>
+                            <select name="event" class="form-input h-9 text-sm w-full">
+                                <option value="">Tất cả</option>
+                                @foreach($eventTypes as $evt)
+                                    <option value="{{ $evt }}" @selected(request('event') === $evt)>
+                                        {{ $logLabels[$evt] ?? $evt }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="sm:hidden"></div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Từ ngày</label>
+                            <input type="date" name="date_from" value="{{ request('date_from') }}"
+                                   class="form-input h-9 text-sm w-full">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Đến ngày</label>
+                            <input type="date" name="date_to" value="{{ request('date_to') }}"
+                                   class="form-input h-9 text-sm w-full">
+                        </div>
+                    </div>
+                    <div class="filter-mobile-actions">
+                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                            <i class="bi bi-funnel text-xs"></i> Áp dụng
+                        </button>
+                        @if($actFilterActive)
+                        <a href="{{ route('activity.log') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm shrink-0">
+                            <i class="bi bi-x text-sm"></i> Xóa
+                        </a>
+                        @endif
+                        <span class="ml-auto text-xs text-slate-400 dark:text-slate-500 shrink-0">{{ $activities->total() }}</span>
+                    </div>
                 </div>
             </form>
         </div>
