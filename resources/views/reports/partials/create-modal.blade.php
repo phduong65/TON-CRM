@@ -1,12 +1,12 @@
 <div id="createReportModal"
-     class="hidden fixed inset-0 z-50 items-center justify-center bg-black/50 p-4"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('createReportModal')">
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col"
-         style="max-height:90vh">
+         style="max-height:95vh">
 
         {{-- Header --}}
-        <div class="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+        <div class="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-700">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <i class="bi bi-flag-fill text-pcrm-500"></i>
                 Tạo báo cáo vi phạm
@@ -25,7 +25,7 @@
             <input type="hidden" name="_modal" value="createReportModal">
 
             {{-- Scrollable body --}}
-            <div class="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+            <div class="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
 
                 {{-- Reporter info --}}
                 <div class="flex items-center gap-3 p-3 rounded-xl bg-pcrm-50 dark:bg-pcrm-900/20 border border-pcrm-100 dark:border-pcrm-800/30">
@@ -48,7 +48,7 @@
                     </p>
 
                     {{-- Branch + Team filter (không submit) --}}
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="form-label">Lọc theo chi nhánh</label>
                             <select id="cr_branch" class="form-input" onchange="crFilterTeams()">
@@ -101,7 +101,7 @@
                         <span class="font-normal normal-case text-slate-400">(tuỳ chọn)</span>
                     </p>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="form-label">Danh mục / Quy chế</label>
                             <select id="cr_regulation" class="form-input" onchange="crFilterViolations()">
@@ -170,7 +170,7 @@
 
                     {{-- Dropzone --}}
                     <div id="cr_dropzone"
-                         class="border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-pcrm-400 dark:hover:border-pcrm-500 hover:bg-pcrm-50/30 dark:hover:bg-pcrm-900/10"
+                         class="border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-xl p-4 sm:p-6 text-center cursor-pointer transition-colors hover:border-pcrm-400 dark:hover:border-pcrm-500 hover:bg-pcrm-50/30 dark:hover:bg-pcrm-900/10"
                          onclick="document.getElementById('cr_files').click()"
                          ondragover="crDragOver(event)"
                          ondragleave="crDragLeave()"
@@ -180,8 +180,11 @@
                             Kéo thả hoặc
                             <span class="text-pcrm-600 dark:text-pcrm-400 font-medium">nhấp để chọn file</span>
                         </p>
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 pointer-events-none">
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 pointer-events-none hidden sm:block">
                             Ảnh JPG · PNG · WEBP (tự thu nhỏ về 1000×1000) &nbsp;·&nbsp; Video MP4 · MOV dưới 20 MB
+                        </p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 pointer-events-none sm:hidden">
+                            Ảnh, Video · Tối đa 5 file · 20 MB/file
                         </p>
                         <input type="file" id="cr_files" name="evidence_files[]"
                                multiple
@@ -198,13 +201,13 @@
                     @enderror
 
                     {{-- Preview grid (hidden when empty) --}}
-                    <div id="cr_preview" class="grid grid-cols-5 gap-2 hidden"></div>
+                    <div id="cr_preview" class="grid grid-cols-4 sm:grid-cols-5 gap-2 hidden"></div>
                 </div>
 
             </div>{{-- /scrollable body --}}
 
             {{-- Footer --}}
-            <div class="flex-shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700">
+            <div class="flex-shrink-0 flex items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-100 dark:border-slate-700">
                 <button type="button" onclick="closeModal('createReportModal')" class="btn-secondary">Huỷ</button>
                 <button type="submit" class="btn-primary">
                     <i class="bi bi-send-fill"></i>

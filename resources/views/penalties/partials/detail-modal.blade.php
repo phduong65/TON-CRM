@@ -1,13 +1,13 @@
 {{-- Penalty Detail Modal — click-to-open, approve/reject inline --}}
-<div id="penaltyDetailModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+<div id="penaltyDetailModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
     onclick="if(event.target===this)closePenaltyDetail()">
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xl flex flex-col"
-        style="max-height: 90vh;">
+        style="max-height: 95vh;">
 
         {{-- ── Header ── --}}
         <div id="detail-header"
-            class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+            class="flex items-start justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
             {{-- Loading skeleton --}}
             <div id="detail-header-loading" class="flex items-center gap-3 w-full">
                 <div class="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0"></div>
@@ -34,7 +34,7 @@
         </div>
 
         {{-- ── Body (scrollable) ── --}}
-        <div class="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 space-y-5">
 
             {{-- Loading skeleton body --}}
             <div id="detail-body-loading" class="space-y-3">
@@ -47,7 +47,7 @@
             <div id="detail-body-content" class="hidden space-y-5">
 
                 {{-- Employee + violation --}}
-                <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                     <div>
                         <p
                             class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
@@ -66,7 +66,7 @@
                 </div>
 
                 {{-- Points / Money --}}
-                <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                     <div>
                         <p
                             class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
@@ -161,7 +161,7 @@
         </div>
 
         {{-- ── Footer / Actions ── --}}
-        <div class="shrink-0 px-6 py-4 border-t border-slate-200 dark:border-slate-700">
+        <div class="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 dark:border-slate-700">
             {{-- Loading skeleton footer --}}
             <div id="detail-footer-loading" class="flex gap-2">
                 <div class="h-9 w-20 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"></div>

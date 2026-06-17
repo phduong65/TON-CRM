@@ -1,7 +1,7 @@
-<div id="editEmployeeModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+<div id="editEmployeeModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('editEmployeeModal')">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] flex flex-col">
+        <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <i class="bi bi-pencil-square text-amber-500"></i> Sửa nhân viên
             </h3>
@@ -9,11 +9,11 @@
                 <i class="bi bi-x-lg text-sm"></i>
             </button>
         </div>
-        <form id="editEmployeeForm" method="POST" class="px-6 py-5 space-y-4 overflow-y-auto">
+        <form id="editEmployeeForm" method="POST" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4 overflow-y-auto">
             @csrf @method('PUT')
             <input type="hidden" name="_modal" value="editEmployeeModal">
             <input type="hidden" name="_edit_id" id="editEmpId">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Mã nhân viên <span class="text-red-500">*</span></label>
                     <input type="text" id="editEmpCode" name="code" class="form-input" required>
@@ -30,7 +30,7 @@
                 <input type="text" id="editEmpName" name="name" class="form-input" required>
                 @error('name') <p class="form-error">{{ $message }}</p> @enderror
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Email</label>
                     <input type="email" id="editEmpEmail" name="email" class="form-input">
@@ -42,7 +42,7 @@
                     @error('phone') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Chi nhánh <span class="text-red-500">*</span></label>
                     <select id="editEmpBranch" name="branch_id" class="form-input" required>
@@ -64,7 +64,7 @@
                     @error('team_id') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Ngày gia nhập</label>
                     <input type="date" id="editEmpJoined" name="joined_at" class="form-input">

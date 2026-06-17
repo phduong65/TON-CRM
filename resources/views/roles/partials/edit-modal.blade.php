@@ -1,7 +1,7 @@
-<div id="editRoleModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+<div id="editRoleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('editRoleModal')">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col">
+        <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <i class="bi bi-pencil-square text-amber-500"></i> Sửa vai trò
             </h3>
@@ -9,7 +9,7 @@
                 <i class="bi bi-x-lg text-sm"></i>
             </button>
         </div>
-        <form id="editRoleForm" method="POST" class="px-6 py-5 space-y-5 overflow-y-auto">
+        <form id="editRoleForm" method="POST" class="px-4 sm:px-6 py-4 sm:py-5 space-y-5 overflow-y-auto">
             @csrf @method('PUT')
             <input type="hidden" name="_modal" value="editRoleModal">
             <input type="hidden" name="_edit_id" id="editRoleId">

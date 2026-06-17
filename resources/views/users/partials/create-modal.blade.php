@@ -1,7 +1,7 @@
-<div id="createUserModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+<div id="createUserModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('createUserModal')">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col">
+        <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <i class="bi bi-person-plus text-pcrm-600"></i> Thêm người dùng
             </h3>
@@ -9,7 +9,7 @@
                 <i class="bi bi-x-lg text-sm"></i>
             </button>
         </div>
-        <form action="{{ route('users.store') }}" method="POST" class="px-6 py-5 space-y-5 overflow-y-auto">
+        <form action="{{ route('users.store') }}" method="POST" class="px-4 sm:px-6 py-4 sm:py-5 space-y-5 overflow-y-auto">
             @csrf
             <input type="hidden" name="_modal" value="createUserModal">
 
@@ -26,7 +26,7 @@
                     <input type="email" name="email" class="form-input" value="{{ old('email') }}" placeholder="email@congty.vn" required>
                     @error('email') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="form-label">Mật khẩu <span class="text-red-500">*</span></label>
                         <input type="password" name="password" class="form-input" placeholder="Tối thiểu 8 ký tự" required>

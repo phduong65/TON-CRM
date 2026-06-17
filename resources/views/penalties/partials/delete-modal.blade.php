@@ -1,6 +1,6 @@
-<div id="deletePenaltyModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+<div id="deletePenaltyModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('deletePenaltyModal')">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm p-6">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm p-4 sm:p-6">
         <div class="flex items-center gap-3 mb-4">
             <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
                 <i class="bi bi-exclamation-triangle text-red-600 dark:text-red-400"></i>

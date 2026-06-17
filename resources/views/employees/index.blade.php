@@ -201,7 +201,9 @@ function openEditEmployeeModal(data) {
 }
 function openDeleteEmployeeModal(id, name) {
     document.getElementById('deleteEmployeeName').textContent = name;
-    document.getElementById('deleteEmployeeForm').action = '/employees/' + id;
+    const url = '/employees/' + id;
+    document.getElementById('resignEmployeeForm').action = url;
+    document.getElementById('deleteEmployeeForm').action = url;
     openModal('deleteEmployeeModal');
 }
 

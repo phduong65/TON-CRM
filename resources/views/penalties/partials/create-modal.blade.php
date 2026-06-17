@@ -12,13 +12,13 @@
 
 {{-- ── Penalty Create Modal ── --}}
 <div id="createPenaltyModal"
-     class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+     class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('createPenaltyModal')">
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl flex flex-col"
-         style="max-height:92vh">
+         style="max-height:95vh">
 
         {{-- Header --}}
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+        <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <i class="bi bi-gear text-red-500"></i> Tạo phiếu xử phạt
             </h3>
@@ -38,7 +38,7 @@
             {{-- employee_id is always set by JS before submit --}}
             <input type="hidden" name="employee_id" id="cp_employee_id">
 
-            <div class="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+            <div class="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-5">
 
                 {{-- ① Quy chế --}}
                 <div>
@@ -125,7 +125,7 @@
                     <div>
                         <label class="form-label">Nhân viên vi phạm <span class="text-red-500">*</span></label>
                         {{-- Filter row --}}
-                        <div class="grid grid-cols-2 gap-2 mb-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                             <select id="cp_filter_branch" class="form-input text-sm py-1.5" onchange="cpOnBranchFilter()">
                                 <option value="">Tất cả chi nhánh</option>
                                 @foreach($branches as $b)
@@ -347,7 +347,7 @@
             </div>
 
             {{-- Footer --}}
-            <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
+            <div class="flex items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
                 <button type="button" onclick="closeModal('createPenaltyModal')" class="btn-secondary">Hủy</button>
                 <button type="submit" class="btn-danger">
                     <i class="bi bi-gavel"></i> Tạo phiếu phạt
