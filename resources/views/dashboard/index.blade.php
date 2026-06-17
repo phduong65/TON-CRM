@@ -68,34 +68,28 @@
                 </div>
             </a>
 
-            {{-- Tổng tiền đã trừ --}}
-            <a href="{{ route('penalties.index') }}" class="stat-card flex flex-col gap-3 group">
+            {{-- Service Charge --}}
+            <div class="stat-card flex flex-col gap-3">
                 <div class="flex items-start justify-between">
-                    <div class="stat-icon-wrap bg-rose-50 dark:bg-rose-900/30">
-                        <i class="bi bi-cash-stack text-2xl text-rose-600 dark:text-rose-400"></i>
+                    <div class="stat-icon-wrap bg-amber-50 dark:bg-amber-900/30">
+                        <i class="bi bi-currency-dollar text-2xl text-amber-600 dark:text-amber-400"></i>
                     </div>
                     <span
-                        class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400">
-                        <i class="bi bi-check-circle-fill text-xs"></i> Đã duyệt
+                        class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                        <i class="bi bi-gear-fill text-xs"></i> Cài đặt
                     </span>
                 </div>
                 <div>
                     <p class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                        {{ number_format($totalMoneyDeducted ?? 0, 0, ',', '.') }}
+                        {{ number_format($serviceCharge ?? 0, 0, ',', '.') }}
                     </p>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Tổng tiền đã trừ (VNĐ)</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mt-0.5">Service Charge (VNĐ)</p>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-1.5 text-xs text-slate-400">
-                        <i class="bi bi-receipt-cutoff text-sm"></i>
-                        <span>Từ {{ $approvedPenalties ?? 0 }} phiếu phạt đã duyệt</span>
-                    </div>
-                    <span
-                        class="text-xs text-rose-500 dark:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                        Xem <i class="bi bi-arrow-right text-xs"></i>
-                    </span>
+                <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                    <i class="bi bi-info-circle text-sm"></i>
+                    <span>Phí dịch vụ theo cấu hình hệ thống</span>
                 </div>
-            </a>
+            </div>
 
             {{-- Vi phạm tháng này --}}
             <a href="{{ route('penalties.index') }}" class="stat-card flex flex-col gap-3 group">

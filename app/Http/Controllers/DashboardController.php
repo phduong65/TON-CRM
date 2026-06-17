@@ -54,6 +54,8 @@ class DashboardController extends Controller
         $totalMoneyDeducted = (float) Penalty::where('status', 'approved')
             ->sum('total_money_deducted');
 
+        $serviceCharge = (float) Setting::getValue('service_charge', 0);
+
         $redzoneThreshold = Setting::getValue('redzone_threshold', 50);
 
         $redzoneEmployees = Employee::query()
@@ -258,6 +260,7 @@ class DashboardController extends Controller
             'totalBranches',
             'totalViolations',
             'totalMoneyDeducted',
+            'serviceCharge',
             'totalPenaltiesThisMonth',
             'totalPenaltiesLastMonth',
             'pendingPenalties',

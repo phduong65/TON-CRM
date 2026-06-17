@@ -54,6 +54,14 @@
                             <p class="text-xs text-slate-400 mt-1">Số điểm cộng cho nhân viên khi báo cáo vi phạm của họ được duyệt.</p>
                         </div>
 
+                        <div>
+                            <label for="s_service_charge" class="form-label">Service Charge (VNĐ)</label>
+                            <input type="number" name="settings[service_charge]" id="s_service_charge"
+                                class="form-input" value="{{ old('settings.service_charge', $settings->get('service_charge')->value ?? 0) }}"
+                                min="0" placeholder="0">
+                            <p class="text-xs text-slate-400 mt-1">Phí dịch vụ hiển thị trên bảng điều khiển.</p>
+                        </div>
+
                         <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
                             <button type="submit" class="btn-primary">
                                 <i class="ph-floppy-disk"></i>
@@ -61,6 +69,19 @@
                             </button>
                         </div>
                     </form>
+
+                    @if(auth()->user()->hasRole('admin'))
+                    <div class="mt-5 pt-5 border-t border-slate-200 dark:border-slate-700">
+                        <label class="form-label flex items-center gap-2">
+                            <i class="bi bi-lock-fill text-slate-400 text-xs"></i>
+                            Tổng tiền đã trừ (VNĐ)
+                        </label>
+                        <input type="text" disabled
+                            class="form-input bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                            value="{{ number_format($totalMoneyDeducted ?? 0, 0, ',', '.') }}">
+                        <p class="text-xs text-slate-400 mt-1">Tổng tiền phạt từ tất cả phiếu phạt đã được duyệt. Chỉ đọc.</p>
+                    </div>
+                    @endif
                 </div>
             </div>
 

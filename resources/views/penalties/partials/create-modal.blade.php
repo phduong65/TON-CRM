@@ -77,7 +77,31 @@
                     @error('violation_id') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- ③ Hình thức phạt --}}
+                {{-- ③ Mức độ vi phạm --}}
+                <div id="cp_severity_wrap" class="hidden">
+                    <label class="form-label">Mức độ vi phạm <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-5 gap-1.5" id="cp_severity_btns">
+                        @foreach([
+                            ['value' => 'low',      'label' => 'Nhẹ',              'pts' => 1,  'color' => 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'],
+                            ['value' => 'medium',   'label' => 'Trung bình',       'pts' => 3,  'color' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'],
+                            ['value' => 'high',     'label' => 'Nặng',             'pts' => 5,  'color' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
+                            ['value' => 'critical', 'label' => 'Nghiêm trọng',     'pts' => 10, 'color' => 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800'],
+                            ['value' => 'extreme',  'label' => 'Đặc biệt NT',      'pts' => 20, 'color' => 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'],
+                        ] as $s)
+                        <button type="button"
+                                data-severity="{{ $s['value'] }}"
+                                data-pts="{{ $s['pts'] }}"
+                                onclick="cpSetSeverity('{{ $s['value'] }}')"
+                                class="cp-severity-btn flex flex-col items-center gap-0.5 rounded-lg border px-2 py-2 text-center transition-all cursor-pointer {{ $s['color'] }}">
+                            <span class="text-xs font-semibold leading-none">{{ $s['label'] }}</span>
+                            <span class="text-[11px] font-mono leading-none opacity-75">-{{ $s['pts'] }}đ</span>
+                        </button>
+                        @endforeach
+                    </div>
+                    <input type="hidden" id="cp_severity_value" name="severity">
+                </div>
+
+                {{-- ④ Hình thức phạt --}}
                 <div>
                     <label class="form-label">Hình thức phạt <span class="text-red-500">*</span></label>
                     <div class="flex rounded-lg border border-slate-300 dark:border-slate-600 overflow-hidden text-sm font-medium">
@@ -236,7 +260,7 @@
                     </div>
                 </div>
 
-                {{-- ④ Mức phạt --}}
+                {{-- ⑤ Mức phạt --}}
                 <div class="flex flex-wrap gap-4">
                     <div class="flex-1 min-w-[120px]">
                         <label class="form-label">Điểm trừ <span class="text-red-500">*</span></label>
@@ -259,7 +283,7 @@
                     </div>
                 </div>
 
-                {{-- ⑤ Mô tả --}}
+                {{-- ⑥ Mô tả --}}
                 <div>
                     <label class="form-label">Mô tả / Ghi chú</label>
                     <textarea name="description" rows="2" class="form-input"
@@ -267,7 +291,7 @@
                     @error('description') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- ⑥ Đính kèm --}}
+                {{-- ⑦ Đính kèm --}}
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="form-label mb-0">Hình ảnh / Video đính kèm</label>
@@ -339,8 +363,11 @@
     'use strict';
 
     /* ── Static data from Blade ── */
-    var REG_VIOLATIONS = @json($regulationViolationsMap);   // { reg_id: [{id,name,points,money,type},...] }
+    var REG_VIOLATIONS = @json($regulationViolationsMap);   // { reg_id: [{id,name,points,money,type,severity},...] }
     var TEAM_EMPLOYEES  = @json($teamEmployeesMap);          // { team_id: [{id,code,name},...] }
+
+    /* Mức độ → điểm trừ (khớp với POINTS_MAP trong ViolationsSeeder) */
+    var SEVERITY_POINTS = { low: 1, medium: 3, high: 5, critical: 10, extreme: 20 };
 
     var _type      = 'individual'; // 'individual' | 'team'
     var _memberIdx = {{ old('members') ? count(old('members')) : 0 }};
@@ -366,7 +393,7 @@
     };
 
     /* ──────────────────────────────────────────────────
-       ② Violation → fill points / money
+       ② Violation → fill severity + points / money
     ────────────────────────────────────────────────── */
     window.cpOnViolationChange = function (violId) {
         var regId = document.getElementById('cp_regulation').value;
@@ -379,29 +406,63 @@
             });
         }
 
+        var severityWrap = document.getElementById('cp_severity_wrap');
         var moneyWrap    = document.getElementById('cp_money_wrap');
         var moneyHidden  = document.getElementById('cp_money');
         var moneyDisplay = document.getElementById('cp_money_display');
 
         if (vio) {
-            var hasMoney  = vio.type === 'money' || vio.type === 'both';
-            var pts       = (vio.type === 'money') ? 0 : vio.points;
+            // Show severity panel and auto-select from violation
+            severityWrap.classList.remove('hidden');
+            cpSetSeverity(vio.severity || 'medium');
 
-            document.getElementById('cp_points').value = pts;
+            var hasMoney = vio.type === 'money' || vio.type === 'both';
             moneyHidden.value = vio.money;
-
             moneyWrap.classList.toggle('hidden', !hasMoney);
             if (hasMoney) {
                 moneyDisplay.value = new Intl.NumberFormat('vi-VN').format(vio.money);
             }
-
-            cpSyncTeamPoints(pts);
         } else {
+            severityWrap.classList.add('hidden');
+            document.getElementById('cp_severity_value').value = '';
             document.getElementById('cp_points').value = 0;
             moneyHidden.value = 0;
             moneyWrap.classList.add('hidden');
+            _cpClearSeverityActive();
         }
     };
+
+    /* ──────────────────────────────────────────────────
+       ②b Severity button → update points
+    ────────────────────────────────────────────────── */
+    window.cpSetSeverity = function (severity) {
+        var pts = SEVERITY_POINTS[severity] || 0;
+
+        // Store value
+        document.getElementById('cp_severity_value').value = severity;
+
+        // Update points field + sync team rows
+        document.getElementById('cp_points').value = pts;
+        cpSyncTeamPoints(pts);
+
+        // Update button active states
+        document.querySelectorAll('.cp-severity-btn').forEach(function (btn) {
+            var isActive = btn.dataset.severity === severity;
+            btn.classList.toggle('ring-2',        isActive);
+            btn.classList.toggle('ring-offset-1', isActive);
+            btn.classList.toggle('ring-pcrm-500', isActive);
+            btn.classList.toggle('dark:ring-offset-slate-800', isActive);
+            btn.classList.toggle('scale-105',     isActive);
+            btn.style.fontWeight = isActive ? '700' : '';
+        });
+    };
+
+    function _cpClearSeverityActive() {
+        document.querySelectorAll('.cp-severity-btn').forEach(function (btn) {
+            btn.classList.remove('ring-2', 'ring-offset-1', 'ring-pcrm-500', 'dark:ring-offset-slate-800', 'scale-105');
+            btn.style.fontWeight = '';
+        });
+    }
 
     /* ──────────────────────────────────────────────────
        ③ Penalty type toggle
@@ -741,6 +802,12 @@
         openModal('createPenaltyModal');
         @if(old('_regulation_id'))
         cpOnRegulationChange('{{ old('_regulation_id') }}');
+        @endif
+        @if(old('violation_id'))
+        cpOnViolationChange('{{ old('violation_id') }}');
+        @endif
+        @if(old('severity'))
+        cpSetSeverity('{{ old('severity') }}');
         @endif
     });
     @endif

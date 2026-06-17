@@ -100,36 +100,6 @@ class PcrmSeeder extends Seeder
 
         $admin->assignRole('admin');
 
-        // 3. Regulations
-        $reg1 = Regulation::create([
-            'name'        => 'Quy chế giờ giấc làm việc',
-            'description' => 'Xử phạt đối với hành vi đi trễ, về sớm',
-        ]);
-        $reg2 = Regulation::create([
-            'name'        => 'Quy chế trang phục',
-            'description' => 'Vi phạm quy định về đồng phục và trang phục làm việc',
-        ]);
-        $reg3 = Regulation::create([
-            'name'        => 'Quy chế vệ sinh an toàn thực phẩm',
-            'description' => 'Vi phạm quy định vệ sinh trong khu vực bếp và pha chế',
-        ]);
-        $reg4 = Regulation::create([
-            'name'        => 'Quy chế hành vi ứng xử',
-            'description' => 'Vi phạm về thái độ phục vụ khách hàng',
-        ]);
-        $reg5 = Regulation::create([
-            'name'        => 'Quy chế an toàn lao động',
-            'description' => 'Vi phạm quy định an toàn trong quá trình làm việc',
-        ]);
-
-        // 4. Violations
-        Violation::create(['name' => 'Đi trễ dưới 15 phút',                'severity' => 'low',      'regulation_id' => $reg1->id]);
-        Violation::create(['name' => 'Đi trễ 15-30 phút',                  'severity' => 'medium',   'regulation_id' => $reg1->id]);
-        Violation::create(['name' => 'Đi trễ trên 30 phút',                'severity' => 'high',     'regulation_id' => $reg1->id]);
-        Violation::create(['name' => 'Không mặc đồng phục',                'severity' => 'medium',   'regulation_id' => $reg2->id]);
-        Violation::create(['name' => 'Mặc đồng phục không đúng quy định',  'severity' => 'low',      'regulation_id' => $reg2->id]);
-        Violation::create(['name' => 'Khu vực làm việc không vệ sinh',     'severity' => 'high',     'regulation_id' => $reg3->id]);
-        Violation::create(['name' => 'Thái độ không tốt với khách hàng',   'severity' => 'critical', 'regulation_id' => $reg4->id]);
-        Violation::create(['name' => 'Không sử dụng thiết bị bảo hộ',     'severity' => 'high',     'regulation_id' => $reg5->id]);
+        // Regulations & Violations được quản lý bởi ViolationsSeeder (chạy sau).
     }
 }

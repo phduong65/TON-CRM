@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Test Runner — TON-CMS Dev</title>
+    <title>Test Runner — TON-HR Dev</title>
     @vite(['resources/css/app.css'])
     <style>
         pre { white-space: pre-wrap; word-break: break-word; }
@@ -28,7 +28,7 @@
         <div class="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-2 h-2 rounded-full bg-emerald-400" style="box-shadow:0 0 6px #4ade80"></div>
-                <span class="text-sm font-semibold tracking-tight">TON-CMS <span class="text-[#7d8590]">/</span> test-runner</span>
+                <span class="text-sm font-semibold tracking-tight">TON-HR <span class="text-[#7d8590]">/</span> test-runner</span>
                 <span class="text-[10px] bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded font-bold uppercase tracking-wide">
                     {{ app()->environment() }}
                 </span>

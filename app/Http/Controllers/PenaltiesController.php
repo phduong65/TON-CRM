@@ -68,11 +68,12 @@ class PenaltiesController extends Controller
         // JS maps: regulation_id → violations[]
         $regulationViolationsMap = $violations->groupBy(fn($v) => $v->regulation_id ?? 0)
             ->map(fn($vios) => $vios->map(fn($v) => [
-                'id'     => $v->id,
-                'name'   => $v->name,
-                'points' => $v->points_deducted,
-                'money'  => (float) $v->money_deducted,
-                'type'   => $v->penalty_type,
+                'id'       => $v->id,
+                'name'     => $v->name,
+                'points'   => $v->points_deducted,
+                'money'    => (float) $v->money_deducted,
+                'type'     => $v->penalty_type,
+                'severity' => $v->severity,
             ])->values());
 
         // JS map: team_id → employees[]
@@ -87,9 +88,10 @@ class PenaltiesController extends Controller
         // Flat map violation_id → defaults (used by edit modal)
         $violationDefaults = $violations->mapWithKeys(fn($v) => [
             $v->id => [
-                'points' => $v->points_deducted,
-                'money'  => (float) $v->money_deducted,
-                'type'   => $v->penalty_type,
+                'points'   => $v->points_deducted,
+                'money'    => (float) $v->money_deducted,
+                'type'     => $v->penalty_type,
+                'severity' => $v->severity,
             ],
         ]);
 

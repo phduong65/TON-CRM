@@ -54,6 +54,7 @@
                         <option value="medium"   @selected(request('severity') === 'medium')>Trung bình</option>
                         <option value="high"     @selected(request('severity') === 'high')>Nặng</option>
                         <option value="critical" @selected(request('severity') === 'critical')>Nghiêm trọng</option>
+                        <option value="extreme"  @selected(request('severity') === 'extreme')>Đặc biệt NT</option>
                     </select>
                 </div>
                 <div>
@@ -89,7 +90,19 @@
                             <th class="table-th">Quy chế</th>
                             <th class="table-th">Mức độ</th>
                             <th class="table-th">Hình thức phạt</th>
-                            <th class="table-th text-right">Trừ điểm</th>
+                            <th class="table-th text-right">
+                                @php
+                                    $currentSort = request('sort', 'points_asc');
+                                    $nextSort    = $currentSort === 'points_asc' ? 'points_desc' : 'points_asc';
+                                    $sortIcon    = $currentSort === 'points_asc' ? 'bi-sort-numeric-down' : 'bi-sort-numeric-up';
+                                @endphp
+                                <a href="{{ request()->fullUrlWithQuery(['sort' => $nextSort, 'page' => 1]) }}"
+                                   class="inline-flex items-center gap-1 hover:text-pcrm-600 dark:hover:text-pcrm-400 transition-colors"
+                                   title="{{ $currentSort === 'points_asc' ? 'Đang: ít → nhiều. Click để đổi' : 'Đang: nhiều → ít. Click để đổi' }}">
+                                    Trừ điểm
+                                    <i class="bi {{ $sortIcon }} text-pcrm-500"></i>
+                                </a>
+                            </th>
                             <th class="table-th text-right">Phạt tiền</th>
                             <th class="table-th text-center">Trạng thái</th>
                             @canany(['update-violations', 'delete-violations'])
@@ -105,8 +118,8 @@
                             <td class="table-td">
                                 @php
                                     $sev = $v->severity ?? 'medium';
-                                    $sc = ['low' => 'badge-info', 'medium' => 'badge-warning', 'high' => 'badge-danger', 'critical' => 'badge-danger'];
-                                    $sl = ['low' => 'Nhẹ', 'medium' => 'Trung bình', 'high' => 'Nặng', 'critical' => 'Nghiêm trọng'];
+                                    $sc = ['low' => 'badge-info', 'medium' => 'badge-warning', 'high' => 'badge-danger', 'critical' => 'badge-danger', 'extreme' => 'badge-danger'];
+                                    $sl = ['low' => 'Nhẹ', 'medium' => 'Trung bình', 'high' => 'Nặng', 'critical' => 'Nghiêm trọng', 'extreme' => 'Đặc biệt NT'];
                                 @endphp
                                 <span class="{{ $sc[$sev] ?? 'badge-neutral' }}">{{ $sl[$sev] ?? $sev }}</span>
                             </td>
@@ -197,9 +210,34 @@
 
 @push('scripts')
 <script>
+var VIOLATION_SEVERITY_POINTS = { low: 1, medium: 3, high: 5, critical: 10, extreme: 20 };
+
+function setViolationSeverity(severity, prefix) {
+    var pts = VIOLATION_SEVERITY_POINTS[severity] || 0;
+
+    // Update hidden input
+    var hiddenInput = document.getElementById(prefix + 'ViolationSeverityInput');
+    if (hiddenInput) hiddenInput.value = severity;
+
+    // Update points field
+    var ptsInput = document.getElementById(prefix + 'ViolationPointsVal');
+    if (ptsInput) ptsInput.value = pts;
+
+    // Update button active states
+    document.querySelectorAll('.viol-sev-btn-' + prefix).forEach(function (btn) {
+        var isActive = btn.dataset.severity === severity;
+        btn.classList.toggle('ring-2',        isActive);
+        btn.classList.toggle('ring-offset-1', isActive);
+        btn.classList.toggle('ring-pcrm-500', isActive);
+        btn.classList.toggle('dark:ring-offset-slate-800', isActive);
+        btn.classList.toggle('scale-105',     isActive);
+        btn.style.fontWeight = isActive ? '700' : '';
+    });
+}
+
 function toggleViolationPenaltyFields(penaltyType, prefix) {
-    const pointsEl = document.getElementById(prefix + 'ViolationPoints');
-    const moneyEl  = document.getElementById(prefix + 'ViolationMoney');
+    var pointsEl = document.getElementById(prefix + 'ViolationPoints');
+    var moneyEl  = document.getElementById(prefix + 'ViolationMoney');
     if (!pointsEl || !moneyEl) return;
     pointsEl.classList.toggle('hidden', penaltyType === 'money');
     moneyEl.classList.toggle('hidden', penaltyType === 'points');
@@ -209,13 +247,12 @@ function openEditViolationModal(data) {
     document.getElementById('editViolationId').value             = data.id;
     document.getElementById('editViolationName').value           = data.name             ?? '';
     document.getElementById('editViolationDesc').value           = data.description      ?? '';
-    document.getElementById('editViolationSeverity').value       = data.severity         ?? 'medium';
     document.getElementById('editViolationRegulation').value     = data.regulation_id    ?? '';
     document.getElementById('editViolationPenaltyType').value    = data.penalty_type     ?? 'points';
-    document.getElementById('editViolationPointsVal').value      = data.points_deducted  ?? 0;
     document.getElementById('editViolationMoneyVal').value       = data.money_deducted   ?? 0;
     document.getElementById('editViolationActive').checked       = !!data.is_active;
     document.getElementById('editViolationForm').action          = '/violations/' + data.id;
+    setViolationSeverity(data.severity ?? 'medium', 'edit');
     toggleViolationPenaltyFields(data.penalty_type ?? 'points', 'edit');
     openModal('editViolationModal');
 }

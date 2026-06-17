@@ -10,7 +10,13 @@ class ViolationsController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Violation::with('regulation')->orderBy('name');
+        $sort = $request->input('sort', 'points_asc');
+        $query = Violation::with('regulation');
+
+        match ($sort) {
+            'points_desc' => $query->orderBy('points_deducted', 'desc'),
+            default       => $query->orderBy('points_deducted', 'asc'),
+        };
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -44,7 +50,7 @@ class ViolationsController extends Controller
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'description'     => 'nullable|string',
-            'severity'        => 'required|in:low,medium,high,critical',
+            'severity'        => 'required|in:low,medium,high,critical,extreme',
             'regulation_id'   => 'required|exists:regulations,id',
             'penalty_type'    => 'required|in:points,money,both',
             'points_deducted' => 'nullable|integer|min:0|max:100',
@@ -67,7 +73,7 @@ class ViolationsController extends Controller
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'description'     => 'nullable|string',
-            'severity'        => 'required|in:low,medium,high,critical',
+            'severity'        => 'required|in:low,medium,high,critical,extreme',
             'regulation_id'   => 'required|exists:regulations,id',
             'penalty_type'    => 'required|in:points,money,both',
             'points_deducted' => 'nullable|integer|min:0|max:100',

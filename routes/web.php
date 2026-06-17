@@ -29,7 +29,7 @@ use App\Http\Controllers\LogViewerController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes — TON-CMS Staff Discipline Management System
+| Web Routes — TON-HR Staff Discipline Management System
 |--------------------------------------------------------------------------
 | Giao diện tiếng Việt — Blade thuần + Tailwind CSS
 */

@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nội Quy Thưởng &amp; Phạt — Nhà Hàng F&amp;B</title>
+
+  <!-- AOS -->
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── RESET & TOKENS ─────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy:       #0d2137;
+      --navy2:      #163552;
+      --gold:       #c8973a;
+      --gold-lt:    #f5e6c8;
+      --green:      #166534;
+      --red:        #991b1b;
+      --text:       #1e293b;
+      --muted:      #64748b;
+      --border:     #e2e8f0;
+      --bg-subtle:  #f8fafc;
+      --row-hover:  #f0f7ff;
+      --radius-lg:  16px;
+      --radius-md:  10px;
+      --radius-sm:  6px;
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md:  0 4px 16px rgba(13,33,55,.10), 0 2px 6px rgba(13,33,55,.06);
+      --shadow-lg:  0 12px 40px rgba(13,33,55,.14), 0 4px 12px rgba(13,33,55,.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Be Vietnam Pro', Arial, sans-serif;
+      color: var(--text);
+      font-size: 10pt;
+      line-height: 1.6;
+      background: #fff;
+    }
+
+    /* ── SCROLL PROGRESS BAR ────────────────────────── */
+    #progress-bar {
+      position: fixed; top: 0; left: 0; z-index: 9999;
+      height: 3px; width: 0%;
+      background: linear-gradient(90deg, var(--gold), #e8b44a, var(--gold));
+      transition: width .1s ease;
+      box-shadow: 0 0 8px rgba(200,151,58,.6);
+    }
+
+    /* ── FLOATING NAV ───────────────────────────────── */
+    .float-nav {
+      position: fixed; top: 50%; right: 20px; z-index: 100;
+      transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .float-nav a {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: rgba(13,33,55,.2);
+      border: 2px solid rgba(13,33,55,.15);
+      display: block; cursor: pointer;
+      transition: all .25s ease;
+      text-decoration: none;
+      position: relative;
+    }
+
+    .float-nav a:hover,
+    .float-nav a.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      transform: scale(1.3);
+    }
+
+    .float-nav a::before {
+      content: attr(data-label);
+      position: absolute; right: 18px; top: 50%;
+      transform: translateY(-50%);
+      background: var(--navy); color: #fff;
+      font-size: 8.5pt; font-weight: 600;
+      padding: 3px 8px; border-radius: 4px;
+      white-space: nowrap;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+      font-family: 'Be Vietnam Pro', sans-serif;
+    }
+
+    .float-nav a:hover::before { opacity: 1; }
+
+    /* ── COVER ──────────────────────────────────────── */
+    .cover {
+      position: relative; min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 80px 60px;
+      background: var(--navy);
+      color: #fff; text-align: center;
+      overflow: hidden;
+    }
+
+    .cover-ring {
+      position: absolute; border-radius: 50%;
+      border: 1px solid rgba(200,151,58,.12);
+      pointer-events: none;
+    }
+    .cover-ring-1 { width: 800px; height: 800px; top: -250px; right: -220px; }
+    .cover-ring-2 { width: 600px; height: 600px; bottom: -180px; left: -160px; }
+    .cover-ring-3 { width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%,-50%); border-color: rgba(200,151,58,.06); }
+
+    .cover-glow {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse at 75% 20%, rgba(200,151,58,.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 25% 80%, rgba(200,151,58,.12) 0%, transparent 55%);
+    }
+
+    .cover-inner { position: relative; z-index: 1; max-width: 720px; }
+
+    .cover-emblem {
+      width: 96px; height: 96px;
+      margin: 0 auto 28px;
+      background: linear-gradient(135deg, var(--gold) 0%, #e8b44a 50%, #c8973a 100%);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 42px; font-weight: 800; color: #fff;
+      box-shadow:
+        0 0 0 8px rgba(200,151,58,.18),
+        0 0 0 18px rgba(200,151,58,.08),
+        0 24px 48px rgba(0,0,0,.4);
+      animation: pulse-ring 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { box-shadow: 0 0 0 8px rgba(200,151,58,.18), 0 0 0 18px rgba(200,151,58,.08), 0 24px 48px rgba(0,0,0,.4); }
+      50%       { box-shadow: 0 0 0 12px rgba(200,151,58,.25), 0 0 0 24px rgba(200,151,58,.12), 0 24px 48px rgba(0,0,0,.4); }
+    }
+
+    .cover-company {
+      font-size: 9pt; font-weight: 600;
+      letter-spacing: 5px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 8px;
+    }
+
+    .cover-rule {
+      width: 80px; height: 2px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      margin: 18px auto;
+    }
+
+    .cover-title {
+      font-size: 46pt; font-weight: 800;
+      line-height: 1.05; letter-spacing: -2px;
+      margin-bottom: 4px;
+    }
+
+    .cover-title .gold { color: var(--gold); }
+
+    .cover-subtitle {
+      font-size: 11.5pt; font-weight: 300;
+      color: rgba(255,255,255,.6);
+      margin: 16px auto 48px;
+      max-width: 480px; line-height: 1.6;
+    }
+
+    .cover-stats {
+      display: flex; gap: 0;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: rgba(255,255,255,.04);
+      backdrop-filter: blur(8px);
+    }
+
+    .cover-stat {
+      flex: 1; padding: 20px 18px;
+      border-right: 1px solid rgba(255,255,255,.08);
+      transition: background .25s;
+    }
+    .cover-stat:last-child { border-right: none; }
+    .cover-stat:hover { background: rgba(255,255,255,.07); }
+
+    .cover-stat .num {
+      font-size: 24pt; font-weight: 800;
+      color: var(--gold); display: block; line-height: 1;
+    }
+    .cover-stat .lbl {
+      font-size: 7.5pt; color: rgba(255,255,255,.5);
+      letter-spacing: .4px; margin-top: 5px; line-height: 1.4;
+    }
+
+    .cover-footer {
+      position: absolute; bottom: 28px; left: 0; right: 0;
+      font-size: 7.5pt; color: rgba(255,255,255,.28);
+      letter-spacing: 1.5px; text-transform: uppercase;
+    }
+
+    .scroll-cue {
+      position: absolute; bottom: 64px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      animation: bounce-y 2s ease-in-out infinite;
+    }
+
+    .scroll-cue-line {
+      width: 1px; height: 40px;
+      background: linear-gradient(to bottom, transparent, rgba(200,151,58,.6));
+    }
+
+    .scroll-cue-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--gold);
+    }
+
+    @keyframes bounce-y {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(8px); }
+    }
+
+    /* ── PAGE ───────────────────────────────────────── */
+    .page { max-width: 920px; margin: 0 auto; padding: 56px 64px 80px; }
+
+    /* ── PART HEADER ────────────────────────────────── */
+    .part {
+      display: flex; align-items: center; gap: 16px;
+      margin: 72px 0 28px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--navy);
+      position: relative;
+    }
+
+    .part::after {
+      content: '';
+      position: absolute; bottom: -2px; left: 0;
+      width: 80px; height: 2px;
+      background: var(--gold);
+    }
+
+    .part:first-of-type { margin-top: 0; }
+
+    .part-tag {
+      background: var(--navy); color: #fff;
+      font-size: 7.5pt; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 6px 14px; border-radius: var(--radius-sm);
+      white-space: nowrap; flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .part-name {
+      font-size: 18pt; font-weight: 800;
+      color: var(--navy); letter-spacing: -.4px;
+    }
+
+    /* ── SCORE INTRO ────────────────────────────────── */
+    .score-intro {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+      color: #fff;
+      border-radius: var(--radius-lg); padding: 24px 30px;
+      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 24px;
+      box-shadow: var(--shadow-lg);
+      position: relative; overflow: hidden;
+    }
+
+    .score-intro::before {
+      content: '';
+      position: absolute; top: -40px; right: -40px;
+      width: 180px; height: 180px; border-radius: 50%;
+      background: rgba(200,151,58,.08);
+    }
+
+    .score-intro .big {
+      font-size: 48pt; font-weight: 800;
+      color: var(--gold); line-height: 1; flex-shrink: 0;
+      text-shadow: 0 2px 12px rgba(200,151,58,.3);
+    }
+
+    .score-intro p { font-size: 9.5pt; color: rgba(255,255,255,.8); line-height: 1.65; }
+    .score-intro strong { color: #fff; }
+
+    /* ── ZONE CARDS ─────────────────────────────────── */
+    .zone-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+
+    .zone-card {
+      border-radius: var(--radius-md); padding: 18px 14px;
+      text-align: center; border: 2px solid transparent;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .zone-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+    .zone-card .z-dot  { font-size: 22px; margin-bottom: 6px; }
+    .zone-card .z-name { font-size: 7pt; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+    .zone-card .z-pts  { font-size: 19pt; font-weight: 800; margin: 6px 0 4px; line-height: 1; }
+    .zone-card .z-note { font-size: 7.5pt; opacity: .75; line-height: 1.4; }
+
+    .z-green  { background: #dcfce7; border-color: #16a34a; color: #14532d; }
+    .z-yellow { background: #fef9c3; border-color: #ca8a04; color: #713f12; }
+    .z-orange { background: #ffedd5; border-color: #ea580c; color: #7c2d12; }
+    .z-red    { background: #fee2e2; border-color: #dc2626; color: #7f1d1d; }
+
+    /* ── SEVERITY CARDS ─────────────────────────────── */
+    .sev-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 28px; }
+
+    .sev-card {
+      border-radius: var(--radius-md); padding: 14px 8px;
+      text-align: center;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .sev-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+    .sev-card .s-pts  { font-size: 18pt; font-weight: 800; line-height: 1; }
+    .sev-card .s-name { font-size: 7.5pt; font-weight: 700; margin-top: 5px; }
+    .sev-card .s-tag  { font-size: 7pt; opacity: .6; margin-top: 2px; }
+
+    .s-low { background: #e0f2fe; color: #075985; }
+    .s-med { background: #fef9c3; color: #854d0e; }
+    .s-hgh { background: #ffedd5; color: #9a3412; }
+    .s-crt { background: #fee2e2; color: #991b1b; }
+    .s-ext { background: #1e1b4b; color: #c4b5fd; }
+
+    /* ── SECTION LABEL ──────────────────────────────── */
+    .section-label {
+      display: flex; align-items: center; gap: 12px;
+      margin: 32px 0 12px;
+    }
+
+    .section-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; flex-shrink: 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .si-reward { background: var(--gold-lt); }
+
+    .section-label .s-title { font-size: 12pt; font-weight: 700; color: var(--navy); }
+    .section-label .s-desc  { font-size: 8pt; color: var(--muted); margin-top: 2px; }
+
+    /* ── TABLES ─────────────────────────────────────── */
+    .table-wrap {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+
+    .data-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+
+    .data-table thead tr { background: var(--navy); }
+    .data-table thead th {
+      color: #fff; padding: 10px 12px;
+      text-align: left; font-weight: 600;
+      font-size: 7.5pt; letter-spacing: .4px;
+      white-space: nowrap;
+    }
+
+    .data-table tbody td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:nth-child(even) td { background: var(--bg-subtle); }
+    .data-table tbody tr:hover td { background: var(--row-hover); }
+
+    .reward-table th:nth-child(1), .reward-table td:nth-child(1) { width: 26%; }
+    .reward-table th:nth-child(2), .reward-table td:nth-child(2) { width: 59%; color: var(--muted); }
+    .reward-table th:nth-child(3), .reward-table td:nth-child(3) { width: 15%; text-align: center; }
+
+    .penalty-table th:nth-child(1), .penalty-table td:nth-child(1) { width: 3%; text-align: center; color: var(--muted); font-size: 7.5pt; }
+    .penalty-table th:nth-child(2), .penalty-table td:nth-child(2) { width: 25%; }
+    .penalty-table th:nth-child(3), .penalty-table td:nth-child(3) { width: 37%; color: var(--muted); }
+    .penalty-table th:nth-child(4), .penalty-table td:nth-child(4) { width: 12%; text-align: center; }
+    .penalty-table th:nth-child(5), .penalty-table td:nth-child(5) { width: 12%; text-align: right; font-size: 8pt; }
+    .penalty-table th:nth-child(6), .penalty-table td:nth-child(6) { width: 11%; text-align: center; }
+
+    .pts-plus  { font-weight: 800; color: var(--green); font-size: 11pt; }
+    .pts-minus { font-weight: 800; color: var(--red);   font-size: 10.5pt; }
+    .money     { color: #b45309; font-size: 7.5pt; white-space: nowrap; font-weight: 600; }
+
+    /* ── BADGES ─────────────────────────────────────── */
+    .b {
+      display: inline-block; padding: 2px 9px;
+      border-radius: 999px; font-size: 7pt; font-weight: 700;
+      white-space: nowrap; line-height: 1.6;
+    }
+    .b-low { background: #e0f2fe; color: #075985; }
+    .b-med { background: #fef9c3; color: #854d0e; }
+    .b-hgh { background: #ffedd5; color: #9a3412; }
+    .b-crt { background: #fee2e2; color: #991b1b; }
+    .b-ext { background: #1e1b4b; color: #c4b5fd; }
+
+    /* ── GROUP HEAD ─────────────────────────────────── */
+    .group-head {
+      font-size: 11.5pt; font-weight: 700; color: var(--navy);
+      padding: 12px 18px;
+      background: linear-gradient(to right, #eef3f8, #f8fafc);
+      border-left: 5px solid var(--navy);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      margin: 32px 0 12px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .group-head small {
+      display: block; font-size: 8pt;
+      font-weight: 400; color: var(--muted);
+      margin-top: 3px; line-height: 1.4;
+    }
+
+    /* ── CALLOUT ────────────────────────────────────── */
+    .callout {
+      border-radius: var(--radius-md); padding: 14px 20px;
+      margin: 16px 0; font-size: 8.5pt;
+      display: flex; gap: 14px; align-items: flex-start;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .callout .ico { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout ul   { padding-left: 16px; margin-top: 6px; }
+    .callout li   { margin-bottom: 4px; }
+
+    .c-warn   { background: #fffbeb; border: 1px solid #fde68a; }
+    .c-danger { background: #fff1f2; border: 1px solid #fecdd3; }
+    .c-gold   { background: #fefce8; border: 1px solid #fef08a; }
+
+    /* ── PROCESS GRID ───────────────────────────────── */
+    .process-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+
+    .process-card {
+      border-radius: var(--radius-lg); padding: 20px 24px;
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .process-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+    .process-card .pc-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+
+    .process-card .pc-ico {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+
+    .process-card .pc-title { font-weight: 700; font-size: 10.5pt; color: var(--navy); }
+
+    .process-card ol { padding-left: 18px; font-size: 8.5pt; color: var(--text); }
+    .process-card li { margin-bottom: 6px; line-height: 1.5; }
+
+    .pc-penalty { background: #fff8f8; border-color: #fecaca; }
+    .pc-reward  { background: #f0fdf4; border-color: #bbf7d0; }
+
+    /* ── SIGNATURE ──────────────────────────────────── */
+    .sig-area { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 36px; margin-top: 64px; }
+
+    .sig-block { text-align: center; }
+
+    .sig-block .sig-role {
+      font-weight: 700; font-size: 9pt; color: var(--navy);
+      border-bottom: 1.5px solid var(--navy);
+      padding-bottom: 8px; margin-bottom: 10px;
+    }
+
+    .sig-block .sig-space { height: 60px; }
+    .sig-block .sig-hint  { font-size: 7.5pt; color: var(--muted); line-height: 1.6; }
+
+    /* ── FOOTER ─────────────────────────────────────── */
+    .doc-footer {
+      margin-top: 48px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 7.5pt; color: var(--muted);
+    }
+
+    /* ── PRINT ──────────────────────────────────────── */
+    @media print {
+      #progress-bar, .float-nav, .scroll-cue { display: none !important; }
+      body { font-size: 9pt; }
+      .cover { min-height: auto; padding: 40px; page-break-after: always; }
+      .part { page-break-before: always; }
+      .part:first-of-type { page-break-before: avoid; }
+      .no-break { page-break-inside: avoid; }
+      .group-head { page-break-after: avoid; }
+      .data-table tr { page-break-inside: avoid; }
+      [data-aos] { opacity: 1 !important; transform: none !important; }
+      @page { margin: 14mm 16mm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<nav class="float-nav">
+  <a href="#cover"  data-label="Trang bìa"></a>
+  <a href="#part1"  data-label="Phần I — Hệ thống điểm"></a>
+  <a href="#part2"  data-label="Phần II — Bảng thưởng"></a>
+  <a href="#part3"  data-label="Phần III — Bảng phạt"></a>
+  <a href="#part4"  data-label="Phần IV — Quy trình"></a>
+</nav>
+
+<!-- COVER -->
+<div class="cover" id="cover">
+  <div class="cover-ring cover-ring-1"></div>
+  <div class="cover-ring cover-ring-2"></div>
+  <div class="cover-ring cover-ring-3"></div>
+  <div class="cover-glow"></div>
+
+  <div class="cover-inner">
+    <div class="cover-emblem">F</div>
+    <div class="cover-company">Công ty TNHH F&amp;B</div>
+    <div class="cover-rule"></div>
+    <div class="cover-title">
+      Nội Quy<br>
+      <span class="gold">Thưởng &amp; Phạt</span><br>
+      Nhân Viên
+    </div>
+    <div class="cover-subtitle">
+      Quy chế Kỷ luật &amp; Khen thưởng Nội bộ<br>Áp dụng toàn hệ thống
+    </div>
+    <div class="cover-stats">
+      <div class="cover-stat">
+        <span class="num">100đ</span>
+        <div class="lbl">Điểm khởi đầu mỗi tháng</div>
+      </div>
+      <div class="cover-stat">
+        <span class="num">8</span>
+        <div class="lbl">Loại thưởng theo bộ phận</div>
+      </div>
+      <div class="cover-stat">
+        <span class="num">7</span>
+        <div class="lbl">Nhóm vi phạm</div>
+      </div>
+      <div class="cover-stat">
+        <span class="num">5</span>
+        <div class="lbl">Mức độ xử phạt</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <div class="scroll-cue-line"></div>
+    <div class="scroll-cue-dot"></div>
+  </div>
+
+  <div class="cover-footer">Tài liệu nội bộ &nbsp;|&nbsp; Hiệu lực từ ngày ban hành &nbsp;|&nbsp; Chỉ dành cho nhân viên</div>
+</div>
+
+<!-- BODY -->
+<div class="page">
+
+  <!-- PHẦN I -->
+  <div class="part no-break" id="part1" data-aos="fade-right" data-aos-duration="600">
+    <div class="part-tag">Phần I</div>
+    <div class="part-name">Hệ Thống Điểm Hành Vi</div>
+  </div>
+
+  <div class="score-intro no-break" data-aos="fade-up" data-aos-duration="700">
+    <div class="big">100</div>
+    <div>
+      <strong>Mỗi nhân viên được cấp 100 điểm vào đầu tháng.</strong>
+      <p>Điểm bị trừ khi có vi phạm và được cộng thêm khi đạt thành tích. Điểm cuối tháng quyết định vùng hiệu suất, thứ hạng bảng xếp hạng và các chính sách khen thưởng. Mọi phiếu phạt / thưởng đều phải qua phê duyệt trước khi áp dụng.</p>
+    </div>
+  </div>
+
+  <div class="zone-row no-break">
+    <div class="zone-card z-green"  data-aos="zoom-in" data-aos-delay="0"   data-aos-duration="500">
+      <div class="z-dot">🟢</div>
+      <div class="z-name">Greenzone</div>
+      <div class="z-pts">90–100đ</div>
+      <div class="z-note">Xuất sắc — đủ điều kiện khen thưởng</div>
+    </div>
+    <div class="zone-card z-yellow" data-aos="zoom-in" data-aos-delay="80"  data-aos-duration="500">
+      <div class="z-dot">🟡</div>
+      <div class="z-name">Yellowzone</div>
+      <div class="z-pts">80–89đ</div>
+      <div class="z-note">Tốt — tiếp tục duy trì</div>
+    </div>
+    <div class="zone-card z-orange" data-aos="zoom-in" data-aos-delay="160" data-aos-duration="500">
+      <div class="z-dot">🟠</div>
+      <div class="z-name">Orangezone</div>
+      <div class="z-pts">70–79đ</div>
+      <div class="z-note">Cần cải thiện — quản lý nhắc nhở</div>
+    </div>
+    <div class="zone-card z-red"    data-aos="zoom-in" data-aos-delay="240" data-aos-duration="500">
+      <div class="z-dot">🔴</div>
+      <div class="z-name">Redzone</div>
+      <div class="z-pts">&lt; 70đ</div>
+      <div class="z-note">Cảnh báo — xử lý đặc biệt nếu 2 tháng liên tiếp</div>
+    </div>
+  </div>
+
+  <div class="sev-row no-break">
+    <div class="sev-card s-low" data-aos="fade-up" data-aos-delay="0"   data-aos-duration="400"><div class="s-pts">-1đ</div><div class="s-name">Nhẹ</div><div class="s-tag">Low</div></div>
+    <div class="sev-card s-med" data-aos="fade-up" data-aos-delay="60"  data-aos-duration="400"><div class="s-pts">-3đ</div><div class="s-name">Trung Bình</div><div class="s-tag">Medium</div></div>
+    <div class="sev-card s-hgh" data-aos="fade-up" data-aos-delay="120" data-aos-duration="400"><div class="s-pts">-5đ</div><div class="s-name">Nặng</div><div class="s-tag">High</div></div>
+    <div class="sev-card s-crt" data-aos="fade-up" data-aos-delay="180" data-aos-duration="400"><div class="s-pts">-10đ</div><div class="s-name">Nghiêm Trọng</div><div class="s-tag">Critical</div></div>
+    <div class="sev-card s-ext" data-aos="fade-up" data-aos-delay="240" data-aos-duration="400"><div class="s-pts">-20đ</div><div class="s-name">Đặc Biệt NT</div><div class="s-tag">Extreme</div></div>
+  </div>
+
+  <!-- PHẦN II -->
+  <div class="part" id="part2" data-aos="fade-right" data-aos-duration="600">
+    <div class="part-tag" style="background:#b45309;">Phần II</div>
+    <div class="part-name" style="color:#92400e;">Bảng Thưởng Điểm — Theo Bộ Phận</div>
+  </div>
+
+  <div class="callout c-gold no-break" data-aos="fade-up" data-aos-duration="600">
+    <div class="ico">⭐</div>
+    <div>
+      <strong>Điểm thưởng được cộng thêm vào điểm tháng sau khi quản lý phê duyệt.</strong>
+      Nhân viên có thể vượt 100 điểm — điểm thưởng không bị giới hạn trần. Ngoài ra, báo cáo vi phạm của đồng nghiệp được xác minh và duyệt sẽ nhận thêm <strong>+5 điểm</strong>.
+    </div>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">🏅</div>
+    <div>
+      <div class="s-title">Thưởng Chung — Áp dụng tất cả bộ phận</div>
+      <div class="s-desc">Thưởng điểm áp dụng cho toàn bộ nhân viên không phân bộ phận</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Không đi trễ cả tháng</strong></td><td>Không đi trễ bất kỳ ca nào trong tháng</td><td><span class="pts-plus">+10đ</span></td></tr>
+        <tr><td><strong>Không vi phạm nội quy cả tháng</strong></td><td>Không có phiếu phạt nội quy nào trong tháng</td><td><span class="pts-plus">+10đ</span></td></tr>
+        <tr><td><strong>Nhận ca đại xuất</strong></td><td>Nhận thêm ca khi nhân sự thiếu hoặc tình huống khẩn cấp</td><td><span class="pts-plus">+5đ</span></td></tr>
+        <tr><td><strong>KPI đạt</strong></td><td>Hoàn thành chỉ tiêu KPI được giao trong tháng</td><td><span class="pts-plus">+15đ</span></td></tr>
+        <tr><td><strong>Không review xấu</strong></td><td>Cả tháng không có review tiêu cực gắn tên nhân viên</td><td><span class="pts-plus">+10đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">🍽️</div>
+    <div>
+      <div class="s-title">Thưởng Phục Vụ (Service)</div>
+      <div class="s-desc">Thưởng điểm cho bộ phận phục vụ</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Khách khen Facebook</strong></td><td>Khách để lại đánh giá / khen ngợi trên Facebook</td><td><span class="pts-plus">+5đ</span></td></tr>
+        <tr><td><strong>Khách khen Google Review</strong></td><td>Khách để lại đánh giá 5 sao trên Google</td><td><span class="pts-plus">+10đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">🌙</div>
+    <div>
+      <div class="s-title">Thưởng Lếp Xỉu (Ca hỗ trợ cuối ca)</div>
+      <div class="s-desc">Thưởng điểm cho nhân viên nhận ca hỗ trợ cuối ca</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Lếp xỉu mỗi lần</strong></td><td>Thưởng cho mỗi lần nhận ca lếp xỉu</td><td><span class="pts-plus">+2đ</span></td></tr>
+        <tr><td><strong>Lếp xỉu 50+ lần</strong></td><td>Bonus khi đạt 50+ lần lếp xỉu/tháng (trừ 400.000đ phí phát sinh)</td><td><span class="pts-plus">+5đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">👨‍🍳</div>
+    <div>
+      <div class="s-title">Thưởng Bếp (Kitchen)</div>
+      <div class="s-desc">Thưởng điểm cho bộ phận bếp</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Không có món trả trong tháng</strong></td><td>Không có order bị trả lại hoặc khiếu nại món ăn trong tháng</td><td><span class="pts-plus">+10đ</span></td></tr>
+        <tr><td><strong>Food Cost tối ưu</strong></td><td>Đạt chỉ tiêu Food Cost tháng theo kế hoạch</td><td><span class="pts-plus">+10đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">🍹</div>
+    <div>
+      <div class="s-title">Thưởng Bar</div>
+      <div class="s-desc">Thưởng điểm cho bộ phận bar</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Đào tạo nhân viên tốt</strong></td><td>Bartender/barista hướng dẫn và đào tạo nhân viên mới hiệu quả</td><td><span class="pts-plus">+5đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">📣</div>
+    <div>
+      <div class="s-title">Thưởng Marketing</div>
+      <div class="s-desc">Thưởng điểm cho bộ phận Marketing</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Video đạt KPI</strong></td><td>Video/nội dung đăng tải đạt chỉ tiêu view/tương tác</td><td><span class="pts-plus">+5đ</span></td></tr>
+        <tr><td><strong>Booking full</strong></td><td>Đạt tỉ lệ booking đầy bàn theo chỉ tiêu tháng</td><td><span class="pts-plus">+5đ</span></td></tr>
+        <tr><td><strong>Ý tưởng hay</strong></td><td>Đề xuất ý tưởng marketing được phê duyệt và triển khai thực tế</td><td><span class="pts-plus">+10đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">💻</div>
+    <div>
+      <div class="s-title">Thưởng IT</div>
+      <div class="s-desc">Thưởng điểm cho bộ phận IT</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Giảm chi phí vận hành</strong></td><td>Tối ưu hệ thống giúp giảm chi phí vận hành so với kỳ trước</td><td><span class="pts-plus">+20đ</span></td></tr>
+        <tr><td><strong>Đúng deadline</strong></td><td>Hoàn thành tất cả task IT đúng hoặc trước deadline tháng</td><td><span class="pts-plus">+15đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label no-break" data-aos="fade-left" data-aos-duration="500">
+    <div class="section-icon si-reward">🛒</div>
+    <div>
+      <div class="s-title">Thưởng Thu Mua (Procurement)</div>
+      <div class="s-desc">Thưởng điểm cho bộ phận thu mua</div>
+    </div>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table reward-table">
+      <thead><tr><th>Loại thưởng</th><th>Điều kiện đạt thưởng</th><th>Điểm thưởng</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Giảm giá NCC</strong></td><td>Thương lượng được giá nhà cung cấp thấp hơn so với tháng trước</td><td><span class="pts-plus">+10đ</span></td></tr>
+        <tr><td><strong>Phát hiện sai sót</strong></td><td>Phát hiện hàng lỗi, gian lận hoặc sai sót trong đơn hàng nhập</td><td><span class="pts-plus">+5đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PHẦN III -->
+  <div class="part" id="part3" data-aos="fade-right" data-aos-duration="600">
+    <div class="part-tag" style="background:#991b1b;">Phần III</div>
+    <div class="part-name" style="color:#991b1b;">Bảng Xử Phạt — Theo Nhóm Vi Phạm</div>
+  </div>
+
+  <div class="callout c-warn no-break" data-aos="fade-up" data-aos-duration="600">
+    <div class="ico">ℹ️</div>
+    <div>
+      Bảng liệt kê toàn bộ vi phạm đã chuẩn hóa. Hình thức phạt gồm: <strong>Trừ điểm</strong> và/hoặc <strong>Phạt tiền</strong>. Cột "Phạt tiền" là mức cơ bản (VND) — trường hợp hư hỏng / mất tài sản, số tiền được nhập theo giá trị thực tế khi lập phiếu phạt.
+    </div>
+  </div>
+
+  <!-- Nhóm 1 -->
+  <div class="group-head no-break" data-aos="fade-right" data-aos-duration="500">
+    Nhóm 1 — Giờ Giấc &amp; Kỷ Luật Lao Động
+    <small>Đi trễ, về sớm, nghỉ phép, nghỉ đột xuất, chấm công, đồng phục và tuân thủ nội quy</small>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table penalty-table">
+      <thead><tr><th>#</th><th>Vi phạm</th><th>Mô tả</th><th>Mức độ</th><th>Phạt tiền</th><th>Trừ điểm</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Đi trễ dưới 5 phút</strong></td><td>Đi trễ dưới 5 phút</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>2</td><td><strong>Đi trễ 5–15 phút</strong></td><td>Có mặt trễ từ 5 đến 15 phút</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>3</td><td><strong>Đi trễ 15–30 phút</strong></td><td>Có mặt trễ từ 15 đến 30 phút</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>4</td><td><strong>Đi trễ trên 30 phút</strong></td><td>Có mặt trễ trên 30 phút</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>5</td><td><strong>Đi trễ nhiều lần trong tuần</strong></td><td>Từ lần thứ 3 trở lên đi trễ trong cùng một tuần</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>6</td><td><strong>Về sớm dưới 15 phút</strong></td><td>Rời vị trí trước giờ làm dưới 15 phút</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>7</td><td><strong>Về sớm trên 15 phút</strong></td><td>Rời vị trí trước giờ làm trên 15 phút</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>8</td><td><strong>Tự ý bỏ vị trí trong ca</strong></td><td>Rời khu vực làm việc mà không báo cáo quản lý</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>9</td><td><strong>Nghỉ chưa được duyệt</strong></td><td>Tự ý nghỉ khi chưa có xác nhận phê duyệt từ quản lý</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>10</td><td><strong>Nghỉ gấp báo dưới 4 giờ trước ca</strong></td><td>Báo nghỉ quá sát giờ làm, dưới 4 giờ trước khi ca bắt đầu</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>11</td><td><strong>Nghỉ đột xuất không có lý do</strong></td><td>Không cung cấp lý do chính đáng khi nghỉ đột xuất</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>12</td><td><strong>No Show</strong></td><td>Không đi làm, không báo cáo</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>13</td><td><strong>No Show cuối tuần / ngày lễ</strong></td><td>Không đi làm vào ca cao điểm cuối tuần hoặc ngày lễ mà không báo</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>14</td><td><strong>Nghỉ quá số ngày quy định/tháng</strong></td><td>Số ngày nghỉ vượt giới hạn cho phép theo quy định công ty</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>15</td><td><strong>Quên chấm công vào ca</strong></td><td>Không thực hiện check-in khi bắt đầu ca làm</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>16</td><td><strong>Quên chấm công ra ca</strong></td><td>Không thực hiện check-out khi kết thúc ca làm</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>17</td><td><strong>Quên chấm công từ 3 lần/tháng</strong></td><td>Từ lần thứ 3 trở lên quên chấm công trong cùng một tháng</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>18</td><td><strong>Nhờ người chấm công hộ</strong></td><td>Nhờ đồng nghiệp chấm công thay — gian lận thời gian làm việc</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>19</td><td><strong>Chấm công hộ người khác</strong></td><td>Hỗ trợ đồng nghiệp gian lận bằng cách chấm công thay</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>20</td><td><strong>Sửa dữ liệu chấm công sai sự thật</strong></td><td>Cố tình khai sai giờ làm hoặc chỉnh sửa dữ liệu chấm công</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>21</td><td><strong>Không mặc đồng phục đúng quy định</strong></td><td>Mặc sai áo hoặc quần đồng phục theo quy định của công ty</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>22</td><td><strong>Đồng phục nhăn nhúm hoặc bẩn</strong></td><td>Mặc đồng phục thiếu chỉn chu, nhăn nhúm hoặc có vết bẩn rõ ràng</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>23</td><td><strong>Không đeo bảng tên trong ca</strong></td><td>Không đeo bảng tên nhân viên khiến khách không nhận diện được</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>24</td><td><strong>Mang dép không đúng quy định</strong></td><td>Dùng dép hoặc giày không đúng tiêu chuẩn an toàn và đồng bộ quy định</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>25</td><td><strong>Tóc tai không gọn gàng</strong></td><td>Kiểu tóc không phù hợp hoặc không gọn gàng khi tiếp xúc với khách</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>26</td><td><strong>Có mùi cơ thể ảnh hưởng môi trường</strong></td><td>Không đảm bảo vệ sinh cá nhân, có mùi cơ thể gây ảnh hưởng đến khách và đồng nghiệp</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>27</td><td><strong>Hút thuốc trong khu vực làm việc</strong></td><td>Hút thuốc trong khu vực làm việc hoặc nơi không được phép</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>28</td><td><strong>Uống rượu bia trước hoặc trong ca</strong></td><td>Sử dụng rượu bia trước hoặc trong ca làm, ảnh hưởng đến hiệu suất công việc</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>29</td><td><strong>Không tham gia briefing đầu ca</strong></td><td>Vắng mặt buổi họp đầu ca mà không có lý do chính đáng</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>30</td><td><strong>Không đọc / nắm thông báo công ty</strong></td><td>Bỏ sót thông báo vận hành gây ảnh hưởng đến công việc</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>31</td><td><strong>Không thực hiện checklist đầu ca</strong></td><td>Bỏ qua quy trình kiểm tra và chuẩn bị theo checklist khi bắt đầu ca</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>32</td><td><strong>Không thực hiện checklist cuối ca</strong></td><td>Bỏ qua quy trình kiểm tra và dọn dẹp theo checklist khi kết thúc ca</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>33</td><td><strong>Không hoàn thành task được giao</strong></td><td>Không hoàn thành nhiệm vụ được giao trong ca mà không có lý do chính đáng</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>34</td><td><strong>Không phản hồi quản lý khi được yêu cầu</strong></td><td>Gây gián đoạn vận hành do không phản hồi hoặc phản hồi trễ yêu cầu từ quản lý</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>35</td><td><strong>Từ chối công việc trong phạm vi trách nhiệm</strong></td><td>Không hợp tác, từ chối thực hiện công việc nằm trong phạm vi trách nhiệm vị trí</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>36</td><td><strong>Không tuân thủ SOP đã được đào tạo</strong></td><td>Thực hiện sai quy trình chuẩn đã được đào tạo và ký nhận</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>37</td><td><strong>Tái phạm cùng một lỗi 3 lần/tháng</strong></td><td>Không cải thiện sau khi được nhắc nhở, tái phạm cùng lỗi từ 3 lần trở lên trong tháng</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Nhóm 2 -->
+  <div class="group-head no-break" data-aos="fade-right" data-aos-duration="500">
+    Nhóm 2 — Vận Hành &amp; Nghiệp Vụ
+    <small>Lỗi quy trình phục vụ, bar, bếp và tiêu chuẩn phục vụ khách hàng</small>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table penalty-table">
+      <thead><tr><th>#</th><th>Vi phạm</th><th>Mô tả</th><th>Mức độ</th><th>Phạt tiền</th><th>Trừ điểm</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Phục vụ chậm so với tiêu chuẩn</strong></td><td>Thời gian phục vụ vượt quá tiêu chuẩn quy định mà không có lý do hợp lý</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>2</td><td><strong>Mang món nhầm bàn</strong></td><td>Mang món ăn hoặc đồ uống đến nhầm bàn khách</td><td><span class="b b-med">Trung bình</span></td><td><span class="money">50.000đ</span></td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>3</td><td><strong>Gọi sai món cho khách</strong></td><td>Nhập sai order của khách dẫn đến bếp/bar ra sai món</td><td><span class="b b-hgh">Nặng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>4</td><td><strong>Không tuân thủ quy trình phục vụ</strong></td><td>Bỏ qua hoặc thực hiện sai các bước trong quy trình phục vụ chuẩn</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>5</td><td><strong>Không hoàn thành MISE EN PLACE</strong></td><td>Không chuẩn bị đầy đủ vật dụng và nguyên liệu theo checklist trước ca</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>6</td><td><strong>Bàn giao ca không đúng quy trình</strong></td><td>Không thực hiện bàn giao ca đúng quy trình: ghi chú, kiểm kho, thông báo ca sau</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>7</td><td><strong>Pha chế sai công thức</strong></td><td>Pha chế đồ uống không đúng recipe hoặc tỷ lệ chuẩn quy định</td><td><span class="b b-hgh">Nặng</span></td><td><span class="money">100.000đ</span></td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>8</td><td><strong>Khách trả đồ uống do lỗi pha chế</strong></td><td>Khách từ chối nhận hoặc trả lại đồ uống do chất lượng pha chế không đạt</td><td><span class="b b-crt">Nghiêm trọng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>9</td><td><strong>Lãng phí nguyên liệu pha chế</strong></td><td>Sử dụng nguyên liệu bar vượt mức định lượng chuẩn không có lý do hợp lý</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>10</td><td><strong>Ra món không đúng order</strong></td><td>Bếp ra món không khớp với order về loại, số lượng hoặc yêu cầu đặc biệt của khách</td><td><span class="b b-hgh">Nặng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>11</td><td><strong>Món bị trả do lỗi phục vụ</strong></td><td>Khách từ chối nhận hoặc trả lại món do lỗi trong quá trình phục vụ</td><td><span class="b b-crt">Nghiêm trọng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>12</td><td><strong>Không chào hỏi khách theo chuẩn</strong></td><td>Không thực hiện nghi thức chào hỏi và đón tiếp khách đúng chuẩn thương hiệu</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>13</td><td><strong>Không xử lý yêu cầu khách kịp thời</strong></td><td>Bỏ qua hoặc chậm trễ xử lý yêu cầu hợp lý từ khách hàng</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>14</td><td><strong>Khách để lại review tiêu cực</strong></td><td>Khách đánh giá tiêu cực gắn trực tiếp với hành vi hoặc thái độ của nhân viên</td><td><span class="b b-crt">Nghiêm trọng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-10đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Nhóm 3 -->
+  <div class="group-head no-break" data-aos="fade-right" data-aos-duration="500">
+    Nhóm 3 — Tài Sản &amp; Thiết Bị
+    <small>Quản lý tài sản sai quy định, làm hư hỏng hoặc mất mát tài sản công ty</small>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table penalty-table">
+      <thead><tr><th>#</th><th>Vi phạm</th><th>Mô tả</th><th>Mức độ</th><th>Phạt tiền</th><th>Trừ điểm</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Sử dụng thiết bị sai mục đích</strong></td><td>Dùng dụng cụ, thiết bị của công ty cho mục đích cá nhân hoặc không đúng chức năng</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>2</td><td><strong>Không tắt thiết bị điện sau ca</strong></td><td>Quên tắt đèn, điều hòa, quạt hoặc thiết bị điện khác khi kết thúc ca</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>3</td><td><strong>Bảo quản dụng cụ không đúng quy định</strong></td><td>Không cất giữ, vệ sinh hoặc bảo quản dụng cụ theo quy trình sau khi sử dụng</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>4</td><td><strong>Không báo cáo thiết bị hư hỏng kịp thời</strong></td><td>Phát hiện thiết bị có dấu hiệu hỏng hóc nhưng không báo cáo kịp thời cho quản lý</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>5</td><td><strong>Làm hỏng tài sản do sơ suất</strong></td><td>Tài sản bị hỏng do lỗi sơ suất — phạt tiền theo giá trị thực tế nếu lớn hơn mức cơ bản</td><td><span class="b b-hgh">Nặng</span></td><td><span class="money">400.000đ+</span></td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>6</td><td><strong>Làm mất tài sản công ty</strong></td><td>Tài sản bị mất do thiếu trách nhiệm — bồi thường theo giá trị thực tế</td><td><span class="b b-crt">Nghiêm trọng</span></td><td><span class="money">Theo GTTT</span></td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>7</td><td><strong>Cố ý hủy hoại tài sản công ty</strong></td><td>Cố ý làm hỏng hoặc hủy hoại tài sản — bồi thường toàn bộ theo giá trị thực tế</td><td><span class="b b-ext">Đặc biệt NT</span></td><td><span class="money">Toàn bộ GTTT</span></td><td><span class="pts-minus">-20đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Nhóm 4 -->
+  <div class="group-head no-break" data-aos="fade-right" data-aos-duration="500">
+    Nhóm 4 — Nghiệp Vụ Bếp
+    <small>Lỗi chế biến, kiểm soát nguyên liệu và quản lý dụng cụ bếp</small>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table penalty-table">
+      <thead><tr><th>#</th><th>Vi phạm</th><th>Mô tả</th><th>Mức độ</th><th>Phạt tiền</th><th>Trừ điểm</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Chế biến sai công thức chuẩn</strong></td><td>Nấu/chế biến không đúng recipe, tỷ lệ hay kỹ thuật theo tiêu chuẩn bếp</td><td><span class="b b-hgh">Nặng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>2</td><td><strong>Món bị trả do chất lượng chế biến kém</strong></td><td>Khách từ chối nhận món do chất lượng chế biến không đạt tiêu chuẩn</td><td><span class="b b-crt">Nghiêm trọng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>3</td><td><strong>Trình bày món không đúng chuẩn</strong></td><td>Món ăn ra cho khách không đúng chuẩn trình bày và plating của thương hiệu</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>4</td><td><strong>Để thực phẩm hết hạn trong kho</strong></td><td>Không kiểm tra và loại bỏ nguyên liệu hết hạn theo quy trình FIFO/FEFO</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>5</td><td><strong>Lãng phí nguyên liệu quá định lượng</strong></td><td>Sử dụng hoặc để hao hụt nguyên liệu vượt mức định lượng chuẩn không có lý do</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>6</td><td><strong>Không kiểm tra chất lượng nguyên liệu nhập</strong></td><td>Nhận nguyên liệu mà không kiểm tra chất lượng, nguồn gốc, hạn sử dụng theo quy trình</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>7</td><td><strong>Không vệ sinh dụng cụ bếp đúng quy trình</strong></td><td>Dụng cụ bếp không được vệ sinh, khử trùng đúng cách và đúng lịch theo quy trình</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>8</td><td><strong>Tái sử dụng dụng cụ chưa qua vệ sinh</strong></td><td>Dùng lại dụng cụ bếp khi chưa được vệ sinh và khử trùng đúng chuẩn</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>9</td><td><strong>Làm hỏng dụng cụ bếp do sơ suất</strong></td><td>Dụng cụ nấu nướng bị hỏng do không tuân thủ hướng dẫn sử dụng đúng cách</td><td><span class="b b-hgh">Nặng</span></td><td><span class="money">200.000đ</span></td><td><span class="pts-minus">-5đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Nhóm 5 -->
+  <div class="group-head no-break" data-aos="fade-right" data-aos-duration="500">
+    Nhóm 5 — Vệ Sinh &amp; An Toàn
+    <small>Vi phạm vệ sinh cá nhân, vệ sinh khu vực làm việc, an toàn lao động và an toàn thực phẩm</small>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table penalty-table">
+      <thead><tr><th>#</th><th>Vi phạm</th><th>Mô tả</th><th>Mức độ</th><th>Phạt tiền</th><th>Trừ điểm</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Vệ sinh cá nhân không đạt chuẩn</strong></td><td>Ngoại hình, quần áo, tóc tai không đảm bảo vệ sinh và chuyên nghiệp khi tiếp xúc khách</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>2</td><td><strong>Không rửa tay đúng quy trình</strong></td><td>Không rửa tay hoặc rửa tay không đúng quy trình trước khi chế biến/tiếp xúc thực phẩm</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>3</td><td><strong>Khu vực làm việc không đạt chuẩn vệ sinh</strong></td><td>Khu vực phụ trách không được dọn dẹp đúng tiêu chuẩn vệ sinh quy định</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>4</td><td><strong>Không dọn vệ sinh khu vực cuối ca</strong></td><td>Không thực hiện dọn dẹp khu vực phụ trách trước khi kết thúc ca theo checklist</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>5</td><td><strong>Nhà vệ sinh không đạt chuẩn trong ca</strong></td><td>Nhà vệ sinh trong ca phụ trách không được dọn dẹp đúng lịch và tiêu chuẩn quy định</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>6</td><td><strong>Không đổ rác đúng quy định</strong></td><td>Không phân loại rác, không đổ rác đúng giờ hoặc để rác tràn ra ngoài thùng</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>7</td><td><strong>Không sử dụng thiết bị bảo hộ lao động</strong></td><td>Không đeo găng tay, tạp dề, mũ hoặc thiết bị bảo hộ quy định khi làm việc</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>8</td><td><strong>Vi phạm quy tắc an toàn lao động</strong></td><td>Thực hiện hành vi gây nguy hiểm cho bản thân hoặc đồng nghiệp trong khu vực làm việc</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>9</td><td><strong>Vi phạm quy định an toàn thực phẩm</strong></td><td>Không tuân thủ quy định về nhiệt độ bảo quản, thời hạn sử dụng và vệ sinh thực phẩm</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>10</td><td><strong>Phục vụ thực phẩm không đảm bảo VSATTP</strong></td><td>Phục vụ thực phẩm đã hỏng hoặc không đạt tiêu chuẩn vệ sinh an toàn thực phẩm cho khách</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Nhóm 6 -->
+  <div class="group-head no-break" data-aos="fade-right" data-aos-duration="500">
+    Nhóm 6 — Văn Hóa &amp; Hành Vi
+    <small>Thái độ làm việc, giao tiếp nội bộ, giao tiếp khách hàng, tinh thần đồng đội và bảo mật thông tin</small>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table penalty-table">
+      <thead><tr><th>#</th><th>Vi phạm</th><th>Mô tả</th><th>Mức độ</th><th>Phạt tiền</th><th>Trừ điểm</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Thái độ làm việc tiêu cực</strong></td><td>Biểu hiện thái độ chán nản, lười biếng, không nhiệt tình trong công việc</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>2</td><td><strong>Không tuân thủ chỉ đạo của quản lý</strong></td><td>Từ chối hoặc bỏ qua chỉ đạo hợp lý từ quản lý trực tiếp mà không có lý do chính đáng</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>3</td><td><strong>Tranh cãi, gây mâu thuẫn với đồng nghiệp</strong></td><td>Cãi vã, to tiếng hoặc gây bất hòa với đồng nghiệp trong môi trường làm việc</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>4</td><td><strong>Nói xấu đồng nghiệp hoặc quản lý</strong></td><td>Loan tin, nói xấu đồng nghiệp hoặc cấp trên gây ảnh hưởng đến môi trường làm việc</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>5</td><td><strong>Thái độ thiếu tôn trọng với khách hàng</strong></td><td>Hành vi, lời nói hoặc cử chỉ thể hiện sự thiếu tôn trọng với khách hàng</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>6</td><td><strong>Tranh cãi trực tiếp với khách hàng</strong></td><td>Cãi vã, tranh luận hoặc có hành vi thiếu chuyên nghiệp trực tiếp với khách hàng</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>7</td><td><strong>Tự ý giảm giá hoặc miễn phí dịch vụ</strong></td><td>Áp dụng giảm giá hoặc miễn phí cho khách khi chưa được ủy quyền từ quản lý</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>8</td><td><strong>Không hỗ trợ đồng nghiệp khi được yêu cầu</strong></td><td>Từ chối hoặc phớt lờ yêu cầu hỗ trợ hợp lý từ đồng nghiệp trong giờ làm việc</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>9</td><td><strong>Tiết lộ thông tin nội bộ trái phép</strong></td><td>Chia sẻ thông tin về giá cả, quy trình, dữ liệu khách hàng hoặc nội bộ công ty ra ngoài</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>10</td><td><strong>Đăng thông tin công ty lên MXH trái phép</strong></td><td>Đăng thông tin, hình ảnh nội bộ hoặc nói xấu công ty trên mạng xã hội khi chưa được phép</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Nhóm 7 -->
+  <div class="group-head no-break" data-aos="fade-right" data-aos-duration="500">
+    Nhóm 7 — Trách Nhiệm &amp; Hiệu Suất Công Việc
+    <small>Vi phạm về KPI, hiệu suất, trách nhiệm quản lý, nghiệp vụ IT, Marketing và Kế toán</small>
+  </div>
+  <div class="table-wrap" data-aos="fade-up" data-aos-duration="500">
+    <table class="data-table penalty-table">
+      <thead><tr><th>#</th><th>Vi phạm</th><th>Mô tả</th><th>Mức độ</th><th>Phạt tiền</th><th>Trừ điểm</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><strong>Không hoàn thành KPI tháng</strong></td><td>Kết quả làm việc không đạt chỉ tiêu KPI đã cam kết trong tháng</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>2</td><td><strong>Báo cáo sai lệch hoặc thiếu dữ liệu</strong></td><td>Nộp báo cáo công việc có thông tin sai lệch hoặc thiếu so với yêu cầu</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>3</td><td><strong>Không đào tạo nhân viên mới đúng quy trình</strong></td><td>Quản lý/TL không thực hiện onboarding và đào tạo nhân viên mới theo đúng quy trình</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>4</td><td><strong>Không xử lý khiếu nại khách kịp thời</strong></td><td>Quản lý không tiếp nhận hoặc giải quyết khiếu nại của khách trong thời gian quy định</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>5</td><td><strong>Không đạt tiến độ task IT</strong></td><td>Task IT không hoàn thành đúng deadline đã cam kết với team/quản lý</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>6</td><td><strong>Không backup dữ liệu theo lịch</strong></td><td>Bỏ qua lịch backup dữ liệu hệ thống theo quy trình đã quy định</td><td><span class="b b-med">Trung bình</span></td><td>-</td><td><span class="pts-minus">-3đ</span></td></tr>
+        <tr><td>7</td><td><strong>Cấp sai quyền truy cập hệ thống</strong></td><td>Gán quyền hệ thống sai vai trò hoặc cấp vượt phạm vi cho phép</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>8</td><td><strong>Gây sự cố hệ thống do sơ suất</strong></td><td>Hành động sơ suất của IT gây sự cố ảnh hưởng đến hoạt động hệ thống và vận hành</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>9</td><td><strong>Đăng nội dung sai hoặc không phù hợp</strong></td><td>Đăng nội dung sai thông tin, vi phạm brand guideline hoặc không phù hợp với thương hiệu</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>10</td><td><strong>Lỗi chính tả trong nội dung đã đăng</strong></td><td>Bài đăng có lỗi chính tả hoặc ngữ pháp rõ ràng sau khi đã publish công khai</td><td><span class="b b-low">Nhẹ</span></td><td>-</td><td><span class="pts-minus">-1đ</span></td></tr>
+        <tr><td>11</td><td><strong>Làm mất tài sản media của dự án</strong></td><td>Làm mất file ảnh, video hoặc tài nguyên thiết kế quan trọng của dự án marketing</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>12</td><td><strong>Trễ deadline nội dung hoặc chiến dịch</strong></td><td>Không hoàn thành nội dung hoặc chiến dịch marketing đúng timeline đã cam kết</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>13</td><td><strong>Nhập sai dữ liệu kế toán</strong></td><td>Nhập sai số liệu vào phần mềm kế toán hoặc hệ thống quản lý tài chính</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>14</td><td><strong>Thiếu chứng từ thanh toán khi đối soát</strong></td><td>Hóa đơn, biên lai hoặc chứng từ liên quan bị thiếu khi thực hiện đối soát</td><td><span class="b b-hgh">Nặng</span></td><td>-</td><td><span class="pts-minus">-5đ</span></td></tr>
+        <tr><td>15</td><td><strong>Chốt lệch tiền mặt cuối ca</strong></td><td>Số tiền mặt thực tế không khớp với hệ thống khi chốt ca mà không giải trình được lý do</td><td><span class="b b-crt">Nghiêm trọng</span></td><td>-</td><td><span class="pts-minus">-10đ</span></td></tr>
+        <tr><td>16</td><td><strong>Tự ý thay đổi thông tin nhà cung cấp</strong></td><td>Thay đổi thông tin nhà cung cấp trong hệ thống khi chưa có phê duyệt từ cấp trên</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>17</td><td><strong>Chậm nộp BHXH hoặc báo cáo thuế</strong></td><td>Nộp hồ sơ BHXH, báo cáo thuế hoặc đóng bảo hiểm trễ hạn quy định pháp luật</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+        <tr><td>18</td><td><strong>Mất hồ sơ nhân sự hoặc tài liệu tài chính</strong></td><td>Hồ sơ nhân viên, hợp đồng lao động hoặc tài liệu tài chính quan trọng bị thất lạc</td><td><span class="b b-ext">Đặc biệt NT</span></td><td>-</td><td><span class="pts-minus">-20đ</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PHẦN IV -->
+  <div class="part" id="part4" data-aos="fade-right" data-aos-duration="600">
+    <div class="part-tag">Phần IV</div>
+    <div class="part-name">Quy Trình Xử Lý &amp; Xác Nhận</div>
+  </div>
+
+  <div class="process-grid no-break">
+    <div class="process-card pc-penalty" data-aos="flip-left" data-aos-duration="700">
+      <div class="pc-head">
+        <div class="pc-ico" style="background:#fee2e2;">⚠️</div>
+        <div class="pc-title">Quy trình phiếu phạt</div>
+      </div>
+      <ol>
+        <li>Quản lý tạo phiếu phạt kèm bằng chứng</li>
+        <li>Phiếu gửi lên cấp có thẩm quyền để xét duyệt</li>
+        <li>Sau khi duyệt, điểm được trừ chính thức</li>
+        <li>Nhân viên nhận thông báo kết quả</li>
+        <li>Nhân viên có quyền khiếu nại trong <strong>48 giờ</strong></li>
+      </ol>
+    </div>
+    <div class="process-card pc-reward" data-aos="flip-right" data-aos-duration="700">
+      <div class="pc-head">
+        <div class="pc-ico" style="background:#dcfce7;">🏆</div>
+        <div class="pc-title">Quy trình phiếu thưởng</div>
+      </div>
+      <ol>
+        <li>Quản lý / TL đề xuất phiếu thưởng cho nhân viên</li>
+        <li>Phiếu được phê duyệt bởi người có thẩm quyền</li>
+        <li>Điểm thưởng cộng ngay sau khi duyệt</li>
+        <li>Bảng xếp hạng cập nhật tự động</li>
+        <li>Nhân viên nhận thông báo xác nhận thưởng</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="callout c-danger no-break" data-aos="fade-up" data-aos-duration="600">
+    <div class="ico">🚫</div>
+    <div>
+      <strong>Redzone liên tiếp 2 tháng:</strong> Nhân viên có điểm dưới 70 từ 2 tháng liên tiếp sẽ bị kích hoạt thủ tục xử phạt đặc biệt — có thể bao gồm cảnh cáo bằng văn bản hoặc xem xét chấm dứt hợp đồng theo quy định lao động nội bộ.
+    </div>
+  </div>
+
+  <div class="sig-area no-break" data-aos="fade-up" data-aos-duration="700" data-aos-delay="100">
+    <div class="sig-block">
+      <div class="sig-role">Giám Đốc / Đại diện Công ty</div>
+      <div class="sig-space"></div>
+      <div class="sig-hint">Họ tên &amp; Chữ ký<br>Ngày ký: _____ / _____ / 20_____</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-role">Quản Lý Bộ Phận</div>
+      <div class="sig-space"></div>
+      <div class="sig-hint">Họ tên &amp; Chữ ký<br>Ngày ký: _____ / _____ / 20_____</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-role">Nhân Viên Xác Nhận</div>
+      <div class="sig-space"></div>
+      <div class="sig-hint">Họ tên — Mã NV<br>Ngày ký: _____ / _____ / 20_____</div>
+    </div>
+  </div>
+
+  <div class="doc-footer" data-aos="fade-up" data-aos-duration="500">
+    <span>Công ty TNHH F&amp;B &nbsp;|&nbsp; Nội Quy Thưởng &amp; Phạt Nhân Viên</span>
+    <span>Tài liệu nội bộ — Hiệu lực từ ngày ban hành</span>
+  </div>
+
+</div>
+
+<!-- AOS JS -->
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script>
+  AOS.init({
+    once: true,
+    offset: 60,
+    easing: 'ease-out-cubic',
+    anchorPlacement: 'top-bottom'
+  });
+
+  window.addEventListener('scroll', function () {
+    var scrollTop = window.scrollY;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    document.getElementById('progress-bar').style.width = pct + '%';
+
+    var sections = ['cover','part1','part2','part3','part4'];
+    var navLinks = document.querySelectorAll('.float-nav a');
+    var active = 0;
+    sections.forEach(function (id, i) {
+      var el = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top <= 100) active = i;
+    });
+    navLinks.forEach(function (l, i) {
+      l.classList.toggle('active', i === active);
+    });
+  }, { passive: true });
+</script>
+</body>
+</html>

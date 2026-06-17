@@ -37,42 +37,59 @@
                 @error('description') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="form-label">Mức độ <span class="text-red-500">*</span></label>
-                    <select id="editViolationSeverity" name="severity" class="form-input" required>
-                        <option value="low">Nhẹ</option>
-                        <option value="medium">Trung bình</option>
-                        <option value="high">Nặng</option>
-                        <option value="critical">Nghiêm trọng</option>
-                    </select>
-                    @error('severity') <p class="form-error">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="form-label">Hình thức xử phạt <span class="text-red-500">*</span></label>
-                    <select id="editViolationPenaltyType" name="penalty_type" class="form-input" required
-                            onchange="toggleViolationPenaltyFields(this.value, 'edit')">
-                        <option value="points">Trừ điểm</option>
-                        <option value="money">Phạt tiền</option>
-                        <option value="both">Cả hai</option>
-                    </select>
-                    @error('penalty_type') <p class="form-error">{{ $message }}</p> @enderror
-                </div>
+            {{-- Hình thức xử phạt --}}
+            <div>
+                <label class="form-label">Hình thức xử phạt <span class="text-red-500">*</span></label>
+                <select id="editViolationPenaltyType" name="penalty_type" class="form-input" required
+                        onchange="toggleViolationPenaltyFields(this.value, 'edit')">
+                    <option value="points">Trừ điểm</option>
+                    <option value="money">Phạt tiền</option>
+                    <option value="both">Cả hai</option>
+                </select>
+                @error('penalty_type') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div id="editViolationPoints">
-                    <label class="form-label">Số điểm trừ</label>
+            {{-- Mức độ vi phạm — click để tự động điền điểm --}}
+            <div id="editViolationPoints">
+                <label class="form-label">Mức độ vi phạm <span class="text-red-500">*</span></label>
+                <div class="grid grid-cols-5 gap-1.5">
+                    @foreach([
+                        ['value' => 'low',      'label' => 'Nhẹ',          'pts' => 1,  'idle' => 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'],
+                        ['value' => 'medium',   'label' => 'Trung bình',   'pts' => 3,  'idle' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'],
+                        ['value' => 'high',     'label' => 'Nặng',         'pts' => 5,  'idle' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
+                        ['value' => 'critical', 'label' => 'Nghiêm trọng', 'pts' => 10, 'idle' => 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800'],
+                        ['value' => 'extreme',  'label' => 'Đặc biệt NT',  'pts' => 20, 'idle' => 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'],
+                    ] as $s)
+                    <button type="button"
+                            id="editSevBtn_{{ $s['value'] }}"
+                            data-severity="{{ $s['value'] }}"
+                            data-pts="{{ $s['pts'] }}"
+                            onclick="setViolationSeverity('{{ $s['value'] }}', 'edit')"
+                            class="viol-sev-btn-edit flex flex-col items-center gap-0.5 rounded-lg border px-2 py-2.5 text-center transition-all cursor-pointer {{ $s['idle'] }}">
+                        <span class="text-xs font-semibold leading-none">{{ $s['label'] }}</span>
+                        <span class="text-[11px] font-mono leading-none opacity-75 mt-0.5">-{{ $s['pts'] }}đ</span>
+                    </button>
+                    @endforeach
+                </div>
+                <input type="hidden" name="severity" id="editViolationSeverityInput">
+                @error('severity') <p class="form-error mt-1">{{ $message }}</p> @enderror
+
+                <div class="mt-3">
+                    <label class="form-label">Điểm trừ</label>
                     <input type="number" id="editViolationPointsVal" name="points_deducted"
-                           class="form-input" min="0" max="100">
-                    @error('points_deducted') <p class="form-error">{{ $message }}</p> @enderror
+                           class="form-input bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300"
+                           min="0" max="100" readonly tabindex="-1">
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Tự động theo mức độ đã chọn.</p>
                 </div>
-                <div id="editViolationMoney">
-                    <label class="form-label">Số tiền phạt (₫)</label>
-                    <input type="number" id="editViolationMoneyVal" name="money_deducted"
-                           class="form-input" min="0" step="1000">
-                    @error('money_deducted') <p class="form-error">{{ $message }}</p> @enderror
-                </div>
+                @error('points_deducted') <p class="form-error">{{ $message }}</p> @enderror
+            </div>
+
+            {{-- Tiền phạt — nhập tay --}}
+            <div id="editViolationMoney">
+                <label class="form-label">Số tiền phạt (₫)</label>
+                <input type="number" id="editViolationMoneyVal" name="money_deducted"
+                       class="form-input" min="0" step="1000" placeholder="VD: 200000">
+                @error('money_deducted') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div class="flex items-center pb-1">

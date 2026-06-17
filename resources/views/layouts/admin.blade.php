@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', config('app.name', 'TON-CMS')) — TON-CMS</title>
+    <title>@yield('title', config('app.name', 'TON-HR')) — TON-HR</title>
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=be-vietnam-pro:300,400,500,600,700,800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/phosphor-icons/1.4.2/css/phosphor.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.css" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -43,7 +44,7 @@
         </div>
     </div>
 
-    <!-- ── TON-CMS Alert Modal ── -->
+    <!-- ── TON-HR Alert Modal ── -->
     <div id="pcrm-alert-overlay"
          class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4"
          style="background:rgba(0,0,0,0.55); backdrop-filter:blur(2px);">
@@ -87,10 +88,25 @@
             </div>
         </div>
     </div>
-    <!-- ── /TON-CMS Alert Modal ── -->
+    <!-- ── /TON-HR Alert Modal ── -->
 
     @stack('modals')
     @stack('scripts')
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+    <script>
+    (function () {
+        // Auto-stagger: cards inside .aos-stagger containers get incremental delays
+        document.querySelectorAll('.aos-stagger').forEach(function (container) {
+            container.querySelectorAll('[data-aos]').forEach(function (el, i) {
+                if (!el.hasAttribute('data-aos-delay')) {
+                    el.setAttribute('data-aos-delay', String(i * 70));
+                }
+            });
+        });
+        AOS.init({ duration: 260, once: true, offset: 30, easing: 'ease-out-quart' });
+    })();
+    </script>
 
     <script>
     // ── Modal helpers ──────────────────────────────────────────────────────
@@ -103,7 +119,7 @@
         if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
     }
 
-    // ── TON-CMS Alert System ────────────────────────────────────────────────
+    // ── TON-HR Alert System ────────────────────────────────────────────────
     (function () {
         var _timer = null;
 
