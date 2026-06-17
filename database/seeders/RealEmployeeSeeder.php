@@ -90,9 +90,11 @@ class RealEmployeeSeeder extends Seeder
             $branch = $branches[$emp['branch']] ?? null;
             $team = $teamMap[$teamKey] ?? null;
 
-            // Tạo email từ mã nhân viên
-            $emailSlug = Str::lower(Str::replace([' ', '+'], '', $emp['code']));
-            $email = $emailSlug . '@hr.vn';
+            // Email: viết tắt họ + tên đệm, đầy đủ tên cuối — vd: Nguyễn Đình Minh Hiển → ndm_hien
+            $nameParts = explode(' ', trim($emp['name']));
+            $lastName  = array_pop($nameParts);
+            $initials  = implode('', array_map(fn($p) => mb_substr($p, 0, 1), $nameParts));
+            $email = Str::slug(($initials ? $initials . ' ' : '') . $lastName, '_') . '@hr.vn';
 
             // Tạo User account
             $user = User::firstOrCreate(
