@@ -55,7 +55,6 @@ class RealEmployeeSeeder extends Seeder
 
         // 3. Danh sách nhân viên từ Excel
         $employees = [
-            ['code' => '0001',         'name' => 'Chị Bích',                'phone' => '+84902497984', 'gender' => 'Nam',            'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => '',                    'access' => 'Quản lý'],
             ['code' => 'GD-TVTON',     'name' => 'Trần Văn Tôn',           'phone' => '+84775070993', 'gender' => 'Nam',            'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => 'Giám đốc',            'access' => 'Quản lý'],
             ['code' => 'NV-NDMHIEN',   'name' => 'Nguyễn Đình Minh Hiển',  'phone' => '+84338318541', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Nhà hàng',   'position' => 'Run Food',            'access' => 'Nhân viên'],
             ['code' => 'NV-THPHUONG',  'name' => 'Trần Hữu Phương',        'phone' => '+84909761175', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bếp',        'position' => 'Đầu bếp',             'access' => 'Nhân viên'],

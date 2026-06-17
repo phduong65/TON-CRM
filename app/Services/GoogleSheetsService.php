@@ -361,6 +361,7 @@ class GoogleSheetsService
             'medium'   => 'Trung bình',
             'high'     => 'Nặng',
             'critical' => 'Nghiêm trọng',
+            'extreme' => 'Đặc biệt NT',
             default    => $severity,
         };
     }
@@ -371,6 +372,7 @@ class GoogleSheetsService
             'nhẹ', 'low'                => 'low',
             'nặng', 'high'              => 'high',
             'nghiêm trọng', 'critical'  => 'critical',
+            'đặc biệt nt', 'extreme'     => 'extreme',
             default                     => 'medium',
         };
     }

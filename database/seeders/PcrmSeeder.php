@@ -28,7 +28,7 @@ class PcrmSeeder extends Seeder
         // 2. Admin user
         $admin = User::create([
             'name'     => 'Quản trị viên',
-            'email'    => 'admin@pcrm.vn',
+            'email'    => 'admin@hr.vn',
             'password' => Hash::make('admin123'),
         ]);
 
