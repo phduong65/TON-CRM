@@ -26,7 +26,7 @@ class DashboardController extends Controller
     private function adminDashboard()
     {
         $isAdmin        = true;
-        $totalEmployees = Employee::count();
+        $totalEmployees = Employee::where('is_active', true)->count();
         $totalTeams     = Team::count();
         $totalBranches  = Branch::count();
         $totalViolations = Violation::where('is_active', true)->count();
@@ -59,6 +59,7 @@ class DashboardController extends Controller
         $redzoneThreshold = Setting::getValue('redzone_threshold', 50);
 
         $redzoneEmployees = Employee::query()
+            ->where('is_active', true)
             ->with(['user', 'team', 'branch'])
             ->addSelect([
                 'total_score' => DB::table('employee_scores')
@@ -71,6 +72,7 @@ class DashboardController extends Controller
             ->get();
 
         $redzoneCount = Employee::select('employees.id')
+            ->where('employees.is_active', true)
             ->leftJoin('employee_scores', 'employees.id', '=', 'employee_scores.employee_id')
             ->groupBy('employees.id')
             ->havingRaw('COALESCE(SUM(employee_scores.points), 0) < ?', [$redzoneThreshold])
@@ -96,6 +98,7 @@ class DashboardController extends Controller
             ->get();
 
         $topEmployees = Employee::query()
+            ->where('is_active', true)
             ->with(['team', 'branch'])
             ->addSelect([
                 'total_score' => DB::table('employee_scores')
@@ -134,7 +137,7 @@ class DashboardController extends Controller
 
         // ── Analytics: Preload shared collections (avoid N+1) ─────────────
         $defaultMonthlyScore = (int) Setting::getValue('default_score_per_month', 100);
-        $allEmployees        = Employee::select('id', 'branch_id', 'team_id')->get();
+        $allEmployees        = Employee::where('is_active', true)->select('id', 'branch_id', 'team_id')->get();
 
         $thisMonthScores = MonthlyEmployeeScore::where('month', $now->month)
             ->where('year', $now->year)
@@ -320,9 +323,10 @@ class DashboardController extends Controller
                 ->limit(5)
                 ->get();
 
-            $totalEmployees = Employee::count();
+            $totalEmployees = Employee::where('is_active', true)->count();
 
-            $rankIndex = Employee::select('employees.id', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
+            $rankIndex = Employee::where('is_active', true)
+                ->select('employees.id', DB::raw('COALESCE(SUM(employee_scores.points), 0) as total_score'))
                 ->leftJoin('employee_scores', 'employees.id', '=', 'employee_scores.employee_id')
                 ->groupBy('employees.id')
                 ->orderBy('total_score', 'desc')
@@ -331,6 +335,7 @@ class DashboardController extends Controller
             $myRank = $rankIndex !== false ? $rankIndex + 1 : null;
 
             $teamLeaderboard = Employee::query()
+                ->where('is_active', true)
                 ->with(['team', 'branch'])
                 ->addSelect([
                     'total_score' => DB::table('employee_scores')

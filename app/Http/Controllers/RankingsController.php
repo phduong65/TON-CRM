@@ -57,7 +57,11 @@ class RankingsController extends Controller
             ])
             ->selectRaw('COALESCE(SUM(employee_scores.points), 0) / NULLIF(COUNT(DISTINCT employees.id), 0) as average_score')
             ->selectRaw('COUNT(DISTINCT employees.id) as employees_count')
-            ->leftJoin('employees', 'employees.team_id', '=', 'teams.id')
+            ->leftJoin('employees', function ($join) {
+                $join->on('employees.team_id', '=', 'teams.id')
+                     ->where('employees.is_active', true)
+                     ->whereNull('employees.deleted_at');
+            })
             ->leftJoin('employee_scores', 'employee_scores.employee_id', '=', 'employees.id')
             ->groupBy('teams.id', 'teams.code', 'teams.name', 'teams.branch_id', 'teams.description', 'teams.is_active', 'teams.created_at', 'teams.updated_at')
             ->with('branch')
