@@ -144,9 +144,33 @@ class EmployeesController extends Controller
             ->with('success', 'Thông tin nhân viên đã được cập nhật!');
     }
 
-    public function destroy(Employee $employee)
+    public function destroy(Employee $employee, Request $request)
     {
-        $employee->loadMissing(['branch']);
+        $employee->loadMissing(['branch', 'user']);
+
+        if ($request->input('_delete_type') === 'permanent') {
+            DB::transaction(function () use ($employee) {
+                $user = $employee->user;
+                activity()
+                    ->performedOn($employee)
+                    ->causedBy(auth()->user())
+                    ->inLog('employee')
+                    ->withProperties([
+                        'code'   => $employee->code,
+                        'name'   => $employee->name,
+                        'branch' => $employee->branch?->name,
+                    ])
+                    ->log('Xóa nhân viên ' . $employee->name . ' (' . $employee->code . ')');
+
+                $employee->delete();
+                $user?->delete();
+            });
+
+            return redirect()->route('employees.index')
+                ->with('success', 'Nhân viên đã được xóa khỏi hệ thống!');
+        }
+
+        // Default: mark as resigned
         activity()
             ->performedOn($employee)
             ->causedBy(auth()->user())
@@ -156,13 +180,13 @@ class EmployeesController extends Controller
                 'name'   => $employee->name,
                 'branch' => $employee->branch?->name,
             ])
-            ->log('Vô hiệu hóa nhân viên ' . $employee->name . ' (' . $employee->code . ')');
+            ->log('Đánh dấu nghỉ việc nhân viên ' . $employee->name . ' (' . $employee->code . ')');
 
         $employee->update(['is_active' => false]);
         $employee->user?->update(['status' => 'inactive']);
 
         return redirect()->route('employees.index')
-            ->with('success', 'Nhân viên đã được vô hiệu hóa!');
+            ->with('success', 'Nhân viên đã được đánh dấu nghỉ việc!');
     }
 
     public function penalties(Employee $employee)

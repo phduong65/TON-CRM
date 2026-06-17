@@ -92,7 +92,7 @@ class RealEmployeeSeeder extends Seeder
 
             // Tạo email từ mã nhân viên
             $emailSlug = Str::lower(Str::replace([' ', '+'], '', $emp['code']));
-            $email = $emailSlug . '@pcrm.vn';
+            $email = $emailSlug . '@hr.vn';
 
             // Tạo User account
             $user = User::firstOrCreate(
