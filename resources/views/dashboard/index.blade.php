@@ -1153,41 +1153,6 @@
 
                     {{-- Right: avatar + status --}}
                     <div class="flex flex-col items-end gap-5 flex-shrink-0">
-
-
-                        {{-- Avatar circle --}}
-                        <div class="flex flex-row justify-end items-center gap-2">
-                            @if ($employee)
-                                <div class="w-48 h-48 p-3 rounded-full dash-avatar flex items-center justify-center font-black text-xl md:text-2xl text-white select-none"
-                                    style="background:rgba(255,255,255,0.2);border:3px solid rgba(255,255,255,0.45);">
-                                    <div class="text-center">
-                                        <p class="text-white font-black text-6xl leading-none tracking-tight">
-                                            {{ number_format($myTotalScore) }}</p>
-                                        <p class="text-xs" style="color:rgba(255,255,255,0.6)">điểm</p>
-                                        {{-- Status badge --}}
-                                        @if ($employee)
-                                            @php
-                                                [$zoneBadgeLabel, $zoneBadgeIcon, $zoneBadgeBg, $zoneBadgeBorder, $zoneSubLabel, $zoneBadgeClass] = match (true) {
-                                                    $myTotalScore >= 90 => ['Greenzone', 'bi-shield-fill-check', 'rgba(16,185,129,0.75)', 'rgba(52,211,153,0.5)', 'Xuất sắc', ''],
-                                                    $myTotalScore >= 80 => ['Yellowzone', 'bi-star-fill', 'rgba(202,138,4,0.8)', 'rgba(234,179,8,0.5)', 'Tốt', ''],
-                                                    $myTotalScore >= 70 => ['Orangezone', 'bi-exclamation-triangle-fill', 'rgba(234,88,12,0.8)', 'rgba(249,115,22,0.5)', 'Cần chú ý', ''],
-                                                    default             => ['Redzone', 'bi-exclamation-octagon-fill', 'rgba(244,63,94,0.85)', 'rgba(251,113,133,0.5)', 'Cần cải thiện', 'dash-redzone-blink'],
-                                                };
-                                            @endphp
-                                            <div class="hidden sm:flex flex-col items-center gap-2 self-center mt-2">
-                                                <div class="flex flex-col items-center gap-1.5">
-                                                    <span
-                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-bold {{ $zoneBadgeClass }}"
-                                                        style="background:{{ $zoneBadgeBg }};border:1px solid {{ $zoneBadgeBorder }};">
-                                                        <i class="bi {{ $zoneBadgeIcon }} text-xs"></i> {{ $zoneBadgeLabel }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
                     </div>
                 </div>
             </div>

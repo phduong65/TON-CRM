@@ -38,6 +38,13 @@
         'red' => 'bg-rose-500',
         default => 'bg-slate-400',
     };
+    $zoneMobileBg = fn(string $z) => match ($z) {
+        'green' => 'max-sm:!bg-emerald-50 max-sm:dark:!bg-emerald-950/30',
+        'yellow' => 'max-sm:!bg-amber-50 max-sm:dark:!bg-amber-950/30',
+        'orange' => 'max-sm:!bg-orange-50 max-sm:dark:!bg-orange-950/30',
+        'red' => 'max-sm:!bg-rose-50 max-sm:dark:!bg-rose-950/30',
+        default => '',
+    };
     $zoneEmoji = fn(string $z) => match ($z) {
         'green' => '🟢',
         'yellow' => '🟡',
@@ -81,38 +88,36 @@
 @endphp
 
 @section('content')
-    <div class="page-header">
-        <div>
-            <div class="inline-flex items-center gap-2">
-                <span
-                    class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-pcrm-100 dark:bg-pcrm-900/50 text-pcrm-700 dark:text-pcrm-400">
-                    <i class="bi bi-trophy-fill text-lg"></i>
-                </span>
-                <h3 class="page-title">Bảng xếp hạng</h3>
-            </div>
+    <div class="flex items-center justify-between gap-2 mb-6">
+        <div class="inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span
+                class="hidden sm:inline-flex flex-shrink-0 items-center justify-center w-9 h-9 rounded-xl bg-pcrm-100 dark:bg-pcrm-900/50 text-pcrm-700 dark:text-pcrm-400">
+                <i class="bi bi-trophy-fill text-lg"></i>
+            </span>
+            <h3 class="page-title !text-base sm:!text-2xl truncate">Bảng xếp hạng</h3>
         </div>
-        <div class="flex gap-2 flex-wrap" role="tablist">
+        <div class="flex gap-1 sm:gap-2 flex-shrink-0" role="tablist">
             <button type="button" class="btn-secondary ranking-tab-btn" onclick="showRankTab('alltime')" id="rtab-alltime"
-                role="tab">
-                <i class="bi bi-list-ol"></i><span>Tất cả thời gian</span>
+                role="tab" title="Tất cả thời gian">
+                <i class="bi bi-list-ol"></i><span class="hidden sm:inline">Tất cả thời gian</span>
             </button>
             <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('teams')" id="rtab-teams"
-                role="tab">
-                <i class="bi bi-people"></i><span>Đội nhóm</span>
+                role="tab" title="Đội nhóm">
+                <i class="bi bi-people"></i><span class="hidden sm:inline">Đội nhóm</span>
             </button>
             <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('monthly')"
-                id="rtab-monthly" role="tab">
-                <i class="bi bi-calendar-month"></i><span>Tháng</span>
+                id="rtab-monthly" role="tab" title="Tháng">
+                <i class="bi bi-calendar-month"></i><span class="hidden sm:inline">Tháng</span>
             </button>
             <button type="button" class="btn btn-primary ranking-tab-btn" onclick="showRankTab('yearly')" id="rtab-yearly"
-                role="tab">
-                <i class="bi bi-calendar2-check"></i><span>Năm</span>
+                role="tab" title="Năm">
+                <i class="bi bi-calendar2-check"></i><span class="hidden sm:inline">Năm</span>
             </button>
         </div>
     </div>
 
     {{-- ══ Zone legend ════════════════════════════════════════════════════════ --}}
-    <div class="flex flex-wrap items-center gap-3 mb-5 px-1">
+    <div class="hidden sm:flex flex-wrap items-center gap-3 mb-5 px-1">
         <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Zone:</span>
         <span
             class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">🟢
@@ -126,7 +131,7 @@
         <span
             class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">🔴
             Redzone</span>
-        <span class="ml-auto text-xs text-slate-400"><span class="font-semibold text-emerald-500">HS</span> = Hiệu số (điểm
+        <span class="hidden sm:inline ml-auto text-xs text-slate-400"><span class="font-semibold text-emerald-500">HS</span> = Hiệu số (điểm
             thưởng vượt 100)</span>
     </div>
 
@@ -142,7 +147,7 @@
                     {{ $employees->count() }} nhân viên
                 </span>
             </div>
-            <div class="card-body max-h-[90vh] overflow-y-auto">
+            <div class="card-body sm:max-h-[90vh] sm:overflow-y-auto">
                 @if ($employees->isEmpty())
                     <div class="py-14 text-center">
                         <div
@@ -163,7 +168,7 @@
                                 $delay = min(0.04 + $index * 0.03, 0.55);
                             @endphp
                             <a href="{{ route('employees.show', $emp) }}"
-                                class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : '' }}"
+                                class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : $zoneMobileBg($zone) }}"
                                 style="animation-delay:{{ $delay }}s">
 
                                 {{-- Rank --}}
@@ -188,12 +193,12 @@
                                         <span
                                             class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $emp->name }}</span>
                                         <span
-                                            class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($zone) }}">
+                                            class="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($zone) }}">
                                             {{ $zoneEmoji($zone) }}
                                             {{ \App\Models\MonthlyEmployeeScore::zoneLabel($zone) }}
                                         </span>
                                     </div>
-                                    <p class="text-xs text-slate-400 truncate mt-0.5">
+                                    <p class="hidden sm:block text-xs text-slate-400 truncate mt-0.5">
                                         {{ $emp->branch->name ?? '—' }}@if ($emp->team)
                                             <span class="opacity-40 mx-1">·</span>{{ $emp->team->name }}
                                         @endif
@@ -203,7 +208,7 @@
                                             class="text-[10px] font-bold uppercase tracking-wider mt-0.5 {{ $rankScoreClass($rank, $zone) }}">
                                             {{ $rankLabel[$rank] ?? '' }}</p>
                                     @else
-                                        <p class="text-[10px] text-slate-400 mt-0.5">{{ $emp->code }}</p>
+                                        <p class="hidden sm:block text-[10px] text-slate-400 mt-0.5">{{ $emp->code }}</p>
                                     @endif
                                 </div>
 
@@ -264,7 +269,7 @@
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">
                                         {{ $team->name }}</p>
-                                    <p class="text-xs text-slate-400 truncate mt-0.5">
+                                    <p class="hidden sm:block text-xs text-slate-400 truncate mt-0.5">
                                         {{ $team->branch->name ?? '—' }}
                                         <span class="opacity-40 mx-1">·</span>{{ $team->employees_count ?? 0 }} thành viên
                                     </p>
@@ -329,27 +334,27 @@
                 <div class="lg:col-span-1">
                     <div
                         class="card bg-gradient-to-br from-amber-50 to-yellow-100 dark:from-amber-950/40 dark:to-yellow-950/20 border border-amber-200 dark:border-amber-800">
-                        <div class="card-body text-center py-8">
-                            <div class="text-6xl mb-3 select-none">🏆</div>
+                        <div class="card-body text-center py-5 lg:py-8">
+                            <div class="text-4xl lg:text-6xl mb-2 lg:mb-3 select-none">🏆</div>
                             <div
-                                class="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-3">
+                                class="text-[10px] lg:text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2 lg:mb-3">
                                 Nhân viên xuất sắc tháng
                                 {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}
                             </div>
                             <div
-                                class="w-16 h-16 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-2xl font-black text-amber-800 dark:text-amber-200 mx-auto mb-3">
+                                class="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-xl lg:text-2xl font-black text-amber-800 dark:text-amber-200 mx-auto mb-2 lg:mb-3">
                                 {{ strtoupper(mb_substr($employeeOfMonth->name, 0, 2)) }}
                             </div>
-                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-0.5">
+                            <h3 class="text-base lg:text-xl font-black text-slate-900 dark:text-white mb-0.5">
                                 {{ $employeeOfMonth->name }}</h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                            <p class="text-xs lg:text-sm text-slate-500 dark:text-slate-400 mb-3 lg:mb-4">
                                 {{ $employeeOfMonth->branch->name ?? '—' }} · {{ $employeeOfMonth->team->name ?? '—' }}
                             </p>
                             @php $mzone = $employeeOfMonth->zone; @endphp
                             <div
-                                class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-4 py-2 mb-1">
+                                class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-3 lg:px-4 py-1.5 lg:py-2 mb-1">
                                 <span
-                                    class="text-2xl font-extrabold {{ $zoneScoreColor($mzone) }}">{{ $employeeOfMonth->display_score }}</span>
+                                    class="text-xl lg:text-2xl font-extrabold {{ $zoneScoreColor($mzone) }}">{{ $employeeOfMonth->display_score }}</span>
                                 <span class="text-xs text-slate-500">điểm</span>
                                 @if (($employeeOfMonth->surplus_points ?? 0) > 0)
                                     <span
@@ -380,7 +385,7 @@
                                 Top nhân viên tháng {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}
                             </h3>
                         </div>
-                        <div class="card-body max-h-[90vh] overflow-y-auto">
+                        <div class="card-body sm:max-h-[90vh] sm:overflow-y-auto">
                             <div class="ranking-scroll-list-sm grid grid-cols-1 sm:grid-cols-1 gap-3">
                                 @forelse($monthlyRanking as $i => $emp)
                                     @php
@@ -390,7 +395,7 @@
                                         $surplus = $emp->surplus_points ?? 0;
                                         $delay = min(0.05 + $i * 0.04, 0.5);
                                     @endphp
-                                    <div class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : '' }}"
+                                    <div class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : $zoneMobileBg($z) }}"
                                         style="animation-delay:{{ $delay }}s">
 
                                         <div class="leaderboard-card-rank leaderboard-medal w-7 text-center flex-shrink-0">
@@ -413,12 +418,12 @@
                                                     {{ $emp->name }}
                                                 </a>
                                                 <span
-                                                    class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($z) }}">
+                                                    class="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($z) }}">
                                                     {{ $zoneEmoji($z) }}
                                                     {{ \App\Models\MonthlyEmployeeScore::zoneLabel($z) }}
                                                 </span>
                                             </div>
-                                            <p class="text-[10px] text-slate-400 mt-0.5">{{ $emp->code }}</p>
+                                            <p class="hidden sm:block text-[10px] text-slate-400 mt-0.5">{{ $emp->code }}</p>
                                         </div>
 
                                         <div class="leaderboard-card-score flex-shrink-0 text-right">
@@ -488,26 +493,26 @@
                 <div class="lg:col-span-1">
                     <div
                         class="card bg-gradient-to-br from-pcrm-50 to-indigo-100 dark:from-pcrm-950/40 dark:to-indigo-950/20 border border-pcrm-200 dark:border-pcrm-800">
-                        <div class="card-body text-center py-8">
-                            <div class="text-6xl mb-3 select-none">🥇</div>
+                        <div class="card-body text-center py-5 lg:py-8">
+                            <div class="text-4xl lg:text-6xl mb-2 lg:mb-3 select-none">🥇</div>
                             <div
-                                class="text-[11px] font-bold uppercase tracking-widest text-pcrm-600 dark:text-pcrm-400 mb-3">
+                                class="text-[10px] lg:text-[11px] font-bold uppercase tracking-widest text-pcrm-600 dark:text-pcrm-400 mb-2 lg:mb-3">
                                 Nhân viên xuất sắc năm {{ $evalYearOnly }}
                             </div>
                             <div
-                                class="w-16 h-16 rounded-full bg-pcrm-200 dark:bg-pcrm-800 flex items-center justify-center text-2xl font-black text-pcrm-800 dark:text-pcrm-200 mx-auto mb-3">
+                                class="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-pcrm-200 dark:bg-pcrm-800 flex items-center justify-center text-xl lg:text-2xl font-black text-pcrm-800 dark:text-pcrm-200 mx-auto mb-2 lg:mb-3">
                                 {{ strtoupper(mb_substr($employeeOfYear->name, 0, 2)) }}
                             </div>
-                            <h3 class="text-xl font-black text-slate-900 dark:text-white mb-0.5">
+                            <h3 class="text-base lg:text-xl font-black text-slate-900 dark:text-white mb-0.5">
                                 {{ $employeeOfYear->name }}</h3>
-                            <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                            <p class="text-xs lg:text-sm text-slate-500 dark:text-slate-400 mb-3 lg:mb-4">
                                 {{ $employeeOfYear->branch->name ?? '—' }} · {{ $employeeOfYear->team->name ?? '—' }}
                             </p>
                             @php $yzone = $employeeOfYear->zone; @endphp
                             <div
-                                class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-4 py-2 mb-1">
+                                class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-3 lg:px-4 py-1.5 lg:py-2 mb-1">
                                 <span
-                                    class="text-2xl font-extrabold {{ $zoneScoreColor($yzone) }}">{{ $employeeOfYear->display_score }}</span>
+                                    class="text-xl lg:text-2xl font-extrabold {{ $zoneScoreColor($yzone) }}">{{ $employeeOfYear->display_score }}</span>
                                 <span class="text-xs text-slate-500">điểm TB</span>
                                 @if (($employeeOfYear->surplus_points ?? 0) > 0)
                                     <span
@@ -537,7 +542,7 @@
                                 Bảng xếp hạng năm {{ $evalYearOnly }} (điểm trung bình/tháng)
                             </h3>
                         </div>
-                        <div class="card-body max-h-[90vh] overflow-y-auto">
+                        <div class="card-body sm:max-h-[90vh] sm:overflow-y-auto">
                             <div class="ranking-scroll-list-sm grid grid-cols-1 sm:grid-cols-1 gap-3">
                                 @forelse($yearlyRanking as $i => $emp)
                                     @php
@@ -547,7 +552,7 @@
                                         $surplus = $emp->surplus_points ?? 0;
                                         $delay = min(0.05 + $i * 0.04, 0.5);
                                     @endphp
-                                    <div class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : '' }}"
+                                    <div class="leaderboard-card {{ $isTop ? 'leaderboard-card-top' : $zoneMobileBg($z) }}"
                                         style="animation-delay:{{ $delay }}s">
 
                                         <div class="leaderboard-card-rank leaderboard-medal w-7 text-center flex-shrink-0">
@@ -570,12 +575,12 @@
                                                     {{ $emp->name }}
                                                 </a>
                                                 <span
-                                                    class="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($z) }}">
+                                                    class="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 {{ $zoneBadgeCss($z) }}">
                                                     {{ $zoneEmoji($z) }}
                                                     {{ \App\Models\MonthlyEmployeeScore::zoneLabel($z) }}
                                                 </span>
                                             </div>
-                                            <p class="text-[10px] text-slate-400 mt-0.5">
+                                            <p class="hidden sm:block text-[10px] text-slate-400 mt-0.5">
                                                 {{ $emp->months_logged }} tháng
                                                 @if ($emp->months_in_red > 0)
                                                     · <span class="text-red-400">{{ $emp->months_in_red }} 🔴</span>
