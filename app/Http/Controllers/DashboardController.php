@@ -330,18 +330,16 @@ class DashboardController extends Controller
                 ->search($employee->id);
             $myRank = $rankIndex !== false ? $rankIndex + 1 : null;
 
-            if ($employee->team_id) {
-                $teamLeaderboard = Employee::query()
-                    ->where('team_id', $employee->team_id)
-                    ->addSelect([
-                        'total_score' => DB::table('employee_scores')
-                            ->selectRaw('COALESCE(SUM(points), 0)')
-                            ->whereColumn('employee_id', 'employees.id'),
-                    ])
-                    ->orderByDesc('total_score')
-                    ->limit(5)
-                    ->get();
-            }
+            $teamLeaderboard = Employee::query()
+                ->with(['team', 'branch'])
+                ->addSelect([
+                    'total_score' => DB::table('employee_scores')
+                        ->selectRaw('COALESCE(SUM(points), 0)')
+                        ->whereColumn('employee_id', 'employees.id'),
+                ])
+                ->orderByDesc('total_score')
+                ->limit(10)
+                ->get();
         }
 
         return view('dashboard.index', compact(

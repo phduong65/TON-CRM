@@ -1364,17 +1364,17 @@
                     </div>
                 </div>
 
-                {{-- Bảng xếp hạng đội --}}
+                {{-- Bảng xếp hạng toàn công ty --}}
                 <div class="card dash-sect-r">
                     <div class="card-header flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="bi bi-bar-chart-steps text-amber-500"></i>
-                            <h3 class="font-semibold text-slate-900 dark:text-white">
-                                Xếp hạng — {{ $employee->team->name ?? 'Đội của tôi' }}
+                        <div class="flex items-center gap-2 min-w-0">
+                            <i class="bi bi-bar-chart-steps text-amber-500 flex-shrink-0"></i>
+                            <h3 class="font-semibold text-slate-900 dark:text-white truncate">
+                                Xếp hạng toàn công ty
                             </h3>
                         </div>
                         <a href="{{ route('rankings.index') }}"
-                            class="text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline flex items-center gap-1">
+                            class="text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline flex items-center gap-1 flex-shrink-0 ml-3">
                             Xem tất cả <i class="bi bi-arrow-right text-xs"></i>
                         </a>
                     </div>
@@ -1419,7 +1419,7 @@
 
                                         {{-- Name + zone badge --}}
                                         <div class="flex-1 min-w-0">
-                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                            <div class="flex items-center gap-1.5">
                                                 <p
                                                     class="text-sm font-semibold truncate {{ $isMe ? 'text-pcrm-700 dark:text-pcrm-300' : 'text-slate-800 dark:text-slate-200' }}">
                                                     {{ $member->name }}
@@ -1437,7 +1437,11 @@
                                                 @endif
                                             </div>
                                             <p class="text-xs text-slate-400 truncate mt-0.5">
-                                                {{ $member->position ?? '—' }}</p>
+                                                {{ $member->team->name ?? '—' }}
+                                                @if ($member->branch->name ?? null)
+                                                    <span class="mx-1 opacity-40">·</span>{{ $member->branch->name }}
+                                                @endif
+                                            </p>
                                         </div>
 
                                         {{-- Score + zone bar --}}
