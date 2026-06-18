@@ -74,7 +74,11 @@
                 </span>
             @endif
         </a>
-
+        <a href="/html/Luat_Thuong_Phat_NhanVien.html" target="_blank"
+            class="sidebar-link sidebar-link-inactive">
+            <i class="bi bi-file-earmark-text text-base"></i>
+            <span>Nội quy công ty</span>
+        </a>
         {{-- ── NHÂN SỰ ──────────────────────────────── --}}
         <p
             class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">

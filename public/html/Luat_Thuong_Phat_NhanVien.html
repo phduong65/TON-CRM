@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="vi">
 
 <head>
@@ -7,9 +8,11 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600;700&amp;display=swap" rel="stylesheet">
 
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
         /* ── THIẾT LẬP CƠ BẢN ──────────────────────── */
         :root {
             --primary: #1e3a8a;
@@ -29,7 +32,7 @@
         }
 
         body {
-            font-family: 'Inter', Arial, sans-serif;
+            font-family: 'Be Vietnam Pro', 'Arial', sans-serif;
             color: var(--text-main);
             font-size: 14px;
             line-height: 1.6;
@@ -56,8 +59,13 @@
             margin-bottom: 30px;
         }
 
-        .doc-header-left { text-align: left; }
-        .doc-header-right { text-align: right; }
+        .doc-header-left {
+            text-align: left;
+        }
+
+        .doc-header-right {
+            text-align: right;
+        }
 
         .company-name {
             font-weight: 700;
@@ -110,7 +118,9 @@
             outline: none;
         }
 
-        .search-box input:focus { border-color: var(--primary); }
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
 
         /* ── TIÊU ĐỀ CÁC PHẦN ──────────────────────── */
         h2 {
@@ -132,8 +142,20 @@
             border-left: 4px solid var(--primary);
         }
 
-        .h3-penalty { border-left-color: var(--penalty); }
-        .h3-reward  { border-left-color: var(--reward); }
+        h4 {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 15px 0 8px 5px;
+        }
+
+        .h3-penalty {
+            border-left-color: var(--penalty);
+        }
+
+        .h3-reward {
+            border-left-color: var(--reward);
+        }
 
         /* ── HỘP GHI CHÚ ──────────────────────── */
         .note-box {
@@ -192,7 +214,7 @@
         /* ── BẢNG BIỂU DỮ LIỆU ──────────────────────── */
         .table-wrapper {
             overflow-x: auto;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         table {
@@ -202,7 +224,8 @@
             text-align: left;
         }
 
-        th, td {
+        th,
+        td {
             border: 1px solid var(--border);
             padding: 10px 12px;
             vertical-align: middle;
@@ -215,11 +238,23 @@
             white-space: nowrap;
         }
 
-        tbody tr:nth-child(even) { background-color: #f9fafb; }
-        tbody tr:hover           { background-color: #f3f4f6; }
+        tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
 
-        .col-stt   { width: 40px; text-align: center; }
-        .col-level { width: 110px; font-weight: 500; }
+        tbody tr:hover {
+            background-color: #f3f4f6;
+        }
+
+        .col-stt {
+            width: 40px;
+            text-align: center;
+        }
+
+        .col-level {
+            width: 110px;
+            font-weight: 500;
+        }
 
         .col-money {
             font-weight: 600;
@@ -252,7 +287,9 @@
             margin-top: 10px;
         }
 
-        .process-box li { margin-bottom: 8px; }
+        .process-box li {
+            margin-bottom: 8px;
+        }
 
         .signature-grid {
             display: grid;
@@ -296,11 +333,22 @@
             }
 
             .doc-header-left,
-            .doc-header-right { text-align: center; }
+            .doc-header-right {
+                text-align: center;
+            }
 
-            .zone-grid       { grid-template-columns: 1fr 1fr; }
-            .process-grid    { grid-template-columns: 1fr; }
-            .signature-grid  { grid-template-columns: 1fr; gap: 40px; }
+            .zone-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .process-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .signature-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
         }
 
         /* ── TỐI ƯU KHI IN ẤN (PDF / MÁY IN) ──────────────────────── */
@@ -318,575 +366,1628 @@
                 max-width: 100%;
             }
 
-            .search-box { display: none; }
+            .search-box {
+                display: none;
+            }
 
-            .page-break { page-break-before: always; }
+            .page-break {
+                page-break-before: always;
+            }
 
-            h2 { margin-top: 20px; }
+            h2 {
+                margin-top: 20px;
+            }
 
-            table { page-break-inside: auto; }
+            table {
+                page-break-inside: auto;
+            }
 
             tr {
                 page-break-inside: avoid;
                 page-break-after: auto;
             }
 
-            thead { display: table-header-group; }
+            thead {
+                display: table-header-group;
+            }
         }
     </style>
 </head>
 
 <body>
 
-<div class="document">
+    <div class="document">
 
-    <!-- Phân đầu tài liệu -->
-    <div class="doc-header">
-        <div class="doc-header-left">
-            <div class="company-name">CÔNG TY TNHH TON CAPITAL</div>
-            <div class="doc-number">Số: 01/2026/NQ-TC</div>
-        </div>
-        <div class="doc-header-right">
-            <div class="company-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-            <div class="doc-number">Độc lập - Tự do - Hạnh phúc</div>
-        </div>
-    </div>
-
-    <div class="doc-title-container">
-        <h1 class="doc-title">Nội Quy Phạt &amp; Thưởng Hệ Thống</h1>
-        <div class="doc-subtitle">(Áp dụng cho toàn bộ nhân sự cơ sở và khối văn phòng từ ngày 01/01/2026)</div>
-    </div>
-
-    <!-- Thanh tìm kiếm -->
-    <div class="search-box">
-        <input type="text" id="liveSearch"
-            placeholder="Nhập từ khóa để tra cứu nhanh lỗi hoặc mức thưởng (VD: Đi trễ, Bếp, KPI)..."
-            onkeyup="filterTables()">
-    </div>
-
-    <!-- PHẦN I -->
-    <h2>Phần I. Cơ Chế Điểm Hành Vi</h2>
-
-    <div class="note-box">
-        <strong>Điểm hạn mức ban đầu: 100 điểm/tháng.</strong> Hệ thống cấp 100 điểm vào ngày 1 hàng tháng cho mỗi
-        nhân sự. Điểm số biến động dựa trên biểu hành vi thực tế và là căn cứ tối cao để xếp hạng hiệu suất cuối kỳ.
-    </div>
-
-    <div class="zone-grid">
-        <div class="zone-card">
-            <strong>Greenzone</strong>
-            <span style="color:#15803d">90 – 100đ</span>
-            <small>Xuất sắc (Đạt xét thưởng)</small>
-        </div>
-        <div class="zone-card">
-            <strong>Yellowzone</strong>
-            <span style="color:#ca8a04">80 – 89đ</span>
-            <small>Tiêu chuẩn (Duy trì ổn định)</small>
-        </div>
-        <div class="zone-card">
-            <strong>Orangezone</strong>
-            <span style="color:#ea580c">70 – 79đ</span>
-            <small>Yếu (Cần cải thiện)</small>
-        </div>
-        <div class="zone-card">
-            <strong>Redzone</strong>
-            <span style="color:#dc2626">&lt; 70đ</span>
-            <small>Báo động (Xử lý kỷ luật)</small>
-        </div>
-    </div>
-
-    <!-- PHẦN II -->
-    <h2>Phần II. Danh Mục Xử Phạt Kỷ Luật</h2>
-
-    <div class="note-box warning">
-        <strong>Lưu ý về bồi hoàn tài sản:</strong> Khung tiền xử lý dưới đây là mức xử lý kỷ luật cơ bản. Riêng
-        hành vi gây hư hỏng/mất mát thiết bị, nhân sự chịu trách nhiệm bồi thường theo giá trị thẩm định thực tế của
-        hội đồng kỹ thuật.
-    </div>
-
-    <!-- Quy Chế 1 -->
-    <h3 class="h3-penalty">Quy Chế 1: Giờ Giấc &amp; Kỷ Luật Lao Động</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th>Hành vi vi phạm</th>
-                    <th>Mô tả chi tiết</th>
-                    <th class="col-level">Mức độ</th>
-                    <th>Khấu Trừ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>1</td><td>Đi trễ dưới 5 phút</td><td>Đi trễ dưới 5 phút</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>2</td><td>Quên chấm công vào ca</td><td>Không thực hiện check-in khi bắt đầu ca làm</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>3</td><td>Quên chấm công ra ca</td><td>Không thực hiện check-out khi kết thúc ca làm</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>4</td><td>Không mặc đồng phục đúng quy định</td><td>Mặc sai áo hoặc quần đồng phục theo quy định của công ty</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>5</td><td>Đồng phục nhăn nhúm hoặc bẩn</td><td>Mặc đồng phục thiếu chỉn chu, nhăn nhúm hoặc có vết bẩn rõ ràng</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>6</td><td>Không đeo bảng tên trong ca</td><td>Không đeo bảng tên nhân viên khiến khách không nhận diện được</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>7</td><td>Mang dép không đúng quy định</td><td>Dùng dép hoặc giày không đúng tiêu chuẩn an toàn và đồng bộ quy định</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>8</td><td>Tóc tai không gọn gàng</td><td>Kiểu tóc không phù hợp hoặc không gọn gàng khi tiếp xúc với khách hàng</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>9</td><td>Không đọc/nắm thông báo của công ty</td><td>Bỏ sót thông báo vận hành gây ảnh hưởng đến công việc</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>10</td><td>Đi trễ 5–15 phút</td><td>Có mặt trễ từ 5 đến 15 phút</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>11</td><td>Về sớm dưới 15 phút</td><td>Rời vị trí trước giờ làm dưới 15 phút</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>12</td><td>Quên chấm công từ 3 lần trở lên trong tháng</td><td>Từ lần thứ 3 trở lên quên chấm công trong cùng một tháng</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>13</td><td>Có mùi cơ thể ảnh hưởng môi trường làm việc</td><td>Không đảm bảo vệ sinh cá nhân, có mùi cơ thể gây ảnh hưởng đến khách và đồng nghiệp</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>14</td><td>Không tham gia briefing đầu ca</td><td>Vắng mặt buổi họp đầu ca mà không có lý do chính đáng</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>15</td><td>Không thực hiện checklist đầu ca</td><td>Bỏ qua quy trình kiểm tra và chuẩn bị theo checklist khi bắt đầu ca</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>16</td><td>Không thực hiện checklist cuối ca</td><td>Bỏ qua quy trình kiểm tra và dọn dẹp theo checklist khi kết thúc ca</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>17</td><td>Không phản hồi quản lý khi được yêu cầu</td><td>Gây gián đoạn vận hành do không phản hồi hoặc phản hồi trễ yêu cầu từ quản lý</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>18</td><td>Đi trễ 15–30 phút</td><td>Có mặt trễ từ 15 đến 30 phút</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>19</td><td>Đi trễ nhiều lần trong tuần</td><td>Từ lần thứ 3 trở lên đi trễ trong cùng tuần</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>20</td><td>Về sớm trên 15 phút</td><td>Rời vị trí trước giờ làm trên 15 phút</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>21</td><td>Nghỉ báo trước nhưng chưa được duyệt</td><td>Tự ý nghỉ khi chưa có xác nhận phê duyệt từ quản lý</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>22</td><td>Nghỉ gấp báo dưới 4 giờ trước ca</td><td>Báo nghỉ quá sát giờ làm, dưới 4 giờ trước khi ca bắt đầu</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>23</td><td>Nghỉ quá số ngày quy định trong tháng</td><td>Số ngày nghỉ vượt giới hạn cho phép theo quy định công ty</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>24</td><td>Hút thuốc trong khu vực làm việc</td><td>Hút thuốc trong khu vực làm việc hoặc nơi không được phép</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>25</td><td>Không hoàn thành task được giao trong ca</td><td>Không hoàn thành nhiệm vụ được giao mà không có lý do chính đáng</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>26</td><td>Từ chối công việc trong phạm vi trách nhiệm</td><td>Không hợp tác, từ chối thực hiện công việc nằm trong phạm vi trách nhiệm vị trí</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>27</td><td>Không tuân thủ SOP đã được đào tạo</td><td>Thực hiện sai quy trình chuẩn đã được đào tạo và ký nhận</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>28</td><td>Đi trễ trên 30 phút</td><td>Có mặt trễ trên 30 phút</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>29</td><td>Tự ý bỏ vị trí trong ca</td><td>Rời khu vực làm việc mà không báo cáo quản lý</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>30</td><td>Nghỉ đột xuất không có lý do hợp lý</td><td>Không cung cấp lý do chính đáng khi nghỉ đột xuất</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>31</td><td>No Show</td><td>Không đi làm, không báo cáo</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>32</td><td>Tái phạm cùng một lỗi 3 lần trong tháng</td><td>Không cải thiện sau khi được nhắc nhở, tái phạm cùng lỗi từ 3 lần trở lên trong tháng</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>33</td><td>No Show cuối tuần hoặc ngày lễ</td><td>Không đi làm vào ca cao điểm cuối tuần hoặc ngày lễ mà không báo</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-                <tr class="searchable-row"><td>34</td><td>Nhờ người chấm công hộ</td><td>Nhờ đồng nghiệp chấm công thay, gian lận thời gian làm việc</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-                <tr class="searchable-row"><td>35</td><td>Chấm công hộ người khác</td><td>Hỗ trợ đồng nghiệp gian lận bằng cách chấm công thay</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-                <tr class="searchable-row"><td>36</td><td>Sửa dữ liệu chấm công sai sự thật</td><td>Cố tình khai sai giờ làm hoặc chỉnh sửa dữ liệu chấm công</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Quy Chế 2 -->
-    <h3 class="h3-penalty">Quy Chế 2: Vận Hành &amp; Nghiệp Vụ</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th>Hành vi vi phạm</th>
-                    <th>Mô tả chi tiết</th>
-                    <th class="col-level">Mức độ</th>
-                    <th>Phạt Tiền</th>
-                    <th>Khấu Trừ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>1</td><td>Phục vụ chậm so với tiêu chuẩn</td><td>Thời gian phục vụ vượt quá tiêu chuẩn quy định mà không có lý do hợp lý</td><td>Nhẹ</td><td>-</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>2</td><td>Không chào hỏi khách theo chuẩn thương hiệu</td><td>Không thực hiện nghi thức chào hỏi và đón tiếp khách đúng chuẩn thương hiệu</td><td>Nhẹ</td><td>-</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>3</td><td>Mang món nhầm bàn</td><td>Mang món ăn hoặc đồ uống đến nhầm bàn khách</td><td>Trung bình</td><td class="col-money">50.000đ</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>4</td><td>Không tuân thủ quy trình phục vụ</td><td>Bỏ qua hoặc thực hiện sai các bước trong quy trình phục vụ chuẩn</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>5</td><td>Không chuẩn bị trước ca</td><td>Không chuẩn bị đầy đủ vật dụng và nguyên liệu theo checklist trước khi ca bắt đầu</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>6</td><td>Bàn giao ca không đúng quy trình</td><td>Không thực hiện bàn giao ca đúng quy trình: ghi chú, kiểm kho, thông báo cho ca sau</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>7</td><td>Lãng phí nguyên liệu pha chế</td><td>Sử dụng nguyên liệu bar vượt mức định lượng chuẩn không có lý do hợp lý</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>8</td><td>Không xử lý yêu cầu khách kịp thời</td><td>Bỏ qua hoặc chậm trễ xử lý yêu cầu hợp lý từ khách hàng</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>9</td><td>Gọi sai món cho khách</td><td>Nhập sai order của khách dẫn đến bếp/bar ra sai món</td><td>Nặng</td><td class="col-money">200.000đ</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>10</td><td>Ra món không đúng order</td><td>Bếp ra món không khớp với order về loại, số lượng hoặc yêu cầu đặc biệt của khách</td><td>Nặng</td><td class="col-money">200.000đ</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>11</td><td>Khách trả đồ uống do lỗi pha chế</td><td>Khách từ chối nhận hoặc trả lại đồ uống do chất lượng pha chế không đạt</td><td>Nghiêm trọng</td><td class="col-money">200.000đ</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>12</td><td>Món bị trả do lỗi phục vụ</td><td>Khách từ chối nhận hoặc trả lại món do lỗi trong quá trình phục vụ</td><td>Nghiêm trọng</td><td class="col-money">200.000đ</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>13</td><td>Khách để lại review tiêu cực về nhân viên</td><td>Khách đánh giá tiêu cực gắn trực tiếp với hành vi hoặc thái độ của nhân viên</td><td>Nghiêm trọng</td><td class="col-money">200.000đ</td><td class="pts-minus">-10đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Quy Chế 3 -->
-    <h3 class="h3-penalty">Quy Chế 3: Tài Sản &amp; Thiết Bị</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th>Hành vi vi phạm</th>
-                    <th>Mô tả chi tiết</th>
-                    <th class="col-level">Mức độ</th>
-                    <th>Phạt Tiền</th>
-                    <th>Khấu Trừ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>1</td><td>Sử dụng thiết bị sai mục đích</td><td>Dùng dụng cụ, thiết bị của công ty cho mục đích cá nhân hoặc không đúng chức năng</td><td>Nhẹ</td><td>-</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>2</td><td>Không tắt thiết bị điện sau ca</td><td>Quên tắt đèn, điều hòa, quạt hoặc thiết bị điện khác khi kết thúc ca</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>3</td><td>Bảo quản dụng cụ không đúng quy định</td><td>Không cất giữ, vệ sinh hoặc bảo quản dụng cụ theo quy trình sau khi sử dụng</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>4</td><td>Không báo cáo thiết bị hư hỏng kịp thời</td><td>Phát hiện thiết bị có dấu hiệu hỏng hóc nhưng không báo cáo kịp thời cho quản lý</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>5</td><td>Làm hỏng tài sản do sơ suất</td><td>Tài sản bị hỏng do lỗi sơ suất. Phạt tiền theo giá trị thực tế nếu lớn hơn mức cơ bản</td><td>Nặng</td><td class="col-money">400.000đ+</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>6</td><td>Làm mất tài sản công ty</td><td>Tài sản bị mất do thiếu trách nhiệm. Nhập số tiền bồi thường theo giá trị thực tế khi tạo phiếu phạt</td><td>Nghiêm trọng</td><td class="col-money">Theo GTTT</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>7</td><td>Cố ý hủy hoại tài sản công ty</td><td>Cố ý làm hỏng hoặc hủy hoại tài sản công ty. Bồi thường toàn bộ theo giá trị thực tế</td><td>Đặc biệt NT</td><td class="col-money">100% GTTT</td><td class="pts-minus">-20đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="page-break"></div>
-
-    <!-- Quy Chế 4 -->
-    <h3 class="h3-penalty">Quy Chế 4: Nghiệp Vụ Bếp</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th>Hành vi vi phạm</th>
-                    <th>Mô tả chi tiết</th>
-                    <th class="col-level">Mức độ</th>
-                    <th>Phạt Tiền</th>
-                    <th>Khấu Trừ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>1</td><td>Trình bày món không đúng chuẩn thương hiệu</td><td>Món ăn ra cho khách không đúng chuẩn trình bày và plating của thương hiệu</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>2</td><td>Lãng phí nguyên liệu quá mức định lượng</td><td>Sử dụng hoặc để hao hụt nguyên liệu vượt mức định lượng chuẩn không có lý do</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>3</td><td>Không kiểm tra chất lượng nguyên liệu nhập</td><td>Nhận nguyên liệu mà không kiểm tra chất lượng, nguồn gốc, hạn sử dụng theo quy trình</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>4</td><td>Tái sử dụng dụng cụ chưa qua vệ sinh</td><td>Dùng lại dụng cụ bếp khi chưa được vệ sinh và khử trùng đúng chuẩn</td><td>Trung bình</td><td>-</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>5</td><td>Không vệ sinh dụng cụ bếp đúng quy trình</td><td>Dụng cụ bếp không được vệ sinh, khử trùng đúng cách và đúng lịch theo quy trình</td><td>Nặng</td><td>-</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>6</td><td>Làm hỏng dụng cụ bếp do sơ suất</td><td>Dụng cụ nấu nướng bị hỏng do không tuân thủ hướng dẫn sử dụng đúng cách</td><td>Nặng</td><td class="col-money">200.000đ</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>7</td><td>Món bị trả do chất lượng chế biến kém</td><td>Khách từ chối nhận món do chất lượng chế biến không đạt tiêu chuẩn</td><td>Nghiêm trọng</td><td class="col-money">200.000đ</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>8</td><td>Để thực phẩm hết hạn sử dụng trong kho</td><td>Không kiểm tra và loại bỏ nguyên liệu hết hạn theo quy trình FIFO/FEFO</td><td>Nghiêm trọng</td><td>-</td><td class="pts-minus">-10đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Quy Chế 5 -->
-    <h3 class="h3-penalty">Quy Chế 5: Vệ Sinh &amp; An Toàn Lao Động</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th>Hành vi vi phạm</th>
-                    <th>Mô tả chi tiết</th>
-                    <th class="col-level">Mức độ</th>
-                    <th>Khấu Trừ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>1</td><td>Vệ sinh cá nhân không đạt chuẩn</td><td>Ngoại hình, quần áo, tóc tai không đảm bảo vệ sinh và chuyên nghiệp khi tiếp xúc khách</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>2</td><td>Khu vực làm việc không đạt chuẩn vệ sinh</td><td>Khu vực phụ trách không được dọn dẹp đúng tiêu chuẩn vệ sinh quy định</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>3</td><td>Không dọn vệ sinh khu vực cuối ca</td><td>Không thực hiện dọn dẹp khu vực phụ trách trước khi kết thúc ca theo checklist</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>4</td><td>Nhà vệ sinh không đạt chuẩn trong ca</td><td>Nhà vệ sinh trong ca phụ trách không được dọn dẹp đúng lịch và tiêu chuẩn quy định</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>5</td><td>Không đổ rác đúng quy định</td><td>Không phân loại rác, không đổ rác đúng giờ hoặc để rác tràn ra ngoài thùng</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>6</td><td>Không sử dụng thiết bị bảo hộ lao động</td><td>Không đeo găng tay, tạp dề, mũ hoặc thiết bị bảo hộ quy định khi làm việc</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>7</td><td>Vi phạm quy tắc an toàn lao động</td><td>Thực hiện hành vi gây nguy hiểm cho bản thân hoặc đồng nghiệp trong khu vực làm việc</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>8</td><td>Vi phạm quy định an toàn thực phẩm</td><td>Không tuân thủ quy định về nhiệt độ bảo quản, thời hạn sử dụng và vệ sinh thực phẩm</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>9</td><td>Phục vụ thực phẩm không đảm bảo VSATTP</td><td>Phục vụ thực phẩm đã hỏng hoặc không đạt tiêu chuẩn vệ sinh an toàn thực phẩm cho khách</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Quy Chế 6 -->
-    <h3 class="h3-penalty">Quy Chế 6: Văn Hóa &amp; Hành Vi</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th>Hành vi vi phạm</th>
-                    <th>Mô tả chi tiết</th>
-                    <th class="col-level">Mức độ</th>
-                    <th>Khấu Trừ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>1</td><td>Thái độ làm việc tiêu cực</td><td>Biểu hiện thái độ chán nản, lười biếng, không nhiệt tình trong công việc</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>2</td><td>Không tuân thủ chỉ đạo hợp lý của quản lý</td><td>Từ chối hoặc bỏ qua chỉ đạo hợp lý từ quản lý trực tiếp mà không có lý do chính đáng</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>3</td><td>Không hỗ trợ đồng nghiệp khi được yêu cầu</td><td>Từ chối hoặc phớt lờ yêu cầu hỗ trợ hợp lý từ đồng nghiệp trong giờ làm việc</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>4</td><td>Tranh cãi, gây mâu thuẫn với đồng nghiệp</td><td>Cãi vã, to tiếng hoặc gây bất hòa với đồng nghiệp trong môi trường làm việc</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>5</td><td>Thái độ thiếu tôn trọng với khách hàng</td><td>Hành vi, lời nói hoặc cử chỉ thể hiện sự thiếu tôn trọng với khách hàng</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>6</td><td>Tự ý giảm giá hoặc miễn phí dịch vụ</td><td>Áp dụng giảm giá hoặc miễn phí cho khách khi chưa được ủy quyền từ quản lý</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>7</td><td>Tiết lộ thông tin nội bộ trái phép</td><td>Chia sẻ thông tin về giá cả, quy trình, dữ liệu khách hàng hoặc nội bộ công ty ra ngoài</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>8</td><td>Tranh cãi trực tiếp với khách hàng</td><td>Cãi vã, tranh luận hoặc có hành vi thiếu chuyên nghiệp trực tiếp với khách hàng</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-                <tr class="searchable-row"><td>9</td><td>Đăng thông tin công ty lên mạng xã hội trái phép</td><td>Đăng thông tin, hình ảnh nội bộ hoặc nói xấu công ty trên mạng xã hội khi chưa được phép</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Quy Chế 7 -->
-    <h3 class="h3-penalty">Quy Chế 7: Trách Nhiệm &amp; Hiệu Suất Công Việc</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th class="col-stt">STT</th>
-                    <th>Hành vi vi phạm</th>
-                    <th>Mô tả chi tiết</th>
-                    <th class="col-level">Mức độ</th>
-                    <th>Khấu Trừ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>1</td><td>Lỗi chính tả hoặc ngữ pháp trong nội dung đã đăng</td><td>Bài đăng có lỗi chính tả hoặc ngữ pháp rõ ràng sau khi đã publish công khai</td><td>Nhẹ</td><td class="pts-minus">-1đ</td></tr>
-                <tr class="searchable-row"><td>2</td><td>Báo cáo sai lệch hoặc thiếu dữ liệu</td><td>Nộp báo cáo công việc có thông tin sai lệch hoặc thiếu so với yêu cầu</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>3</td><td>Không backup dữ liệu theo lịch định kỳ</td><td>Bỏ qua lịch backup dữ liệu hệ thống theo quy trình đã quy định</td><td>Trung bình</td><td class="pts-minus">-3đ</td></tr>
-                <tr class="searchable-row"><td>4</td><td>Không hoàn thành KPI tháng</td><td>Kết quả làm việc không đạt chỉ tiêu KPI đã cam kết trong tháng</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>5</td><td>Trễ deadline nội dung hoặc chiến dịch</td><td>Không hoàn thành nội dung hoặc chiến dịch marketing đúng timeline đã cam kết</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>6</td><td>Nhập sai dữ liệu kế toán</td><td>Nhập sai số liệu vào phần mềm kế toán hoặc hệ thống quản lý tài chính</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>7</td><td>Thiếu chứng từ thanh toán khi đối soát</td><td>Hóa đơn, biên lai hoặc chứng từ liên quan bị thiếu khi thực hiện đối soát</td><td>Nặng</td><td class="pts-minus">-5đ</td></tr>
-                <tr class="searchable-row"><td>8</td><td>Cấp sai quyền truy cập hệ thống</td><td>Gán quyền hệ thống sai vai trò hoặc cấp vượt phạm vi cho phép</td><td>Nặng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>9</td><td>Không đào tạo nhân viên mới đúng quy trình</td><td>Quản lý/TL không thực hiện onboarding và đào tạo nhân viên mới theo đúng quy trình</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>10</td><td>Không xử lý khiếu nại khách hàng kịp thời</td><td>Quản lý không tiếp nhận hoặc giải quyết khiếu nại của khách hàng trong thời gian quy định</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>11</td><td>Không đạt tiến độ task IT</td><td>Task IT không hoàn thành đúng deadline đã cam kết với team/quản lý</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>12</td><td>Đăng nội dung sai hoặc không phù hợp thương hiệu</td><td>Đăng nội dung sai thông tin, vi phạm brand guideline hoặc không phù hợp với thương hiệu</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>13</td><td>Chốt lệch tiền mặt cuối ca</td><td>Số tiền mặt thực tế không khớp với hệ thống khi chốt ca mà không giải trình được lý do</td><td>Nghiêm trọng</td><td class="pts-minus">-10đ</td></tr>
-                <tr class="searchable-row"><td>14</td><td>Gây sự cố hệ thống do sơ suất</td><td>Hành động sơ suất của IT gây sự cố ảnh hưởng đến hoạt động hệ thống và vận hành</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-                <tr class="searchable-row"><td>15</td><td>Làm mất tài sản media của dự án</td><td>Làm mất file ảnh, video hoặc tài nguyên thiết kế quan trọng của dự án marketing</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-                <tr class="searchable-row"><td>16</td><td>Tự ý thay đổi thông tin nhà cung cấp</td><td>Thay đổi thông tin nhà cung cấp trong hệ thống khi chưa có phê duyệt từ cấp trên</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-                <tr class="searchable-row"><td>17</td><td>Chậm nộp BHXH hoặc báo cáo thuế</td><td>Nộp hồ sơ BHXH, báo cáo thuế hoặc đóng bảo hiểm trễ hạn quy định pháp luật</td><td>Đặc biệt NT</td><td class="pts-minus">-20đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- PHẦN III -->
-    <div class="page-break"></div>
-    <h2>Phần III. Danh Mục Khen Thưởng Thành Tích</h2>
-
-    <div class="note-box success">
-        <strong>Cơ chế cộng điểm không giới hạn trần:</strong> Quỹ điểm thưởng tích lũy được cộng dồn trực tiếp vào
-        quỹ điểm tháng tiếp theo. Thưởng ngay <strong>+1 điểm</strong> cho nhân sự chủ động tố cáo vi phạm nội bộ đúng sự thật.
-    </div>
-
-    <!-- Thưởng Chung -->
-    <h3 class="h3-reward">Khối Chung — Áp Dụng Mọi Bộ Phận</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Chủ động tố cáo vi phạm</td><td>Phản ánh vi phạm nội quy đúng sự thật, có bằng chứng</td><td class="pts-plus">+1đ</td></tr>
-                <tr class="searchable-row"><td>Nhận ca đại xuất</td><td>Nhận thêm ca khi nhân sự thiếu hoặc tình huống khẩn cấp</td><td class="pts-plus">+3đ</td></tr>
-                <tr class="searchable-row"><td>Không đi trễ cả tháng</td><td>Không đi trễ bất kỳ ca nào trong tháng</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Không vi phạm nội quy cả tháng</td><td>Không có phiếu phạt nội quy nào trong tháng</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>KPI đạt</td><td>Hoàn thành chỉ tiêu KPI được giao trong tháng</td><td class="pts-plus">+10đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng Phục vụ -->
-    <h3 class="h3-reward">Khối Cơ Sở — Bộ Phận Phục Vụ (Service)</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Đánh giá Google Maps</td><td>Tăng số lượng đánh giá và được khách hàng nhắc tên trong đánh giá tích cực</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Đóng góp cải tiến dịch vụ</td><td>Đề xuất giải pháp nâng cao trải nghiệm khách hàng được áp dụng</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Upsell hiệu quả</td><td>Giới thiệu món ăn/thức uống thành công, đạt KPI upsell</td><td class="pts-plus">Theo KPI</td></tr>
-                <tr class="searchable-row"><td>Đào tạo nhân sự mới</td><td>Hỗ trợ training nhân viên mới hiệu quả, được đánh giá đạt chuẩn</td><td class="pts-plus">+1đ</td></tr>
-                <tr class="searchable-row"><td>Doanh thu vượt chỉ tiêu</td><td>Doanh thu cá nhân hoặc khu vực phụ trách vượt KPI đã đặt ra</td><td class="pts-plus">+5đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng Bếp -->
-    <h3 class="h3-reward">Khối Cơ Sở — Bộ Phận Bếp (Kitchen)</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Không có món trả trong tháng</td><td>Không có order bị trả lại hoặc khiếu nại món ăn trong cả tháng</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Food Cost tối ưu</td><td>Đạt chỉ tiêu Food Cost tháng theo kế hoạch được giao</td><td class="pts-plus">+5đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng Bar -->
-    <h3 class="h3-reward">Khối Cơ Sở — Bộ Phận Bar</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Đào tạo nhân viên tốt</td><td>Bartender/Barista hướng dẫn và đào tạo nhân viên mới hiệu quả</td><td class="pts-plus">+5đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng Marketing -->
-    <h3 class="h3-reward">Khối Văn Phòng — Marketing</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Tăng trưởng mạng xã hội</td><td>Đạt mục tiêu tăng follower, reach hoặc engagement trong tháng</td><td class="pts-plus">+10đ</td></tr>
-                <tr class="searchable-row"><td>Booking full</td><td>Đạt tỉ lệ booking đầy bàn theo chỉ tiêu tháng</td><td class="pts-plus">+10đ</td></tr>
-                <tr class="searchable-row"><td>Ý tưởng hay được triển khai</td><td>Đề xuất ý tưởng marketing được duyệt và triển khai thực tế</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Đánh giá Google Maps</td><td>Tăng số lượng đánh giá và cải thiện điểm số trên Google Maps</td><td class="pts-plus">+3đ</td></tr>
-                <tr class="searchable-row"><td>Chiến dịch hiệu quả</td><td>Campaign đạt hoặc vượt KPI đã đề ra trong kỳ</td><td class="pts-plus">+10đ</td></tr>
-                <tr class="searchable-row"><td>Xử lý khủng hoảng truyền thông</td><td>Giải quyết sự cố truyền thông hiệu quả, bảo vệ hình ảnh thương hiệu</td><td class="pts-plus">+5đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng IT -->
-    <h3 class="h3-reward">Khối Văn Phòng — IT</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Đúng deadline</td><td>Hoàn thành tất cả task IT đúng hoặc trước deadline trong tháng</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Giảm chi phí vận hành</td><td>Tối ưu hệ thống giúp giảm chi phí vận hành so với kỳ trước</td><td class="pts-plus">+10đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng Thu Mua -->
-    <h3 class="h3-reward">Khối Văn Phòng — Thu Mua (Procurement)</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Phát hiện sai sót đơn hàng</td><td>Phát hiện hàng lỗi, gian lận hoặc sai sót trong đơn hàng nhà cung cấp</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Đàm phán giảm giá nhà cung cấp</td><td>Thương lượng được giá nhà cung cấp thấp hơn so với tháng trước</td><td class="pts-plus">+10đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng Kế Toán -->
-    <h3 class="h3-reward">Khối Văn Phòng — Kế Toán</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Hoàn thành báo cáo đúng hạn</td><td>Hoàn thành báo cáo thuế/tài chính trước thời hạn quy định</td><td class="pts-plus">+3đ</td></tr>
-                <tr class="searchable-row"><td>Giảm chi phí vận hành</td><td>Tối ưu hệ thống giúp giảm chi phí vận hành so với kỳ trước</td><td class="pts-plus">+10đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Thưởng Nhân Sự -->
-    <h3 class="h3-reward">Khối Văn Phòng — Nhân Sự (HR)</h3>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Hạng mục thành tích</th>
-                    <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
-                    <th>Điểm Thưởng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="searchable-row"><td>Tuyển dụng đạt KPI</td><td>Hoàn thành tuyển dụng đúng số lượng và chất lượng đúng hạn</td><td class="pts-plus">+5đ</td></tr>
-                <tr class="searchable-row"><td>Giảm chi phí vận hành</td><td>Tối ưu hệ thống giúp giảm chi phí vận hành so với kỳ trước</td><td class="pts-plus">+10đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- PHẦN IV -->
-    <h2>Phần IV. Quy Trình Phê Duyệt Hệ Thống</h2>
-
-    <div class="process-grid">
-        <div class="process-box">
-            <h3 class="h3-penalty">Quy trình Phiếu Phạt Điện Tử</h3>
-            <ol>
-                <li>Quản lý trực tiếp lập phiếu phạt kèm minh chứng số (ảnh/log).</li>
-                <li>Hệ thống chuyển tiếp tự động đến cấp thẩm quyền đối soát.</li>
-                <li>Sau khi duyệt, quỹ điểm nhân sự tự động bị khấu trừ.</li>
-                <li>Tiếp nhận khiếu nại phản hồi ngược trong tối đa <strong>48 giờ</strong>.</li>
-            </ol>
+        <!-- Phân đầu tài liệu -->
+        <div class="doc-header">
+            <div class="doc-header-left">
+                <div class="company-name">CÔNG TY TNHH TON CAPITAL</div>
+                <div class="doc-number">Số: 01/2026/NQ-TC</div>
+            </div>
+            <div class="doc-header-right">
+                <div class="company-name">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div class="doc-number">Độc lập - Tự do - Hạnh phúc</div>
+            </div>
         </div>
 
-        <div class="process-box">
-            <h3 class="h3-reward">Quy trình Phiếu Thưởng Điện Tử</h3>
-            <ol>
-                <li>Quản lý đề xuất phiếu thưởng trực tiếp trên phần mềm.</li>
-                <li>Hội đồng thi đua phê duyệt trực tuyến đề xuất.</li>
-                <li>Điểm thưởng tự động phân bổ vào tài khoản của nhân viên.</li>
-                <li>Bảng vinh danh toàn mạng lưới tự động cập nhật công khai.</li>
-            </ol>
+        <div class="doc-title-container">
+            <h1 class="doc-title">Nội Quy Phạt &amp; Thưởng Hệ Thống</h1>
+            <div class="doc-subtitle">(Áp dụng cho toàn bộ nhân sự cơ sở và khối văn phòng từ ngày 01/01/2026)</div>
         </div>
+
+        <!-- Thanh tìm kiếm -->
+        <div class="search-box">
+            <input type="text" id="liveSearch"
+                placeholder="Nhập từ khóa để tra cứu nhanh lỗi hoặc mức thưởng (VD: Đi trễ, Bếp, KPI)..."
+                onkeyup="filterTables()">
+        </div>
+
+        <!-- PHẦN I -->
+        <h2>Phần I. Cơ Chế Điểm Hành Vi</h2>
+
+        <div class="note-box">
+            <strong>Điểm hạn mức ban đầu: 100 điểm/tháng.</strong> Hệ thống cấp 100 điểm vào ngày 1 hàng tháng cho mỗi
+            nhân sự. Điểm số biến động dựa trên biểu hành vi thực tế và là căn cứ tối cao để xếp hạng hiệu suất cuối kỳ.
+        </div>
+
+        <div class="zone-grid">
+            <div class="zone-card">
+                <strong>Greenzone</strong>
+                <span style="color:#15803d">90 – 100đ</span>
+                <small>Xuất sắc (Đạt xét thưởng)</small>
+            </div>
+            <div class="zone-card">
+                <strong>Yellowzone</strong>
+                <span style="color:#ca8a04">80 – 89đ</span>
+                <small>Tiêu chuẩn (Duy trì ổn định)</small>
+            </div>
+            <div class="zone-card">
+                <strong>Orangezone</strong>
+                <span style="color:#ea580c">70 – 79đ</span>
+                <small>Yếu (Cần cải thiện)</small>
+            </div>
+            <div class="zone-card">
+                <strong>Redzone</strong>
+                <span style="color:#dc2626">&lt; 70đ</span>
+                <small>Báo động (Xử lý kỷ luật)</small>
+            </div>
+        </div>
+
+        <!-- PHẦN II -->
+        <h2>Phần II. Danh Mục Xử Phạt Kỷ Luật</h2>
+
+        <div class="note-box warning">
+            <strong>Lưu ý về bồi hoàn tài sản:</strong> Khung tiền xử lý dưới đây là mức xử lý kỷ luật cơ bản. Riêng
+            hành vi gây hư hỏng/mất mát thiết bị, nhân sự chịu trách nhiệm bồi thường theo giá trị thẩm định thực tế của
+            hội đồng kỹ thuật.
+        </div>
+
+        <!-- Quy Chế 1 -->
+        <h3 class="h3-penalty">Quy Chế 1: Giờ Giấc &amp; Kỷ Luật Lao Động</h3>
+
+        <h4>1.1. Quy định về Đi trễ &amp; Về sớm</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Đi trễ dưới 5 phút</td>
+                        <td>Đi trễ dưới 5 phút</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Đi trễ 5–15 phút</td>
+                        <td>Có mặt trễ từ 5 đến 15 phút</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Đi trễ 15–30 phút</td>
+                        <td>Có mặt trễ từ 15 đến 30 phút</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Đi trễ trên 30 phút</td>
+                        <td>Có mặt trễ trên 30 phút</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>5</td>
+                        <td>Đi trễ nhiều lần trong tuần</td>
+                        <td>Từ lần thứ 3 trở lên đi trễ trong cùng tuần</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>6</td>
+                        <td>Về sớm dưới 15 phút</td>
+                        <td>Rời vị trí trước giờ làm dưới 15 phút</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>7</td>
+                        <td>Về sớm trên 15 phút</td>
+                        <td>Rời vị trí trước giờ làm trên 15 phút</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>1.2. Quy định về Chấm công</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Quên chấm công vào ca</td>
+                        <td>Không thực hiện check-in khi bắt đầu ca làm</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Quên chấm công ra ca</td>
+                        <td>Không thực hiện check-out khi kết thúc ca làm</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Quên chấm công từ 3 lần trở lên trong tháng</td>
+                        <td>Từ lần thứ 3 trở lên quên chấm công trong cùng một tháng</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Nhờ người chấm công hộ</td>
+                        <td>Nhờ đồng nghiệp chấm công thay, gian lận thời gian làm việc</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>5</td>
+                        <td>Chấm công hộ người khác</td>
+                        <td>Hỗ trợ đồng nghiệp gian lận bằng cách chấm công thay</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>6</td>
+                        <td>Sửa dữ liệu chấm công sai sự thật</td>
+                        <td>Cố tình khai sai giờ làm hoặc chỉnh sửa dữ liệu chấm công</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>1.3. Quy định về Đồng phục &amp; Diện mạo</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Không mặc đồng phục đúng quy định</td>
+                        <td>Mặc sai áo hoặc quần đồng phục theo quy định của công ty</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Đồng phục nhăn nhúm hoặc bẩn</td>
+                        <td>Mặc đồng phục thiếu chỉn chu, nhăn nhúm hoặc có vết bẩn rõ ràng</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Không đeo bảng tên trong ca</td>
+                        <td>Không đeo bảng tên nhân viên khiến khách không nhận diện được</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Mang dép không đúng quy định</td>
+                        <td>Dùng dép hoặc giày không đúng tiêu chuẩn an toàn và đồng bộ quy định</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>5</td>
+                        <td>Tóc tai không gọn gàng</td>
+                        <td>Kiểu tóc không phù hợp hoặc không gọn gàng khi tiếp xúc với khách hàng</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>6</td>
+                        <td>Có mùi cơ thể ảnh hưởng môi trường làm việc</td>
+                        <td>Không đảm bảo vệ sinh cá nhân, có mùi cơ thể gây ảnh hưởng đến khách và đồng nghiệp</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>1.4. Quy định về Nghỉ phép &amp; Nghỉ ca</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Nghỉ báo trước nhưng chưa được duyệt</td>
+                        <td>Tự ý nghỉ khi chưa có xác nhận phê duyệt từ quản lý</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Nghỉ gấp báo dưới 4 giờ trước ca</td>
+                        <td>Báo nghỉ quá sát giờ làm, dưới 4 giờ trước khi ca bắt đầu</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Nghỉ quá số ngày quy định trong tháng</td>
+                        <td>Số ngày nghỉ vượt giới hạn cho phép theo quy định công ty</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Nghỉ đột xuất không có lý do hợp lý</td>
+                        <td>Không cung cấp lý do chính đáng khi nghỉ đột xuất</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>5</td>
+                        <td>No Show</td>
+                        <td>Không đi làm, không báo cáo</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>6</td>
+                        <td>No Show cuối tuần hoặc ngày lễ</td>
+                        <td>Không đi làm vào ca cao điểm cuối tuần hoặc ngày lễ mà không báo</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>1.5. Quy trình &amp; Tác phong làm việc nội bộ</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Không đọc/nắm thông báo của công ty</td>
+                        <td>Bỏ sót thông báo vận hành gây ảnh hưởng đến công việc</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Không tham gia briefing đầu ca</td>
+                        <td>Vắng mặt buổi họp đầu ca mà không có lý do chính đáng</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Không thực hiện checklist đầu ca</td>
+                        <td>Bỏ qua quy trình kiểm tra và chuẩn bị theo checklist khi bắt đầu ca</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Không thực hiện checklist cuối ca</td>
+                        <td>Bỏ qua quy trình kiểm tra và dọn dẹp theo checklist khi kết thúc ca</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>5</td>
+                        <td>Không phản hồi quản lý khi được yêu cầu</td>
+                        <td>Gây gián đoạn vận hành do không phản hồi hoặc phản hồi trễ yêu cầu từ quản lý</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>6</td>
+                        <td>Tự ý bỏ vị trí trong ca</td>
+                        <td>Rời khu vực làm việc mà không báo cáo quản lý</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>7</td>
+                        <td>Không hoàn thành task được giao trong ca</td>
+                        <td>Không hoàn thành nhiệm vụ được giao mà không có lý do chính đáng</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>8</td>
+                        <td>Từ chối công việc trong phạm vi trách nhiệm</td>
+                        <td>Không hợp tác, từ chối thực hiện công việc nằm trong phạm vi trách nhiệm vị trí</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>9</td>
+                        <td>Không tuân thủ SOP đã được đào tạo</td>
+                        <td>Thực hiện sai quy trình chuẩn đã được đào tạo và ký nhận</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>10</td>
+                        <td>Hút thuốc trong khu vực làm việc</td>
+                        <td>Hút thuốc trong khu vực làm việc hoặc nơi không được phép</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>11</td>
+                        <td>Tái phạm cùng một lỗi 3 lần trong tháng</td>
+                        <td>Không cải thiện sau khi được nhắc nhở, tái phạm cùng lỗi từ 3 lần trở lên trong tháng</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quy Chế 2 -->
+        <h3 class="h3-penalty">Quy Chế 2: Vận Hành &amp; Nghiệp Vụ</h3>
+
+        <h4>2.1. Tiêu chuẩn Phục vụ Khách hàng</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Phục vụ chậm so với tiêu chuẩn</td>
+                        <td>Thời gian phục vụ vượt quá tiêu chuẩn quy định mà không có lý do hợp lý</td>
+                        <td>Nhẹ</td>
+                        <td>-</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Không chào hỏi khách theo chuẩn thương hiệu</td>
+                        <td>Không thực hiện nghi thức chào hỏi và đón tiếp khách đúng chuẩn thương hiệu</td>
+                        <td>Nhẹ</td>
+                        <td>-</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Không tuân thủ quy trình phục vụ</td>
+                        <td>Bỏ qua hoặc thực hiện sai các bước trong quy trình phục vụ chuẩn</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Không xử lý yêu cầu khách kịp thời</td>
+                        <td>Bỏ qua hoặc chậm trễ xử lý yêu cầu hợp lý từ khách hàng</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>2.2. Lỗi Order &amp; Ra món</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Mang món nhầm bàn</td>
+                        <td>Mang món ăn hoặc đồ uống đến nhầm bàn khách</td>
+                        <td>Trung bình</td>
+                        <td class="col-money">50.000đ</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Gọi sai món cho khách</td>
+                        <td>Nhập sai order của khách dẫn đến bếp/bar ra sai món</td>
+                        <td>Nặng</td>
+                        <td class="col-money">200.000đ</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Ra món không đúng order</td>
+                        <td>Bếp ra món không khớp với order về loại, số lượng hoặc yêu cầu đặc biệt của khách</td>
+                        <td>Nặng</td>
+                        <td class="col-money">200.000đ</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>2.3. Chất lượng &amp; Phản hồi từ khách</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Khách trả đồ uống do lỗi pha chế</td>
+                        <td>Khách từ chối nhận hoặc trả lại đồ uống do chất lượng pha chế không đạt</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="col-money">200.000đ</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Món bị trả do lỗi phục vụ</td>
+                        <td>Khách từ chối nhận hoặc trả lại món do lỗi trong quá trình phục vụ</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="col-money">200.000đ</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Khách để lại review tiêu cực về nhân viên</td>
+                        <td>Khách đánh giá tiêu cực gắn trực tiếp với hành vi hoặc thái độ của nhân viên</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="col-money">200.000đ</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>2.4. Chuẩn bị &amp; Bàn giao ca</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Không chuẩn bị trước ca</td>
+                        <td>Không chuẩn bị đầy đủ vật dụng và nguyên liệu theo checklist trước khi ca bắt đầu</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Bàn giao ca không đúng quy trình</td>
+                        <td>Không thực hiện bàn giao ca đúng quy trình: ghi chú, kiểm kho, thông báo cho ca sau</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Lãng phí nguyên liệu pha chế</td>
+                        <td>Sử dụng nguyên liệu bar vượt mức định lượng chuẩn không có lý do hợp lý</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quy Chế 3 -->
+        <h3 class="h3-penalty">Quy Chế 3: Tài Sản &amp; Thiết Bị</h3>
+
+        <h4>3.1. Sử dụng &amp; Bảo quản</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Sử dụng thiết bị sai mục đích</td>
+                        <td>Dùng dụng cụ, thiết bị của công ty cho mục đích cá nhân hoặc không đúng chức năng</td>
+                        <td>Nhẹ</td>
+                        <td>-</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Không tắt thiết bị điện sau ca</td>
+                        <td>Quên tắt đèn, điều hòa, quạt hoặc thiết bị điện khác khi kết thúc ca</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Bảo quản dụng cụ không đúng quy định</td>
+                        <td>Không cất giữ, vệ sinh hoặc bảo quản dụng cụ theo quy trình sau khi sử dụng</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Không báo cáo thiết bị hư hỏng kịp thời</td>
+                        <td>Phát hiện thiết bị có dấu hiệu hỏng hóc nhưng không báo cáo kịp thời cho quản lý</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>3.2. Sự cố tài sản &amp; Hủy hoại</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Làm hỏng tài sản do sơ suất</td>
+                        <td>Tài sản bị hỏng do lỗi sơ suất. Phạt tiền theo giá trị thực tế nếu lớn hơn mức cơ bản</td>
+                        <td>Nặng</td>
+                        <td class="col-money">400.000đ+</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Làm mất tài sản công ty</td>
+                        <td>Tài sản bị mất do thiếu trách nhiệm. Nhập số tiền bồi thường theo giá trị thực tế khi tạo
+                            phiếu phạt</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="col-money">Theo GTTT</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Cố ý hủy hoại tài sản công ty</td>
+                        <td>Cố ý làm hỏng hoặc hủy hoại tài sản công ty. Bồi thường toàn bộ theo giá trị thực tế</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="col-money">100% GTTT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="page-break"></div>
+
+        <!-- Quy Chế 4 -->
+        <h3 class="h3-penalty">Quy Chế 4: Nghiệp Vụ Bếp</h3>
+
+        <h4>4.1. Tiêu chuẩn món ăn</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Trình bày món không đúng chuẩn thương hiệu</td>
+                        <td>Món ăn ra cho khách không đúng chuẩn trình bày và plating của thương hiệu</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Món bị trả do chất lượng chế biến kém</td>
+                        <td>Khách từ chối nhận món do chất lượng chế biến không đạt tiêu chuẩn</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="col-money">200.000đ</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>4.2. Quản lý Nguyên liệu &amp; Kho bếp</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Lãng phí nguyên liệu quá mức định lượng</td>
+                        <td>Sử dụng hoặc để hao hụt nguyên liệu vượt mức định lượng chuẩn không có lý do</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Không kiểm tra chất lượng nguyên liệu nhập</td>
+                        <td>Nhận nguyên liệu mà không kiểm tra chất lượng, nguồn gốc, hạn sử dụng theo quy trình</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Để thực phẩm hết hạn sử dụng trong kho</td>
+                        <td>Không kiểm tra và loại bỏ nguyên liệu hết hạn theo quy trình FIFO/FEFO</td>
+                        <td>Nghiêm trọng</td>
+                        <td>-</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>4.3. Quản lý Dụng cụ bếp</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Phạt Tiền</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Tái sử dụng dụng cụ chưa qua vệ sinh</td>
+                        <td>Dùng lại dụng cụ bếp khi chưa được vệ sinh và khử trùng đúng chuẩn</td>
+                        <td>Trung bình</td>
+                        <td>-</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Không vệ sinh dụng cụ bếp đúng quy trình</td>
+                        <td>Dụng cụ bếp không được vệ sinh, khử trùng đúng cách và đúng lịch theo quy trình</td>
+                        <td>Nặng</td>
+                        <td>-</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Làm hỏng dụng cụ bếp do sơ suất</td>
+                        <td>Dụng cụ nấu nướng bị hỏng do không tuân thủ hướng dẫn sử dụng đúng cách</td>
+                        <td>Nặng</td>
+                        <td class="col-money">200.000đ</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quy Chế 5 -->
+        <h3 class="h3-penalty">Quy Chế 5: Vệ Sinh &amp; An Toàn Lao Động</h3>
+
+        <h4>5.1. Tiêu chuẩn Vệ sinh Khu vực</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Vệ sinh cá nhân không đạt chuẩn</td>
+                        <td>Ngoại hình, quần áo, tóc tai không đảm bảo vệ sinh và chuyên nghiệp khi tiếp xúc khách</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Khu vực làm việc không đạt chuẩn vệ sinh</td>
+                        <td>Khu vực phụ trách không được dọn dẹp đúng tiêu chuẩn vệ sinh quy định</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Không dọn vệ sinh khu vực cuối ca</td>
+                        <td>Không thực hiện dọn dẹp khu vực phụ trách trước khi kết thúc ca theo checklist</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Nhà vệ sinh không đạt chuẩn trong ca</td>
+                        <td>Nhà vệ sinh trong ca phụ trách không được dọn dẹp đúng lịch và tiêu chuẩn quy định</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>5</td>
+                        <td>Không đổ rác đúng quy định</td>
+                        <td>Không phân loại rác, không đổ rác đúng giờ hoặc để rác tràn ra ngoài thùng</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>5.2. An toàn Lao động &amp; An toàn Thực phẩm</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Không sử dụng thiết bị bảo hộ lao động</td>
+                        <td>Không đeo găng tay, tạp dề, mũ hoặc thiết bị bảo hộ quy định khi làm việc</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Vi phạm quy tắc an toàn lao động</td>
+                        <td>Thực hiện hành vi gây nguy hiểm cho bản thân hoặc đồng nghiệp trong khu vực làm việc</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Vi phạm quy định an toàn thực phẩm</td>
+                        <td>Không tuân thủ quy định về nhiệt độ bảo quản, thời hạn sử dụng và vệ sinh thực phẩm</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Phục vụ thực phẩm không đảm bảo VSATTP</td>
+                        <td>Phục vụ thực phẩm đã hỏng hoặc không đạt tiêu chuẩn vệ sinh an toàn thực phẩm cho khách</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quy Chế 6 -->
+        <h3 class="h3-penalty">Quy Chế 6: Văn Hóa &amp; Hành Vi</h3>
+
+        <h4>6.1. Ứng xử Nội bộ</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Thái độ làm việc tiêu cực</td>
+                        <td>Biểu hiện thái độ chán nản, lười biếng, không nhiệt tình trong công việc</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Không tuân thủ chỉ đạo hợp lý của quản lý</td>
+                        <td>Từ chối hoặc bỏ qua chỉ đạo hợp lý từ quản lý trực tiếp mà không có lý do chính đáng</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Không hỗ trợ đồng nghiệp khi được yêu cầu</td>
+                        <td>Từ chối hoặc phớt lờ yêu cầu hỗ trợ hợp lý từ đồng nghiệp trong giờ làm việc</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Tranh cãi, gây mâu thuẫn với đồng nghiệp</td>
+                        <td>Cãi vã, to tiếng hoặc gây bất hòa với đồng nghiệp trong môi trường làm việc</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>6.2. Ứng xử với Khách hàng</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Thái độ thiếu tôn trọng với khách hàng</td>
+                        <td>Hành vi, lời nói hoặc cử chỉ thể hiện sự thiếu tôn trọng với khách hàng</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Tranh cãi trực tiếp với khách hàng</td>
+                        <td>Cãi vã, tranh luận hoặc có hành vi thiếu chuyên nghiệp trực tiếp với khách hàng</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>6.3. Bảo mật &amp; Tài chính công ty</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Tự ý giảm giá hoặc miễn phí dịch vụ</td>
+                        <td>Áp dụng giảm giá hoặc miễn phí cho khách khi chưa được ủy quyền từ quản lý</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Tiết lộ thông tin nội bộ trái phép</td>
+                        <td>Chia sẻ thông tin về giá cả, quy trình, dữ liệu khách hàng hoặc nội bộ công ty ra ngoài</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Đăng thông tin công ty lên mạng xã hội trái phép</td>
+                        <td>Đăng thông tin, hình ảnh nội bộ hoặc nói xấu công ty trên mạng xã hội khi chưa được phép
+                        </td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quy Chế 7 -->
+        <h3 class="h3-penalty">Quy Chế 7: Trách Nhiệm &amp; Hiệu Suất Công Việc</h3>
+
+        <h4>7.1. Team Marketing &amp; Content</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Lỗi chính tả hoặc ngữ pháp trong nội dung đã đăng</td>
+                        <td>Bài đăng có lỗi chính tả hoặc ngữ pháp rõ ràng sau khi đã publish công khai</td>
+                        <td>Nhẹ</td>
+                        <td class="pts-minus">-1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Trễ deadline nội dung hoặc chiến dịch</td>
+                        <td>Không hoàn thành nội dung hoặc chiến dịch marketing đúng timeline đã cam kết</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Đăng nội dung sai hoặc không phù hợp thương hiệu</td>
+                        <td>Đăng nội dung sai thông tin, vi phạm brand guideline hoặc không phù hợp với thương hiệu</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Làm mất tài sản media của dự án</td>
+                        <td>Làm mất file ảnh, video hoặc tài nguyên thiết kế quan trọng của dự án marketing</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>7.2. Team Kế Toán &amp; Thu Mua</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Báo cáo sai lệch hoặc thiếu dữ liệu</td>
+                        <td>Nộp báo cáo công việc có thông tin sai lệch hoặc thiếu so với yêu cầu</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Nhập sai dữ liệu kế toán</td>
+                        <td>Nhập sai số liệu vào phần mềm kế toán hoặc hệ thống quản lý tài chính</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Thiếu chứng từ thanh toán khi đối soát</td>
+                        <td>Hóa đơn, biên lai hoặc chứng từ liên quan bị thiếu khi thực hiện đối soát</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Chốt lệch tiền mặt cuối ca</td>
+                        <td>Số tiền mặt thực tế không khớp với hệ thống khi chốt ca mà không giải trình được lý do</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>5</td>
+                        <td>Tự ý thay đổi thông tin nhà cung cấp</td>
+                        <td>Thay đổi thông tin nhà cung cấp trong hệ thống khi chưa có phê duyệt từ cấp trên</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>6</td>
+                        <td>Chậm nộp BHXH hoặc báo cáo thuế</td>
+                        <td>Nộp hồ sơ BHXH, báo cáo thuế hoặc đóng bảo hiểm trễ hạn quy định pháp luật</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>7.3. Team IT &amp; Hệ thống</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Không backup dữ liệu theo lịch định kỳ</td>
+                        <td>Bỏ qua lịch backup dữ liệu hệ thống theo quy trình đã quy định</td>
+                        <td>Trung bình</td>
+                        <td class="pts-minus">-3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Cấp sai quyền truy cập hệ thống</td>
+                        <td>Gán quyền hệ thống sai vai trò hoặc cấp vượt phạm vi cho phép</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>3</td>
+                        <td>Không đạt tiến độ task IT</td>
+                        <td>Task IT không hoàn thành đúng deadline đã cam kết với team/quản lý</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>4</td>
+                        <td>Gây sự cố hệ thống do sơ suất</td>
+                        <td>Hành động sơ suất của IT gây sự cố ảnh hưởng đến hoạt động hệ thống và vận hành</td>
+                        <td>Đặc biệt NT</td>
+                        <td class="pts-minus">-20đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>7.4. Khối Quản lý &amp; Nhân sự</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Không đào tạo nhân viên mới đúng quy trình</td>
+                        <td>Quản lý/TL không thực hiện onboarding và đào tạo nhân viên mới theo đúng quy trình</td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>2</td>
+                        <td>Không xử lý khiếu nại khách hàng kịp thời</td>
+                        <td>Quản lý không tiếp nhận hoặc giải quyết khiếu nại của khách hàng trong thời gian quy định
+                        </td>
+                        <td>Nghiêm trọng</td>
+                        <td class="pts-minus">-10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h4>7.5. Chỉ tiêu KPI chung</h4>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="col-stt">STT</th>
+                        <th>Hành vi vi phạm</th>
+                        <th>Mô tả chi tiết</th>
+                        <th class="col-level">Mức độ</th>
+                        <th>Khấu Trừ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>1</td>
+                        <td>Không hoàn thành KPI tháng</td>
+                        <td>Kết quả làm việc không đạt chỉ tiêu KPI đã cam kết trong tháng</td>
+                        <td>Nặng</td>
+                        <td class="pts-minus">-5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PHẦN III -->
+        <div class="page-break"></div>
+        <h2>Phần III. Danh Mục Khen Thưởng Thành Tích</h2>
+
+        <div class="note-box success">
+            <strong>Cơ chế cộng điểm không giới hạn trần:</strong> Quỹ điểm thưởng tích lũy được cộng dồn trực tiếp vào
+            quỹ điểm tháng tiếp theo. Thưởng ngay <strong>+1 điểm</strong> cho nhân sự chủ động tố cáo vi phạm nội bộ
+            đúng sự thật.
+        </div>
+
+        <!-- Thưởng Chung -->
+        <h3 class="h3-reward">Khối Chung — Áp Dụng Mọi Bộ Phận</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Chủ động tố cáo vi phạm</td>
+                        <td>Phản ánh vi phạm nội quy đúng sự thật, có bằng chứng</td>
+                        <td class="pts-plus">+1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Nhận ca đại xuất</td>
+                        <td>Nhận thêm ca khi nhân sự thiếu hoặc tình huống khẩn cấp</td>
+                        <td class="pts-plus">+3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Không đi trễ cả tháng</td>
+                        <td>Không đi trễ bất kỳ ca nào trong tháng</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Không vi phạm nội quy cả tháng</td>
+                        <td>Không có phiếu phạt nội quy nào trong tháng</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>KPI đạt</td>
+                        <td>Hoàn thành chỉ tiêu KPI được giao trong tháng</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng Phục vụ -->
+        <h3 class="h3-reward">Khối Cơ Sở — Bộ Phận Phục Vụ (Service)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Đánh giá Google Maps</td>
+                        <td>Tăng số lượng đánh giá và được khách hàng nhắc tên trong đánh giá tích cực</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Đóng góp cải tiến dịch vụ</td>
+                        <td>Đề xuất giải pháp nâng cao trải nghiệm khách hàng được áp dụng</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Upsell hiệu quả</td>
+                        <td>Giới thiệu món ăn/thức uống thành công, đạt KPI upsell</td>
+                        <td class="pts-plus">Theo KPI</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Đào tạo nhân sự mới</td>
+                        <td>Hỗ trợ training nhân viên mới hiệu quả, được đánh giá đạt chuẩn</td>
+                        <td class="pts-plus">+1đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Doanh thu vượt chỉ tiêu</td>
+                        <td>Doanh thu cá nhân hoặc khu vực phụ trách vượt KPI đã đặt ra</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng Bếp -->
+        <h3 class="h3-reward">Khối Cơ Sở — Bộ Phận Bếp (Kitchen)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Không có món trả trong tháng</td>
+                        <td>Không có order bị trả lại hoặc khiếu nại món ăn trong cả tháng</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Food Cost tối ưu</td>
+                        <td>Đạt chỉ tiêu Food Cost tháng theo kế hoạch được giao</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng Bar -->
+        <h3 class="h3-reward">Khối Cơ Sở — Bộ Phận Bar</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Đào tạo nhân viên tốt</td>
+                        <td>Bartender/Barista hướng dẫn và đào tạo nhân viên mới hiệu quả</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng Marketing -->
+        <h3 class="h3-reward">Khối Văn Phòng — Marketing</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Tăng trưởng mạng xã hội</td>
+                        <td>Đạt mục tiêu tăng follower, reach hoặc engagement trong tháng</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Booking full</td>
+                        <td>Đạt tỉ lệ booking đầy bàn theo chỉ tiêu tháng</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Ý tưởng hay được triển khai</td>
+                        <td>Đề xuất ý tưởng marketing được duyệt và triển khai thực tế</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Đánh giá Google Maps</td>
+                        <td>Tăng số lượng đánh giá và cải thiện điểm số trên Google Maps</td>
+                        <td class="pts-plus">+3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Chiến dịch hiệu quả</td>
+                        <td>Campaign đạt hoặc vượt KPI đã đề ra trong kỳ</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Xử lý khủng hoảng truyền thông</td>
+                        <td>Giải quyết sự cố truyền thông hiệu quả, bảo vệ hình ảnh thương hiệu</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng IT -->
+        <h3 class="h3-reward">Khối Văn Phòng — IT</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Đúng deadline</td>
+                        <td>Hoàn thành tất cả task IT đúng hoặc trước deadline trong tháng</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Giảm chi phí vận hành</td>
+                        <td>Tối ưu hệ thống giúp giảm chi phí vận hành so với kỳ trước</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng Thu Mua -->
+        <h3 class="h3-reward">Khối Văn Phòng — Thu Mua (Procurement)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Phát hiện sai sót đơn hàng</td>
+                        <td>Phát hiện hàng lỗi, gian lận hoặc sai sót trong đơn hàng nhà cung cấp</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Đàm phán giảm giá nhà cung cấp</td>
+                        <td>Thương lượng được giá nhà cung cấp thấp hơn so với tháng trước</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng Kế Toán -->
+        <h3 class="h3-reward">Khối Văn Phòng — Kế Toán</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Hoàn thành báo cáo đúng hạn</td>
+                        <td>Hoàn thành báo cáo thuế/tài chính trước thời hạn quy định</td>
+                        <td class="pts-plus">+3đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Giảm chi phí vận hành</td>
+                        <td>Tối ưu hệ thống giúp giảm chi phí vận hành so với kỳ trước</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thưởng Nhân Sự -->
+        <h3 class="h3-reward">Khối Văn Phòng — Nhân Sự (HR)</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hạng mục thành tích</th>
+                        <th>Tiêu chí &amp; Điều kiện đạt chuẩn</th>
+                        <th>Điểm Thưởng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="searchable-row">
+                        <td>Tuyển dụng đạt KPI</td>
+                        <td>Hoàn thành tuyển dụng đúng số lượng và chất lượng đúng hạn</td>
+                        <td class="pts-plus">+5đ</td>
+                    </tr>
+                    <tr class="searchable-row">
+                        <td>Giảm chi phí vận hành</td>
+                        <td>Tối ưu hệ thống giúp giảm chi phí vận hành so với kỳ trước</td>
+                        <td class="pts-plus">+10đ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PHẦN IV -->
+        <h2>Phần IV. Quy Trình Phê Duyệt Hệ Thống</h2>
+
+        <div class="process-grid">
+            <div class="process-box">
+                <h3 class="h3-penalty">Quy trình Phiếu Phạt Điện Tử</h3>
+                <ol>
+                    <li>Quản lý trực tiếp lập phiếu phạt kèm minh chứng số (ảnh/log).</li>
+                    <li>Hệ thống chuyển tiếp tự động đến cấp thẩm quyền đối soát.</li>
+                    <li>Sau khi duyệt, quỹ điểm nhân sự tự động bị khấu trừ.</li>
+                    <li>Tiếp nhận khiếu nại phản hồi ngược trong tối đa <strong>48 giờ</strong>.</li>
+                </ol>
+            </div>
+
+            <div class="process-box">
+                <h3 class="h3-reward">Quy trình Phiếu Thưởng Điện Tử</h3>
+                <ol>
+                    <li>Quản lý đề xuất phiếu thưởng trực tiếp trên phần mềm.</li>
+                    <li>Hội đồng thi đua phê duyệt trực tuyến đề xuất.</li>
+                    <li>Điểm thưởng tự động phân bổ vào tài khoản của nhân viên.</li>
+                    <li>Bảng vinh danh toàn mạng lưới tự động cập nhật công khai.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="note-box warning">
+            <strong>Cơ chế chế tài Redzone:</strong> Nhân viên có tổng điểm dưới mốc 70đ duy trì trong 2 tháng liên tiếp
+            sẽ chuyển hồ sơ sang diện Kiểm soát đặc biệt để xem xét kỷ luật hoặc chấm dứt HĐLĐ.
+        </div>
+
+        <div class="signature-grid">
+            <div>
+                <div class="sig-role">ĐẠI DIỆN CÔNG TY</div>
+                <div class="sig-name">(Ký và ghi rõ họ tên)</div>
+            </div>
+            <div>
+                <div class="sig-role">QUẢN LÝ VẬN HÀNH</div>
+                <div class="sig-name">(Ký và ghi rõ họ tên)</div>
+            </div>
+            <div>
+                <div class="sig-role">XÁC NHẬN NHÂN VIÊN</div>
+                <div class="sig-name">(Ký và ghi rõ họ tên)</div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="note-box warning">
-        <strong>Cơ chế chế tài Redzone:</strong> Nhân viên có tổng điểm dưới mốc 70đ duy trì trong 2 tháng liên tiếp
-        sẽ chuyển hồ sơ sang diện Kiểm soát đặc biệt để xem xét kỷ luật hoặc chấm dứt HĐLĐ.
-    </div>
+    <script>
+        function filterTables() {
+            var input = document.getElementById("liveSearch");
+            var filter = input.value.toLowerCase().trim();
+            var rows = document.querySelectorAll(".searchable-row");
 
-    <div class="signature-grid">
-        <div>
-            <div class="sig-role">ĐẠI DIỆN CÔNG TY</div>
-            <div class="sig-name">(Ký và ghi rõ họ tên)</div>
-        </div>
-        <div>
-            <div class="sig-role">QUẢN LÝ VẬN HÀNH</div>
-            <div class="sig-name">(Ký và ghi rõ họ tên)</div>
-        </div>
-        <div>
-            <div class="sig-role">XÁC NHẬN NHÂN VIÊN</div>
-            <div class="sig-name">(Ký và ghi rõ họ tên)</div>
-        </div>
-    </div>
+            rows.forEach(function (row) {
+                var text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? "" : "none";
+            });
 
-</div>
+            var wrappers = document.querySelectorAll(".table-wrapper");
+            wrappers.forEach(function (wrapper) {
+                var visibleRows = wrapper.querySelectorAll(".searchable-row:not([style*='display: none'])");
+                var heading = wrapper.previousElementSibling;
 
-<script>
-    function filterTables() {
-        var input = document.getElementById("liveSearch");
-        var filter = input.value.toLowerCase().trim();
-        var rows = document.querySelectorAll(".searchable-row");
-
-        rows.forEach(function (row) {
-            var text = row.textContent.toLowerCase();
-            row.style.display = text.includes(filter) ? "" : "none";
-        });
-
-        var wrappers = document.querySelectorAll(".table-wrapper");
-        wrappers.forEach(function (wrapper) {
-            var visibleRows = wrapper.querySelectorAll(".searchable-row:not([style*='display: none'])");
-            var heading = wrapper.previousElementSibling;
-
-            if (visibleRows.length === 0 && filter !== "") {
-                wrapper.style.display = "none";
-                if (heading && heading.tagName === 'H3') heading.style.display = "none";
-            } else {
-                wrapper.style.display = "";
-                if (heading && heading.tagName === 'H3') heading.style.display = "";
-            }
-        });
-    }
-</script>
+                if (visibleRows.length === 0 && filter !== "") {
+                    wrapper.style.display = "none";
+                    if (heading && heading.tagName === 'H4') heading.style.display = "none";
+                } else {
+                    wrapper.style.display = "";
+                    if (heading && heading.tagName === 'H4') heading.style.display = "";
+                }
+            });
+        }
+    </script>
 
 </body>
 
