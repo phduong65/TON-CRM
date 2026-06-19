@@ -14,8 +14,25 @@ class AppealsController extends Controller
     public function index(Request $request)
     {
         $query = Appeal::with(['penalty.employee.branch', 'penalty.violation', 'appellant'])
-            ->orderByRaw("FIELD(status,'pending','accepted','rejected')")
+            ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'accepted' THEN 1 WHEN 'rejected' THEN 2 ELSE 3 END")
             ->orderBy('created_at', 'desc');
+
+        // Chỉ người duyệt khiếu nại thấy tất cả; người khiếu nại / người bị phạt chỉ thấy khiếu nại liên quan đến mình
+        if (!auth()->user()->can('review-appeals')) {
+            $userId   = auth()->id();
+            $employee = auth()->user()->employee;
+
+            $query->where(function ($q) use ($userId, $employee) {
+                $q->where('appellant_id', $userId);
+
+                if ($employee) {
+                    $q->orWhereHas('penalty', fn($p) =>
+                        $p->where('employee_id', $employee->id)
+                          ->orWhereHas('members', fn($m) => $m->where('employee_id', $employee->id))
+                    );
+                }
+            });
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);

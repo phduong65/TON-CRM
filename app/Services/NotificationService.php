@@ -146,22 +146,8 @@ class NotificationService
             $this->sendToUser($penalty->created_by, 'penalty_created', 'Phiếu phạt đã gửi duyệt', $creatorBody, $data);
         }
 
-        // Notify affected employee(s) — they are being penalized (pending, not yet final)
-        $employeeIds = $penalty->members->pluck('employee_id')
-            ->push($penalty->employee_id)
-            ->unique()
-            ->filter();
-        $employeeBody = sprintf(
-            'Phiếu phạt %s vừa được tạo — Vi phạm: %s — Trừ %s điểm — Đang chờ phê duyệt',
-            $penalty->code ?? '#' . $penalty->id,
-            $penalty->violation?->name ?? '—',
-            $penalty->total_points_deducted
-        );
-        foreach ($this->employeeUserIds($employeeIds)->unique()->filter() as $userId) {
-            if (! $approverIds->contains($userId) && (int) $userId !== (int) $penalty->created_by) {
-                $this->sendToUser((int) $userId, 'penalty_created', 'Bạn có phiếu phạt mới chờ duyệt', $employeeBody, $data);
-            }
-        }
+        // Nhân viên bị phạt chỉ nhận thông báo khi phiếu được duyệt (notifyPenaltyApproved),
+        // không thông báo ở giai đoạn pending để tránh gây lo lắng trước khi có kết quả chính thức.
     }
 
     public function notifyPenaltyApproved(Penalty $penalty): void
@@ -244,22 +230,8 @@ class NotificationService
             $this->sendToUser($reward->created_by, 'reward_created', 'Phiếu thưởng đã gửi duyệt', $creatorBody, $data);
         }
 
-        // Notify affected employee(s) — they are being rewarded (pending, not yet final)
-        $employeeIds = $reward->members->pluck('employee_id')
-            ->push($reward->employee_id)
-            ->unique()
-            ->filter();
-        $employeeBody = sprintf(
-            'Phiếu thưởng %s vừa được tạo cho bạn — Loại: %s — +%s điểm — Đang chờ phê duyệt',
-            $reward->code,
-            $reward->rewardType?->name ?? '—',
-            number_format($reward->total_points_awarded)
-        );
-        foreach ($this->employeeUserIds($employeeIds)->unique()->filter() as $userId) {
-            if (! $approverIds->contains($userId) && (int) $userId !== (int) $reward->created_by) {
-                $this->sendToUser((int) $userId, 'reward_created', 'Bạn có phiếu thưởng mới chờ duyệt', $employeeBody, $data);
-            }
-        }
+        // Nhân viên được thưởng chỉ nhận thông báo khi phiếu được duyệt (notifyRewardApproved),
+        // không thông báo ở giai đoạn pending để tránh tạo kỳ vọng trước khi có kết quả chính thức.
     }
 
     public function notifyRewardApproved(Reward $reward): void

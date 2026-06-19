@@ -22,6 +22,19 @@ class PenaltiesController extends Controller
         $query = Penalty::with(['employee', 'violation.regulation', 'approver', 'members', 'attachments', 'appeals' => fn($q) => $q->where('status', 'pending')])
             ->orderBy('created_at', 'desc');
 
+        // Nhân viên chỉ thấy phiếu phạt của chính mình; người có quyền duyệt thấy tất cả
+        if (!auth()->user()->can('approve-penalties')) {
+            $employee = auth()->user()->employee;
+            if ($employee) {
+                $query->where(function ($q) use ($employee) {
+                    $q->where('employee_id', $employee->id)
+                      ->orWhereHas('members', fn($m) => $m->where('employee_id', $employee->id));
+                });
+            } else {
+                $query->whereRaw('0 = 1');
+            }
+        }
+
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -163,12 +176,14 @@ class PenaltiesController extends Controller
 
     public function show(Penalty $penalty)
     {
+        $this->authorizeEmployeeView($penalty);
         $penalty->load(['employee', 'violation.regulation', 'approver', 'members.employee', 'attachments']);
         return view('penalties.show', compact('penalty'));
     }
 
     public function detailJson(Penalty $penalty)
     {
+        $this->authorizeEmployeeView($penalty);
         $penalty->load(['employee.branch', 'violation.regulation', 'approver', 'members.employee', 'attachments']);
         $user = auth()->user();
 
@@ -455,6 +470,24 @@ class PenaltiesController extends Controller
         if ($record) {
             $record->refundDeduction($points);
         }
+    }
+
+    // Nhân viên chỉ được xem phiếu phạt của mình hoặc khi mình là thành viên liên đới
+    private function authorizeEmployeeView(Penalty $penalty): void
+    {
+        if (auth()->user()->can('approve-penalties')) {
+            return;
+        }
+
+        $employee = auth()->user()->employee;
+        if (!$employee) {
+            abort(403);
+        }
+
+        $canView = $penalty->employee_id === $employee->id
+            || $penalty->members()->where('employee_id', $employee->id)->exists();
+
+        abort_unless($canView, 403);
     }
 
     public function reject(Request $request, Penalty $penalty)
