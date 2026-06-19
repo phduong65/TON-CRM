@@ -65,9 +65,10 @@
                             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
                             <select name="status" class="form-input h-9 text-sm w-full">
                                 <option value="">Tất cả</option>
-                                <option value="pending"  @selected(request('status') === 'pending')>Chờ duyệt</option>
+                                        <option value="pending"  @selected(request('status') === 'pending')>Chờ duyệt</option>
                                 <option value="approved" @selected(request('status') === 'approved')>Đã duyệt</option>
                                 <option value="rejected" @selected(request('status') === 'rejected')>Từ chối</option>
+                                <option value="revoked"  @selected(request('status') === 'revoked')>Đã thu hồi</option>
                             </select>
                         </div>
                         <div>
@@ -116,23 +117,40 @@
             @foreach ($rewards as $reward)
                 @php
                     $borderColor = match ($reward->status) {
-                        'pending' => 'border-l-amber-400 dark:border-l-amber-500',
+                        'pending'  => 'border-l-amber-400 dark:border-l-amber-500',
                         'approved' => 'border-l-emerald-500 dark:border-l-emerald-400',
                         'rejected' => 'border-l-red-500 dark:border-l-red-400',
-                        default => 'border-l-slate-300',
+                        'revoked'  => 'border-l-slate-400 dark:border-l-slate-500',
+                        default    => 'border-l-slate-300',
                     };
                     $dotColor = match ($reward->status) {
-                        'pending' => 'bg-amber-400',
+                        'pending'  => 'bg-amber-400',
                         'approved' => 'bg-emerald-500',
                         'rejected' => 'bg-red-500',
-                        default => 'bg-slate-300',
+                        'revoked'  => 'bg-slate-400',
+                        default    => 'bg-slate-300',
                     };
                     $statusMap = [
-                        'pending' => ['badge-warning', 'Chờ duyệt'],
-                        'approved' => ['badge-success text-[#6ee7b7]', 'Đã duyệt'],
+                        'pending'  => ['badge-warning', 'Chờ duyệt'],
+                        'approved' => ['badge-success', 'Đã duyệt'],
                         'rejected' => ['badge-danger', 'Từ chối'],
+                        'revoked'  => ['bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400 px-1.5 py-0.5 rounded text-xs font-medium', 'Đã thu hồi'],
                     ];
                     [$badgeCls, $badgeLbl] = $statusMap[$reward->status] ?? ['badge-neutral', $reward->status];
+
+                    // Determine display name for target
+                    $targetDisplay = match ($reward->target_type ?? 'individual') {
+                        'all'    => 'Tất cả nhân viên',
+                        'branch' => \App\Models\Branch::find($reward->target_id)?->name ?? 'Chi nhánh',
+                        'team'   => \App\Models\Team::find($reward->target_id)?->name ?? 'Đội nhóm',
+                        default  => $reward->employee?->name ?? 'N/A',
+                    };
+                    $targetCode = match ($reward->target_type ?? 'individual') {
+                        'all'    => null,
+                        'branch' => 'Chi nhánh',
+                        'team'   => 'Đội nhóm',
+                        default  => $reward->employee?->code,
+                    };
                 @endphp
 
                 <div class="card border-l-4 {{ $borderColor }} cursor-pointer
@@ -152,11 +170,11 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1 flex-wrap">
                                 <span class="font-semibold text-slate-900 dark:text-white text-sm">
-                                    {{ $reward->employee?->name ?? 'N/A' }}
+                                    {{ $targetDisplay }}
                                 </span>
-                                @if ($reward->employee?->code)
+                                @if ($targetCode)
                                     <span class="text-xs text-slate-400 dark:text-slate-500 font-mono">
-                                        {{ $reward->employee->code }}
+                                        {{ $targetCode }}
                                     </span>
                                 @endif
                                 <span class="{{ $badgeCls }} text-xs">{{ $badgeLbl }}</span>
@@ -231,6 +249,36 @@
         const rewardTypeDefaults = @json($rewardTypeDefaults);
 
         let rewardMemberIndex = {{ old('members') ? count(old('members')) : 0 }};
+
+        function rwUpdateTargetUI() {
+            const type = document.querySelector('input[name="target_type"]:checked')?.value || 'individual';
+            document.getElementById('rw_target_individual').classList.toggle('hidden', type !== 'individual');
+            document.getElementById('rw_target_branch').classList.toggle('hidden', type !== 'branch');
+            document.getElementById('rw_target_team').classList.toggle('hidden', type !== 'team');
+            document.getElementById('rw_target_all').classList.toggle('hidden', type !== 'all');
+            document.getElementById('rw_members_section').classList.toggle('hidden', type !== 'individual');
+
+            // Sync target_id hidden field
+            const hiddenTargetId = document.getElementById('rw_target_id_hidden');
+            if (type === 'branch') {
+                hiddenTargetId.value = document.getElementById('rw_branch_select').value;
+                document.getElementById('rw_branch_select').onchange = () => { hiddenTargetId.value = document.getElementById('rw_branch_select').value; };
+            } else if (type === 'team') {
+                hiddenTargetId.value = document.getElementById('rw_team_select').value;
+                document.getElementById('rw_team_select').onchange = () => { hiddenTargetId.value = document.getElementById('rw_team_select').value; };
+            } else {
+                hiddenTargetId.value = '';
+            }
+
+            // employee_id not required for non-individual
+            const empSelect = document.getElementById('rw_main_employee');
+            if (empSelect) empSelect.required = (type === 'individual');
+        }
+
+        // Init on page load (handles validation redirect back)
+        document.addEventListener('DOMContentLoaded', function() {
+            rwUpdateTargetUI();
+        });
 
         function _buildRwEmpOptions() {
             const sel = document.getElementById('rw_main_employee');

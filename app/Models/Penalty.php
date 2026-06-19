@@ -20,14 +20,18 @@ class Penalty extends Model
         'total_points_deducted',
         'total_money_deducted',
         'rejected_reason',
+        'revoked_at',
+        'revoked_by',
+        'revoked_reason',
     ];
 
     protected function casts(): array
     {
         return [
-            'approved_at' => 'datetime',
+            'approved_at'          => 'datetime',
+            'revoked_at'           => 'datetime',
             'total_points_deducted' => 'integer',
-            'total_money_deducted' => 'decimal:2',
+            'total_money_deducted'  => 'decimal:2',
         ];
     }
 
@@ -69,5 +73,10 @@ class Penalty extends Model
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
+    }
+
+    public function revoker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'revoked_by');
     }
 }

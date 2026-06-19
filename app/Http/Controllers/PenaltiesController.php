@@ -376,6 +376,87 @@ class PenaltiesController extends Controller
         MonthlyEmployeeScore::ensureExists($employeeId, now()->month, now()->year)->deduct($points);
     }
 
+    public function revoke(Request $request, Penalty $penalty)
+    {
+        abort_if($penalty->status !== 'approved', 403, 'Chỉ có thể thu hồi phiếu phạt đã duyệt.');
+
+        $request->validate(['revoked_reason' => 'required|string|max:500']);
+
+        DB::transaction(function () use ($request, $penalty) {
+            $penalty = Penalty::lockForUpdate()->findOrFail($penalty->id);
+            abort_if($penalty->status !== 'approved', 403, 'Chỉ có thể thu hồi phiếu phạt đã duyệt.');
+
+            $penalty->update([
+                'status'         => 'revoked',
+                'revoked_by'     => auth()->id(),
+                'revoked_at'     => now(),
+                'revoked_reason' => $request->revoked_reason,
+            ]);
+
+            $approvedMonth = $penalty->approved_at->month;
+            $approvedYear  = $penalty->approved_at->year;
+
+            // Refund main employee
+            if ($penalty->total_points_deducted > 0) {
+                EmployeeScore::create([
+                    'employee_id'    => $penalty->employee_id,
+                    'points'         => $penalty->total_points_deducted,
+                    'reason'         => 'Thu hồi xử phạt: ' . ($penalty->violation?->name ?? 'Vi phạm') . ' (' . $penalty->code . ')',
+                    'type'           => 'adjustment',
+                    'reference_type' => Penalty::class,
+                    'reference_id'   => $penalty->id,
+                ]);
+                $this->refundMonthlyDeduction($penalty->employee_id, $penalty->total_points_deducted, $approvedMonth, $approvedYear);
+            }
+
+            // Refund additional members
+            foreach ($penalty->members as $member) {
+                if ($member->points_deducted > 0) {
+                    EmployeeScore::create([
+                        'employee_id'    => $member->employee_id,
+                        'points'         => $member->points_deducted,
+                        'reason'         => 'Thu hồi xử phạt liên đới: ' . ($penalty->violation?->name ?? 'Vi phạm') . ' (' . $penalty->code . ')',
+                        'type'           => 'adjustment',
+                        'reference_type' => Penalty::class,
+                        'reference_id'   => $penalty->id,
+                    ]);
+                    $this->refundMonthlyDeduction($member->employee_id, $member->points_deducted, $approvedMonth, $approvedYear);
+                }
+            }
+        });
+
+        $penalty->loadMissing(['violation', 'employee']);
+        activity()->causedBy(auth()->user())
+            ->performedOn($penalty)
+            ->inLog('penalty')
+            ->withProperties([
+                'code'            => $penalty->code,
+                'employee_name'   => $penalty->employee?->name,
+                'employee_code'   => $penalty->employee?->code,
+                'violation'       => $penalty->violation?->name,
+                'points_refunded' => $penalty->total_points_deducted,
+                'revoked_by'      => auth()->user()->name,
+                'reason'          => $request->revoked_reason,
+            ])
+            ->log('Thu hồi phiếu phạt ' . $penalty->code
+                . ' — Hoàn ' . $penalty->total_points_deducted . ' điểm'
+                . ' — NV: ' . ($penalty->employee?->name ?? '—'));
+
+        return back()->with('success', 'Đã thu hồi phiếu phạt và hoàn điểm!');
+    }
+
+    private function refundMonthlyDeduction(int $employeeId, int $points, int $month, int $year): void
+    {
+        $record = MonthlyEmployeeScore::where('employee_id', $employeeId)
+            ->where('month', $month)
+            ->where('year', $year)
+            ->first();
+
+        if ($record) {
+            $record->refundDeduction($points);
+        }
+    }
+
     public function reject(Request $request, Penalty $penalty)
     {
         abort_if($penalty->status !== 'pending', 403, 'Phiếu phạt không ở trạng thái chờ duyệt.');

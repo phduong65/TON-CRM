@@ -59,6 +59,7 @@
                                 <option value="pending"  @selected(request('status') === 'pending')>Chờ duyệt</option>
                                 <option value="approved" @selected(request('status') === 'approved')>Đã duyệt</option>
                                 <option value="rejected" @selected(request('status') === 'rejected')>Từ chối</option>
+                                <option value="revoked"  @selected(request('status') === 'revoked')>Đã thu hồi</option>
                             </select>
                         </div>
                         <div class="sm:hidden"></div>{{-- spacer for odd grid --}}
@@ -108,21 +109,24 @@
             @foreach ($penalties as $penalty)
                 @php
                     $borderColor = match ($penalty->status) {
-                        'pending' => 'border-l-amber-400 dark:border-l-amber-500',
+                        'pending'  => 'border-l-amber-400 dark:border-l-amber-500',
                         'approved' => 'border-l-emerald-500 dark:border-l-emerald-400',
                         'rejected' => 'border-l-red-500 dark:border-l-red-400',
-                        default => 'border-l-slate-300',
+                        'revoked'  => 'border-l-slate-400 dark:border-l-slate-500',
+                        default    => 'border-l-slate-300',
                     };
                     $dotColor = match ($penalty->status) {
-                        'pending' => 'bg-amber-400',
+                        'pending'  => 'bg-amber-400',
                         'approved' => 'bg-emerald-500',
                         'rejected' => 'bg-red-500',
-                        default => 'bg-slate-300',
+                        'revoked'  => 'bg-slate-400',
+                        default    => 'bg-slate-300',
                     };
                     $statusMap = [
-                        'pending' => ['badge-warning', 'Chờ duyệt'],
+                        'pending'  => ['badge-warning', 'Chờ duyệt'],
                         'approved' => ['badge-success', 'Đã duyệt'],
                         'rejected' => ['badge-danger', 'Từ chối'],
+                        'revoked'  => ['bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400 px-1.5 py-0.5 rounded text-xs font-medium', 'Đã thu hồi'],
                     ];
                     [$badgeCls, $badgeLbl] = $statusMap[$penalty->status] ?? ['badge-neutral', $penalty->status];
                     $penaltyMembers = $penalty->members

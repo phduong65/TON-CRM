@@ -13,6 +13,8 @@ class Reward extends Model
 
     protected $fillable = [
         'code',
+        'target_type',
+        'target_id',
         'reward_type_id',
         'employee_id',
         'description',
@@ -22,12 +24,16 @@ class Reward extends Model
         'approved_by',
         'approved_at',
         'rejected_reason',
+        'revoked_at',
+        'revoked_by',
+        'revoked_reason',
     ];
 
     protected function casts(): array
     {
         return [
             'approved_at'          => 'datetime',
+            'revoked_at'           => 'datetime',
             'total_points_awarded' => 'integer',
         ];
     }
@@ -65,5 +71,10 @@ class Reward extends Model
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
+    }
+
+    public function revoker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'revoked_by');
     }
 }

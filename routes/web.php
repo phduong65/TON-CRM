@@ -104,6 +104,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{penalty}', [PenaltiesController::class, 'destroy'])->name('destroy')->middleware('can:approve-penalties');
         Route::post('/{penalty}/approve', [PenaltiesController::class, 'approve'])->name('approve')->middleware('can:approve-penalties');
         Route::post('/{penalty}/reject', [PenaltiesController::class, 'reject'])->name('reject')->middleware('can:approve-penalties');
+        Route::post('/{penalty}/revoke', [PenaltiesController::class, 'revoke'])->name('revoke')->middleware('can:revoke-penalties');
     });
 
     // Attendance Import — đi trễ / về sớm
@@ -146,6 +147,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{reward}', [RewardsController::class, 'destroy'])->name('destroy')->middleware('can:delete-rewards');
         Route::post('/{reward}/approve', [RewardsController::class, 'approve'])->name('approve')->middleware('can:approve-rewards');
         Route::post('/{reward}/reject', [RewardsController::class, 'reject'])->name('reject')->middleware('can:approve-rewards');
+        Route::post('/{reward}/revoke', [RewardsController::class, 'revoke'])->name('revoke')->middleware('can:revoke-rewards');
         Route::get('/{reward}/detail-json', [RewardsController::class, 'detailJson'])->name('detail-json')->middleware('can:view-rewards');
     });
 

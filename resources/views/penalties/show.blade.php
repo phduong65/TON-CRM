@@ -1,10 +1,16 @@
 @extends('layouts.admin')
 
 @section('title', 'Chi tiết xử phạt')
-@section('page-title', 'Xử phạt #' . $penalty->id)
+@section('page-title', 'Phiếu phạt ' . ($penalty->code ?? '#' . $penalty->id))
 @section('breadcrumb', 'Xử phạt / Chi tiết')
 
 @section('content')
+    <div class="mb-4">
+        <a href="{{ route('penalties.index') }}" class="btn-secondary btn-sm">
+            <i class="bi bi-arrow-left text-xs"></i> Quay lại
+        </a>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Info + Attachments -->
         <div class="lg:col-span-2 space-y-6">
@@ -21,7 +27,12 @@
                         <div>
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Trạng thái</p>
                             @php
-                                $m = ['pending' => ['badge-warning', 'Chờ duyệt'], 'approved' => ['badge-success', 'Đã duyệt'], 'rejected' => ['badge-danger', 'Từ chối']];
+                                $m = [
+                                    'pending'  => ['badge-warning', 'Chờ duyệt'],
+                                    'approved' => ['badge-success', 'Đã duyệt'],
+                                    'rejected' => ['badge-danger', 'Từ chối'],
+                                    'revoked'  => ['bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 px-2 py-0.5 rounded text-xs font-medium', 'Đã thu hồi'],
+                                ];
                                 [$cls, $lbl] = $m[$penalty->status] ?? ['badge-neutral', $penalty->status];
                             @endphp
                             <span class="{{ $cls }} text-sm mt-1 inline-block font-medium">{{ $lbl }}</span>
@@ -64,6 +75,20 @@
                         <div class="col-span-2">
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Lý do từ chối</p>
                             <p class="text-sm text-red-600 dark:text-red-400">{{ $penalty->rejected_reason }}</p>
+                        </div>
+                        @endif
+                        @if($penalty->revoked_at)
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Ngày thu hồi</p>
+                            <p class="text-sm">{{ $penalty->revoked_at->format('d/m/Y H:i') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Người thu hồi</p>
+                            <p class="text-sm font-medium">{{ $penalty->revoker?->name }}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Lý do thu hồi</p>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">{{ $penalty->revoked_reason }}</p>
                         </div>
                         @endif
                     </div>
@@ -138,52 +163,105 @@
                 </div>
             </div>
 
-            @can('approve-penalties')
-                @if($penalty->status === 'pending')
-                <div class="card">
-                    <div class="card-body space-y-2">
-                        <form action="{{ route('penalties.approve', $penalty) }}" method="POST" onsubmit="return confirm('Xác nhận duyệt xử phạt này?')">
+            @canany(['approve-penalties', 'revoke-penalties'])
+            @if(in_array($penalty->status, ['pending', 'approved']))
+            <div class="card">
+                <div class="card-body space-y-2">
+                    @if($penalty->status === 'pending')
+                        @can('approve-penalties')
+                        <form action="{{ route('penalties.approve', $penalty) }}" method="POST"
+                              onsubmit="return confirm('Xác nhận duyệt xử phạt này?')">
                             @csrf
                             <button type="submit" class="btn-primary w-full">
-                                <i class="ph-check-circle"></i>
+                                <i class="bi bi-check-circle"></i>
                                 <span>Duyệt xử phạt</span>
                             </button>
                         </form>
-                        <button type="button" class="btn-secondary w-full" onclick="showRejectModal({{ $penalty->id }})">
-                            <i class="ph-x-circle"></i>
+                        <button type="button" class="btn-danger w-full" onclick="openModal('rejectPenaltyModal')">
+                            <i class="bi bi-x-circle"></i>
                             <span>Từ chối</span>
                         </button>
-                    </div>
+                        @endcan
+                    @endif
+
+                    @if($penalty->status === 'approved')
+                        @can('revoke-penalties')
+                        <button type="button" class="btn-secondary w-full border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                                onclick="openModal('revokePenaltyModal')">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                            <span>Thu hồi phiếu phạt</span>
+                        </button>
+                        @endcan
+                    @endif
                 </div>
-                @endif
-            @endcan
+            </div>
+            @endif
+            @endcanany
         </div>
     </div>
-
-    <div id="reject-modal" class="modal-overlay hidden">
-        <div class="modal-content p-6">
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Từ chối xử phạt</h3>
-            <form id="reject-form" method="POST">
-                @csrf
-                <div class="mb-4">
-                    <label class="form-label">Lý do từ chối</label>
-                    <textarea name="rejected_reason" rows="3" class="form-input" required placeholder="Nhập lý do..."></textarea>
-                </div>
-                <div class="flex justify-end gap-3">
-                    <button type="button" class="btn-secondary" onclick="hideRejectModal()">Hủy</button>
-                    <button type="submit" class="btn-danger">Xác nhận</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function showRejectModal(id) {
-            document.getElementById('reject-modal').classList.remove('hidden');
-            document.getElementById('reject-form').action = '/penalties/' + id + '/reject';
-        }
-        function hideRejectModal() {
-            document.getElementById('reject-modal').classList.add('hidden');
-        }
-    </script>
 @endsection
+
+@push('modals')
+{{-- Reject Modal --}}
+<div id="rejectPenaltyModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+     onclick="if(event.target===this)closeModal('rejectPenaltyModal')">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="bi bi-x-circle text-red-500"></i> Từ chối xử phạt
+            </h3>
+            <button onclick="closeModal('rejectPenaltyModal')"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <i class="bi bi-x-lg text-sm"></i>
+            </button>
+        </div>
+        <form action="{{ route('penalties.reject', $penalty) }}" method="POST" class="px-6 py-5 space-y-4">
+            @csrf
+            <div>
+                <label class="form-label">Lý do từ chối <span class="text-red-500">*</span></label>
+                <textarea name="rejected_reason" class="form-input" rows="3"
+                          placeholder="Nhập lý do từ chối..." required maxlength="500"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onclick="closeModal('rejectPenaltyModal')" class="btn-secondary">Hủy</button>
+                <button type="submit" class="btn-danger"><i class="bi bi-x-circle"></i> Xác nhận từ chối</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Revoke Modal --}}
+<div id="revokePenaltyModal" class="hidden fixed inset-0 bg-black/50 z-50 items-center justify-center p-4"
+     onclick="if(event.target===this)closeModal('revokePenaltyModal')">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="bi bi-arrow-counterclockwise text-orange-500"></i> Thu hồi phiếu phạt
+            </h3>
+            <button onclick="closeModal('revokePenaltyModal')"
+                    class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <i class="bi bi-x-lg text-sm"></i>
+            </button>
+        </div>
+        <form action="{{ route('penalties.revoke', $penalty) }}" method="POST" class="px-6 py-5 space-y-4">
+            @csrf
+            <div class="rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-3 text-sm text-orange-700 dark:text-orange-300">
+                <i class="bi bi-exclamation-triangle mr-1"></i>
+                Thu hồi sẽ hoàn lại <strong>{{ number_format($penalty->total_points_deducted) }} điểm</strong>
+                cho nhân viên liên quan. Hành động này không thể hoàn tác.
+            </div>
+            <div>
+                <label class="form-label">Lý do thu hồi <span class="text-red-500">*</span></label>
+                <textarea name="revoked_reason" class="form-input" rows="3"
+                          placeholder="Nhập lý do thu hồi..." required maxlength="500"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onclick="closeModal('revokePenaltyModal')" class="btn-secondary">Hủy</button>
+                <button type="submit" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors">
+                    <i class="bi bi-arrow-counterclockwise"></i> Xác nhận thu hồi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endpush

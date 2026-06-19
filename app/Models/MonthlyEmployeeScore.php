@@ -131,4 +131,41 @@ class MonthlyEmployeeScore extends Model
             $this->fill($fresh->getAttributes());
         });
     }
+
+    /**
+     * Reverse a deduction (revoke penalty): add points back to final_score up to cap, excess to surplus.
+     */
+    public function refundDeduction(int $points): void
+    {
+        DB::transaction(function () use ($points) {
+            $fresh = static::lockForUpdate()->findOrFail($this->id);
+            $fresh->deducted_points = max(0, $fresh->deducted_points - $points);
+            $capacity              = max(0, $fresh->initial_score - $fresh->final_score);
+            $pointsForBase         = min($points, $capacity);
+            $fresh->final_score    = min($fresh->initial_score, $fresh->final_score + $pointsForBase);
+            $fresh->surplus_points += ($points - $pointsForBase);
+            $fresh->zone           = static::computeZone($fresh->final_score);
+            $fresh->save();
+            $this->fill($fresh->getAttributes());
+        });
+    }
+
+    /**
+     * Reverse a reward (revoke reward): remove from surplus first, then from final_score.
+     */
+    public function revokeReward(int $points): void
+    {
+        DB::transaction(function () use ($points) {
+            $fresh = static::lockForUpdate()->findOrFail($this->id);
+            $fresh->rewarded_points = max(0, $fresh->rewarded_points - $points);
+            // Take from surplus first (the overflow beyond initial_score), then from final_score
+            $fromSurplus           = min($points, $fresh->surplus_points);
+            $fresh->surplus_points -= $fromSurplus;
+            $fromBase              = $points - $fromSurplus;
+            $fresh->final_score    = max(0, $fresh->final_score - $fromBase);
+            $fresh->zone           = static::computeZone($fresh->final_score);
+            $fresh->save();
+            $this->fill($fresh->getAttributes());
+        });
+    }
 }
