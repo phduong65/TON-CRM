@@ -83,7 +83,10 @@ class RewardsController extends Controller
             'created_by'           => auth()->id(),
         ]);
 
-        if ($targetType === 'individual' && $request->filled('members')) {
+        if ($targetType !== 'individual') {
+            // Bulk: resolve target employees and create reward_members
+            $this->createBulkMembers($reward, $targetType, $request->target_id, $request->total_points_awarded);
+        } elseif ($request->filled('members')) {
             foreach ($request->members as $m) {
                 if (!empty($m['employee_id'])) {
                     RewardMember::create([
@@ -94,10 +97,8 @@ class RewardsController extends Controller
                     ]);
                 }
             }
-        } else {
-            // Bulk: resolve target employees and create reward_members
-            $this->createBulkMembers($reward, $targetType, $request->target_id, $request->total_points_awarded);
         }
+        // individual with no extra members → chỉ dùng employee_id trên reward
 
         $reward->loadMissing(['rewardType', 'employee']);
         activity()->causedBy(auth()->user())
@@ -411,7 +412,7 @@ class RewardsController extends Controller
         if ($targetType === 'branch' && $targetId) {
             $query->where('branch_id', $targetId);
         } elseif ($targetType === 'team' && $targetId) {
-            $query->whereHas('teams', fn($q) => $q->where('teams.id', $targetId));
+            $query->where('team_id', $targetId);
         }
         // 'all' → no extra filter
 

@@ -105,8 +105,28 @@
         </div>
 
         {{-- Action footer --}}
-        @php $actionUrl = $notification->actionUrl(); @endphp
-        @if($actionUrl)
+        @php
+            $actionUrl    = $linkedDeleted ? null : $notification->actionUrl();
+            $isPenalty    = isset($notification->data['penalty_id']);
+            $isReward     = isset($notification->data['reward_id']);
+            $isReport     = isset($notification->data['report_id']);
+            $hasLinkedRef = $isPenalty || $isReward || $isReport;
+        @endphp
+        @if($linkedDeleted && $hasLinkedRef)
+            <div class="px-6 pb-6">
+                <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 p-4 flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                        <i class="bi bi-trash3 text-slate-400 dark:text-slate-500 text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                            {{ $isPenalty ? 'Phiếu phạt' : ($isReward ? 'Phiếu thưởng' : 'Báo cáo') }} liên quan đã bị xóa
+                        </p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Phiếu này đã bị xóa khỏi hệ thống và không thể xem được nữa.</p>
+                    </div>
+                </div>
+            </div>
+        @elseif($actionUrl)
             <div class="px-6 pb-6">
                 <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 p-4 flex items-center gap-3">
                     @if($notification->penaltyUrl())
@@ -121,7 +141,7 @@
                             <i class="bi bi-arrow-right-circle"></i>
                             <span>Xem phiếu phạt</span>
                         </a>
-                    @else
+                    @elseif($notification->rewardUrl())
                         <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
                             <i class="bi bi-gift-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
                         </div>
@@ -132,6 +152,18 @@
                         <a href="{{ $actionUrl }}" class="btn-primary shrink-0">
                             <i class="bi bi-arrow-right-circle"></i>
                             <span>Xem phiếu thưởng</span>
+                        </a>
+                    @else
+                        <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+                            <i class="bi bi-flag-fill text-violet-600 dark:text-violet-400 text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Xem báo cáo vi phạm liên quan</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Nhấn để xem chi tiết báo cáo và thực hiện các hành động.</p>
+                        </div>
+                        <a href="{{ $actionUrl }}" class="btn-primary shrink-0">
+                            <i class="bi bi-arrow-right-circle"></i>
+                            <span>Xem báo cáo</span>
                         </a>
                     @endif
                 </div>

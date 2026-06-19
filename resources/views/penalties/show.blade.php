@@ -39,7 +39,15 @@
                         </div>
                         <div>
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Nhân viên</p>
-                            <p class="text-sm font-medium">{{ $penalty->employee->name ?? 'N/A' }}</p>
+                            @if($penalty->employee)
+                                <a href="{{ route('employees.show', $penalty->employee) }}"
+                                   class="text-sm font-medium text-pcrm-600 dark:text-pcrm-400 hover:underline">
+                                    {{ $penalty->employee->name }}
+                                </a>
+                                <p class="text-xs text-slate-400">{{ $penalty->employee->code }} · {{ $penalty->employee->branch?->name }}</p>
+                            @else
+                                <p class="text-sm font-medium">N/A</p>
+                            @endif
                         </div>
                         <div>
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Lỗi vi phạm</p>
@@ -61,6 +69,11 @@
                             <p class="text-lg font-bold text-red-600 dark:text-red-400">{{ number_format($penalty->total_money_deducted, 0, ',', '.') }}₫</p>
                         </div>
                         @endif
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Ngày tạo</p>
+                            <p class="text-sm">{{ $penalty->created_at->format('d/m/Y H:i') }}</p>
+                            <p class="text-xs text-slate-400">bởi {{ $penalty->creator?->name }}</p>
+                        </div>
                         @if($penalty->approved_at)
                         <div>
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Ngày duyệt</p>
@@ -150,10 +163,21 @@
                         <div class="divide-y divide-slate-100 dark:divide-slate-700">
                             @foreach($penalty->members as $member)
                             <div class="px-4 py-3 flex items-center justify-between">
-                                <span class="text-sm">{{ $member->employee->name ?? 'N/A' }}</span>
-                                <span class="text-sm font-semibold text-red-600">-{{ number_format($member->points_deducted) }}</span>
+                                <div>
+                                    <p class="text-sm font-medium">{{ $member->employee?->name ?? 'N/A' }}</p>
+                                    <p class="text-xs text-slate-400">{{ $member->employee?->code }}</p>
+                                </div>
+                                <span class="text-sm font-semibold text-red-600 dark:text-red-400">
+                                    -{{ number_format($member->points_deducted) }}
+                                </span>
                             </div>
                             @endforeach
+                            <div class="px-4 py-3 flex items-center justify-between bg-slate-50 dark:bg-slate-700/30">
+                                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tổng cộng</span>
+                                <span class="text-sm font-bold text-red-600 dark:text-red-400">
+                                    -{{ number_format($penalty->total_points_deducted + $penalty->members->sum('points_deducted')) }}
+                                </span>
+                            </div>
                         </div>
                     @else
                         <div class="p-4 text-center text-sm text-slate-400">
@@ -186,7 +210,8 @@
 
                     @if($penalty->status === 'approved')
                         @can('revoke-penalties')
-                        <button type="button" class="btn-secondary w-full border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
+                        <button type="button"
+                                class="w-full border border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 transition-colors"
                                 onclick="openModal('revokePenaltyModal')">
                             <i class="bi bi-arrow-counterclockwise"></i>
                             <span>Thu hồi phiếu phạt</span>

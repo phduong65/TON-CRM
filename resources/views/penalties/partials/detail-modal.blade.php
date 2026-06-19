@@ -52,7 +52,7 @@
                         <p
                             class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                             Nhân viên vi phạm</p>
-                        <p id="detail-employee-name mb-1" class="text-sm font-semibold text-slate-900 dark:text-white"></p>
+                        <p id="detail-employee-name" class="text-sm font-semibold text-slate-900 dark:text-white"></p>
                         <p id="detail-employee-meta" class="text-xs text-slate-400 dark:text-slate-500"></p>
                     </div>
                     <div>
@@ -114,7 +114,7 @@
                 <div id="detail-approved-wrap"
                     class="hidden rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-3">
                     <div class="flex items-center gap-2">
-                        <i class="ph-check-circle text-emerald-600 dark:text-emerald-400 text-lg"></i>
+                        <i class="bi bi-check-circle-fill text-emerald-600 dark:text-emerald-400 text-lg"></i>
                         <div>
                             <p class="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">Đã duyệt bởi <span
                                     id="detail-approver-name"></span></p>
@@ -127,7 +127,7 @@
                 <div id="detail-rejected-wrap"
                     class="hidden rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
                     <div class="flex items-start gap-2">
-                        <i class="ph-x-circle text-red-600 dark:text-red-400 text-lg mt-0.5 shrink-0"></i>
+                        <i class="bi bi-x-circle-fill text-red-600 dark:text-red-400 text-lg mt-0.5 shrink-0"></i>
                         <div>
                             <p class="text-xs font-semibold text-red-700 dark:text-red-400 mb-0.5">Lý do từ chối</p>
                             <p id="detail-rejected-reason"
@@ -141,7 +141,7 @@
                     <div
                         class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-4 space-y-3">
                         <p class="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-1.5">
-                            <i class="ph-x-circle"></i> Từ chối xử phạt
+                            <i class="bi bi-x-circle"></i> Từ chối xử phạt
                         </p>
                         <form id="detail-reject-form" method="POST">
                             @csrf
@@ -150,7 +150,7 @@
                                 <button type="button" onclick="toggleDetailReject(false)"
                                     class="btn-secondary btn-sm flex-1">Hủy</button>
                                 <button type="submit" class="btn-danger btn-sm flex-1">
-                                    <i class="ph-x-circle"></i> Xác nhận từ chối
+                                    <i class="bi bi-x-circle"></i> Xác nhận từ chối
                                 </button>
                             </div>
                         </form>
@@ -173,21 +173,24 @@
                 <button onclick="closePenaltyDetail()" class="btn-secondary btn-sm">
                     Đóng
                 </button>
+                <a id="detail-link" href="#" class="btn-primary btn-sm text-xs">
+                    Xem chi tiết
+                </a>
 
                 {{-- Pending-only actions (shown via JS) --}}
                 <div id="detail-pending-actions" class="hidden flex items-center gap-2 ml-auto flex-wrap">
                     <button id="detail-edit-btn" onclick="openEditFromDetail()" class="btn-secondary btn-sm hidden">
-                        <i class="ph-pencil-simple"></i> Sửa
+                        <i class="bi bi-pencil"></i> Sửa
                     </button>
                     <button id="detail-reject-btn" onclick="toggleDetailReject(true)"
                         class="btn-danger btn-sm hidden">
-                        <i class="ph-x-circle"></i> Từ chối
+                        <i class="bi bi-x-circle"></i> Từ chối
                     </button>
                     <form id="detail-approve-form" method="POST" class="hidden"
                         onsubmit="return confirm('Xác nhận duyệt phiếu phạt này?')">
                         @csrf
                         <button type="submit" class="btn-primary btn-sm">
-                            <i class="ph-check-circle"></i> Duyệt xử phạt
+                            <i class="bi bi-check-circle"></i> Duyệt xử phạt
                         </button>
                     </form>
                 </div>
@@ -220,6 +223,7 @@
             'use strict';
 
             var _current = null;
+            var _baseUrl = '{{ url('penalties') }}';
 
             /* ── helpers ── */
             function show(id) {
@@ -249,7 +253,7 @@
                 _setLoading(true);
                 toggleDetailReject(false);
 
-                fetch('/penalties/' + penaltyId + '/detail-json', {
+                fetch(_baseUrl + '/' + penaltyId + '/detail-json', {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
@@ -431,6 +435,10 @@
                     text('detail-rejected-reason', d.rejected_reason);
                 }
 
+                /* --- detail link --- */
+                var detailLink = document.getElementById('detail-link');
+                if (detailLink) detailLink.href = _baseUrl + '/' + d.id;
+
                 /* --- action buttons --- */
                 var pendingActions = document.getElementById('detail-pending-actions');
                 var approveForm = document.getElementById('detail-approve-form');
@@ -443,10 +451,10 @@
                 if (approveForm) {
                     var canApprove = d.status === 'pending' && d.can_approve;
                     approveForm.classList.toggle('hidden', !canApprove);
-                    if (canApprove) approveForm.action = '/penalties/' + d.id + '/approve';
+                    if (canApprove) approveForm.action = _baseUrl + '/' + d.id + '/approve';
                 }
                 if (rejectBtn) rejectBtn.classList.toggle('hidden', !(d.status === 'pending' && d.can_approve));
-                if (rejectForm) rejectForm.action = '/penalties/' + d.id + '/reject';
+                if (rejectForm) rejectForm.action = _baseUrl + '/' + d.id + '/reject';
                 if (editBtn) editBtn.classList.toggle('hidden', !(d.status === 'pending' && d.can_edit));
             }
         }());

@@ -17,9 +17,9 @@
         @endcan
     </div>
 
-    <div class="card">
-        {{-- Filter bar --}}
-        <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+    {{-- Filter bar --}}
+    <div class="card mb-4">
+        <div class="px-4 py-3">
             @php
                 $vExtraKeys    = ['regulation_id', 'penalty_type', 'severity', 'status'];
                 $vFilterActive = request()->anyFilled(array_merge(['search'], $vExtraKeys));
@@ -104,7 +104,9 @@
                 </div>
             </form>
         </div>
+    </div>
 
+    <div class="card">
         <div class="card-body p-0">
             <div class="table-container border-0 rounded-none">
                 <table class="table-base">

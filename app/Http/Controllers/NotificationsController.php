@@ -76,7 +76,18 @@ class NotificationsController extends Controller
             ->orderBy('id', 'desc')
             ->first();
 
-        return view('notifications.show', compact('notification', 'prev', 'next'));
+        // Check if the linked entity still exists (may have been deleted)
+        $linkedDeleted = false;
+        $data = $notification->data ?? [];
+        if (isset($data['penalty_id'])) {
+            $linkedDeleted = ! \App\Models\Penalty::find($data['penalty_id']);
+        } elseif (isset($data['reward_id'])) {
+            $linkedDeleted = ! \App\Models\Reward::withTrashed()->find($data['reward_id']);
+        } elseif (isset($data['report_id'])) {
+            $linkedDeleted = ! \App\Models\EmployeeReport::withTrashed()->find($data['report_id']);
+        }
+
+        return view('notifications.show', compact('notification', 'prev', 'next', 'linkedDeleted'));
     }
 
     public function markRead(Notification $notification)

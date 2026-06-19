@@ -45,10 +45,10 @@
             {{-- Populated body --}}
             <div id="rwd-body-content" class="hidden space-y-5">
 
-                {{-- Employee + reward type --}}
+                {{-- Target + reward type --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                     <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
+                        <p id="rwd-target-label" class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-0.5">
                             Nhân viên được thưởng</p>
                         <p id="rwd-employee-name" class="text-sm font-semibold text-slate-900 dark:text-white"></p>
                         <p id="rwd-employee-meta" class="text-xs text-slate-400 dark:text-slate-500"></p>
@@ -148,8 +148,8 @@
                 <button onclick="closeRewardDetail()" class="btn-secondary btn-sm">
                     Đóng
                 </button>
-                <a id="rwd-detail-link" href="#" class="btn-ghost btn-sm text-xs">
-                    <i class="bi bi-arrow-up-right-square"></i> Xem chi tiết
+                <a id="rwd-detail-link" href="#" class="btn-primary btn-sm text-xs">
+                    Xem chi tiết
                 </a>
 
                 {{-- Pending-only actions (shown via JS) --}}
@@ -177,14 +177,8 @@
 (function () {
     'use strict';
 
-    function show(id) {
-        var el = document.getElementById(id);
-        if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
-    }
-    function hide(id) {
-        var el = document.getElementById(id);
-        if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
-    }
+    var _baseUrl = '{{ url('rewards') }}';
+
     function text(id, val) {
         var el = document.getElementById(id);
         if (el) el.textContent = val || '—';
@@ -195,7 +189,7 @@
         _setLoading(true);
         toggleRewardReject(false);
 
-        fetch('/rewards/' + rewardId + '/detail-json', {
+        fetch(_baseUrl + '/' + rewardId + '/detail-json', {
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
         })
         .then(function (r) { return r.json(); })
@@ -241,10 +235,24 @@
             badge.textContent = d.status_label;
         }
 
-        /* employee */
-        text('rwd-employee-name', d.employee.name);
-        var meta = [d.employee.code, d.employee.branch].filter(Boolean).join(' · ');
-        text('rwd-employee-meta', meta);
+        /* target display — thay đổi label và giá trị theo target_type */
+        var targetLabelEl = document.getElementById('rwd-target-label');
+        var targetLabelMap = {
+            individual: 'Nhân viên được thưởng',
+            branch:     'Chi nhánh được thưởng',
+            team:       'Đội nhóm được thưởng',
+            all:        'Đối tượng được thưởng',
+        };
+        if (targetLabelEl) targetLabelEl.textContent = targetLabelMap[d.target_type] || 'Đối tượng';
+
+        if (d.target_type === 'individual') {
+            text('rwd-employee-name', d.employee.name);
+            var meta = [d.employee.code, d.employee.branch].filter(Boolean).join(' · ');
+            text('rwd-employee-meta', meta || null);
+        } else {
+            text('rwd-employee-name', d.target_label);
+            text('rwd-employee-meta', null);
+        }
 
         /* reward type + points */
         text('rwd-reward-type', d.reward_type);
@@ -292,7 +300,7 @@
 
         /* detail link */
         var detailLink = document.getElementById('rwd-detail-link');
-        if (detailLink) detailLink.href = '/rewards/' + d.id;
+        if (detailLink) detailLink.href = _baseUrl + '/' + d.id;
 
         /* action buttons */
         var pendingActions = document.getElementById('rwd-pending-actions');
@@ -305,10 +313,10 @@
         var canApprove = d.status === 'pending' && d.can_approve;
         if (approveForm) {
             approveForm.classList.toggle('hidden', !canApprove);
-            if (canApprove) approveForm.action = '/rewards/' + d.id + '/approve';
+            if (canApprove) approveForm.action = _baseUrl + '/' + d.id + '/approve';
         }
         if (rejectBtn) rejectBtn.classList.toggle('hidden', !canApprove);
-        if (rejectForm) rejectForm.action = '/rewards/' + d.id + '/reject';
+        if (rejectForm) rejectForm.action = _baseUrl + '/' + d.id + '/reject';
     }
 }());
 </script>

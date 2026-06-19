@@ -94,7 +94,7 @@
     @if ($penalties->isEmpty())
         <div class="card">
             <div class="py-16 text-center text-slate-400 dark:text-slate-500">
-                <i class="bi bi-gear text-4xl mb-3 block"></i>
+                <i class="bi bi-clipboard-x text-4xl mb-3 block"></i>
                 <p class="text-sm font-medium">Chưa có phiếu xử phạt nào</p>
                 @can('create-penalties')
                     <button onclick="openModal('createPenaltyModal')"
@@ -154,15 +154,14 @@
                 <div class="card border-l-4 {{ $borderColor }} cursor-pointer
                     hover:shadow-md hover:-translate-y-px transition-all duration-150 group"
                     onclick="openPenaltyDetail({{ $penalty->id }})">
-                    <div class="px-5 py-4 flex items-start gap-4">
-
+                    <div class="px-5 py-4 flex items-center gap-4">
                         {{-- Status dot --}}
-                        <div class="shrink-0 mt-1">
+                        {{-- <div class="shrink-0 mt-1">
                             <div
                                 class="w-2.5 h-2.5 rounded-full {{ $dotColor }}
                                 @if ($penalty->status === 'pending') animate-pulse @endif">
                             </div>
-                        </div>
+                        </div> --}}
 
                         {{-- Main content --}}
                         <div class="flex-1 min-w-0">
@@ -175,12 +174,11 @@
                                         {{ $penalty->employee->code }}
                                     </span>
                                 @endif
-                                <span
-                                    class="{{ $badgeCls }} text-xs bg-white text-[#6ee7b7] dark:text-[#6ee7b7] px-2.5 rounded-full font-medium sm:ml-0">{{ $badgeLbl }}</span>
+                                <span class="{{ $badgeCls }} text-xs">{{ $badgeLbl }}</span>
                             </div>
 
                             <p class="text-sm text-slate-600 dark:text-slate-300 mb-0.5">
-                                <i class="ph-warning-circle text-xs text-slate-400 mr-0.5"></i>
+                                <i class="bi bi-exclamation-triangle text-xs text-slate-400 mr-0.5"></i>
                                 {{ $penalty->violation->name ?? 'N/A' }}
                             </p>
 
@@ -189,24 +187,29 @@
                                     {{ $penalty->description }}
                                 </p>
                             @endif
-                        </div>
 
-                        {{-- Right: points + date + actions --}}
-                        <div class="shrink-0 text-right flex flex-col items-end gap-1.5">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-base font-bold text-red-600 dark:text-red-400">
-                                    -{{ number_format($penalty->total_points_deducted) }}đ
-                                </span>
-                                @if ($penalty->total_money_deducted > 0)
-                                    <span class="text-xs text-red-500 dark:text-red-400">
-                                        / {{ number_format($penalty->total_money_deducted, 0, ',', '.') }}₫
-                                    </span>
-                                @endif
-                            </div>
-
+                            @if ($penalty->members->count() > 0)
+                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                                    <i class="bi bi-people text-xs mr-0.5"></i>
+                                    +{{ $penalty->members->count() }} thành viên liên đới
+                                </p>
+                            @endif
                             <span class="text-xs text-slate-400 dark:text-slate-500">
                                 {{ $penalty->created_at->format('d/m/Y') }}
                             </span>
+                        </div>
+
+                        {{-- Right: points + money + date + actions --}}
+                        <div class="shrink-0 text-right flex justify-center items-end gap-1.5">
+                            <span class="text-base font-bold text-red-600 dark:text-red-400">
+                                -{{ number_format($penalty->total_points_deducted) }}đ
+                            </span>
+
+                            @if ($penalty->total_money_deducted > 0)
+                                <span class="text-xs text-red-500 dark:text-red-400">
+                                    {{ number_format($penalty->total_money_deducted, 0, ',', '.') }}₫
+                                </span>
+                            @endif
 
                             {{-- Quick actions --}}
                             @if ($penalty->status === 'pending')
@@ -239,15 +242,15 @@
                                     @can('revoke-penalties')
                                         <button type="button" title="Thu hồi"
                                             onclick="openRevokePenaltyModal({{ $penalty->id }}, '{{ $penalty->code ?? '#'.$penalty->id }}')"
-                                            class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
-                                            <i class="bi bi-arrow-counterclockwise text-sm"></i>
+                                            class="w-7 h-7 flex items-center justify-center rounded-md text-white btn-danger transition-colors">
+                                            <i class="bi bi-arrow-counterclockwise text-xs"></i>
                                         </button>
                                     @endcan
                                     @if($penalty->employee?->user_id === auth()->id())
                                         <button type="button" title="Khiếu nại"
                                             onclick="openAppealPenaltyModal({{ $penalty->id }}, '{{ $penalty->code ?? '#'.$penalty->id }}')"
                                             class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
-                                            <i class="bi bi-chat-left-text text-sm"></i>
+                                            <i class="bi bi-chat-left-text text-xs"></i>
                                         </button>
                                     @endif
                                 </div>

@@ -39,11 +39,15 @@
                         </div>
                         <div>
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Nhân viên</p>
-                            <a href="{{ route('employees.show', $reward->employee) }}"
-                               class="text-sm font-medium text-pcrm-600 dark:text-pcrm-400 hover:underline">
-                                {{ $reward->employee?->name }}
-                            </a>
-                            <p class="text-xs text-slate-400">{{ $reward->employee?->code }} · {{ $reward->employee?->branch?->name }}</p>
+                            @if($reward->employee)
+                                <a href="{{ route('employees.show', $reward->employee) }}"
+                                   class="text-sm font-medium text-pcrm-600 dark:text-pcrm-400 hover:underline">
+                                    {{ $reward->employee->name }}
+                                </a>
+                                <p class="text-xs text-slate-400">{{ $reward->employee->code }} · {{ $reward->employee->branch?->name }}</p>
+                            @else
+                                <p class="text-sm font-medium">N/A</p>
+                            @endif
                         </div>
                         <div>
                             <p class="text-xs text-slate-400 uppercase tracking-wider">Loại thưởng</p>
