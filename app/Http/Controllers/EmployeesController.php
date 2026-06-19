@@ -108,10 +108,17 @@ class EmployeesController extends Controller
 
     public function show(Employee $employee)
     {
-        $employee->load(['branch', 'team', 'scores', 'penalties' => function($q) {
-            $q->with('violation')->latest();
-        }]);
-        return view('employees.show', compact('employee'));
+        $user = auth()->user();
+        $canViewSensitive = $user->hasRole(['admin', 'manager'])
+            || $user->employee?->id === $employee->id;
+
+        $employee->load(['branch', 'team']);
+        if ($canViewSensitive) {
+            $employee->load(['scores', 'penalties' => function ($q) {
+                $q->with('violation')->latest();
+            }]);
+        }
+        return view('employees.show', compact('employee', 'canViewSensitive'));
     }
 
     public function edit(Employee $employee)
@@ -191,6 +198,14 @@ class EmployeesController extends Controller
 
     public function penalties(Employee $employee)
     {
+        $user = auth()->user();
+        $isOwnProfile = $user->employee?->id === $employee->id;
+        $isPrivileged = $user->hasRole(['admin', 'manager']);
+
+        if (!$isOwnProfile && !$isPrivileged) {
+            abort(403, 'Bạn không có quyền xem lịch sử vi phạm của nhân viên khác.');
+        }
+
         $penalties = $employee->penalties()
             ->with(['violation', 'approver'])
             ->orderBy('created_at', 'desc')

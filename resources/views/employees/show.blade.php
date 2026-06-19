@@ -82,6 +82,7 @@
                 </div>
             </div>
 
+            @if($canViewSensitive)
             <!-- Score Summary -->
             <div class="card mt-4">
                 <div class="card-header">
@@ -98,10 +99,12 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- Right Column -->
         <div class="lg:col-span-2 space-y-6">
+            @if($canViewSensitive)
             <!-- Penalty History -->
             <div class="card">
                 <div class="card-header flex items-center justify-between">
@@ -211,6 +214,18 @@
                     @endif
                 </div>
             </div>
+            @else
+            <!-- Privacy notice for non-privileged viewers -->
+            <div class="card">
+                <div class="card-body py-12 text-center">
+                    <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                        <i class="bi bi-lock text-2xl text-slate-400"></i>
+                    </div>
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Thông tin điểm và lịch sử vi phạm được bảo mật</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Chỉ bản thân nhân viên hoặc quản lý mới có thể xem.</p>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 @endsection

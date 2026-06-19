@@ -88,6 +88,7 @@
 @endphp
 
 @section('content')
+    @php $isAdmin = auth()->user()->hasRole(['admin', 'manager']); @endphp
     <div class="flex items-center justify-between gap-2 mb-6">
         <div class="inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
             <span
@@ -131,8 +132,10 @@
         <span
             class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">🔴
             Redzone</span>
+        @if($isAdmin)
         <span class="hidden sm:inline ml-auto text-xs text-slate-400"><span class="font-semibold text-emerald-500">HS</span> = Hiệu số (điểm
             thưởng vượt 100)</span>
+        @endif
     </div>
 
     {{-- ══ TAB: ALL-TIME ══════════════════════════════════════════════════════ --}}
@@ -212,7 +215,8 @@
                                     @endif
                                 </div>
 
-                                {{-- Score + surplus --}}
+                                {{-- Score + surplus (admin only) --}}
+                                @if($isAdmin)
                                 <div class="leaderboard-card-score flex-shrink-0 text-right">
                                     <p class="font-extrabold text-base {{ $rankScoreClass($rank, $zone) }}">
                                         {{ number_format($atscore) }}
@@ -223,6 +227,7 @@
                                             +{{ number_format($surplus) }} HS</p>
                                     @endif
                                 </div>
+                                @endif
                             </a>
                         @endforeach
                     </div>
@@ -280,13 +285,15 @@
                                     @endif
                                 </div>
 
-                                {{-- Score --}}
+                                {{-- Score (admin only) --}}
+                                @if($isAdmin)
                                 <div class="leaderboard-card-score flex-shrink-0">
                                     <p class="font-extrabold text-base {{ $rankScoreClass($trank, 'green') }}">
                                         {{ number_format($team->average_score, 1) }}
                                         <span class="text-xs font-normal text-slate-400">TB</span>
                                     </p>
                                 </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -351,6 +358,7 @@
                                 {{ $employeeOfMonth->branch->name ?? '—' }} · {{ $employeeOfMonth->team->name ?? '—' }}
                             </p>
                             @php $mzone = $employeeOfMonth->zone; @endphp
+                            @if($isAdmin)
                             <div
                                 class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-3 lg:px-4 py-1.5 lg:py-2 mb-1">
                                 <span
@@ -362,6 +370,7 @@
                                         HS</span>
                                 @endif
                             </div>
+                            @endif
                             <div class="mb-3">
                                 <span class="text-xs px-2 py-0.5 rounded-full font-semibold {{ $zoneBadgeCss($mzone) }}">
                                     {{ $zoneEmoji($mzone) }} {{ \App\Models\MonthlyEmployeeScore::zoneLabel($mzone) }}
@@ -426,6 +435,7 @@
                                             <p class="hidden sm:block text-[10px] text-slate-400 mt-0.5">{{ $emp->code }}</p>
                                         </div>
 
+                                        @if($isAdmin)
                                         <div class="leaderboard-card-score flex-shrink-0 text-right">
                                             <p class="font-extrabold text-base {{ $rankScoreClass($rank, $z) }}">
                                                 {{ $emp->display_score }}
@@ -436,6 +446,7 @@
                                                     +{{ $surplus }} HS</p>
                                             @endif
                                         </div>
+                                        @endif
                                     </div>
                                 @empty
                                     <div class="py-10 text-center text-slate-400">
@@ -509,6 +520,7 @@
                                 {{ $employeeOfYear->branch->name ?? '—' }} · {{ $employeeOfYear->team->name ?? '—' }}
                             </p>
                             @php $yzone = $employeeOfYear->zone; @endphp
+                            @if($isAdmin)
                             <div
                                 class="inline-flex items-center gap-2 bg-white/70 dark:bg-slate-800/50 rounded-full px-3 lg:px-4 py-1.5 lg:py-2 mb-1">
                                 <span
@@ -520,6 +532,7 @@
                                         HS</span>
                                 @endif
                             </div>
+                            @endif
                             <div class="text-xs text-slate-400 mb-3">
                                 {{ $employeeOfYear->months_logged }} tháng ghi nhận
                                 @if ($employeeOfYear->months_in_red > 0)
@@ -588,6 +601,7 @@
                                             </p>
                                         </div>
 
+                                        @if($isAdmin)
                                         <div class="leaderboard-card-score flex-shrink-0 text-right">
                                             <p class="font-extrabold text-base {{ $rankScoreClass($rank, $z) }}">
                                                 {{ $emp->display_score }}
@@ -599,6 +613,7 @@
                                                     +{{ $surplus }} HS</p>
                                             @endif
                                         </div>
+                                        @endif
                                     </div>
                                 @empty
                                     <div class="py-10 text-center text-slate-400">
