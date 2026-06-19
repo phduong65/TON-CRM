@@ -16,6 +16,7 @@ return new class extends Migration
                       'penalty_created', 'penalty_approved', 'penalty_rejected',
                       'reward_created',  'reward_approved',  'reward_rejected',
                       'redzone_alert',
+                      'report_created',  'report_approved',  'report_rejected',
                   ])->default('general');
             $table->string('title');
             $table->text('body')->nullable();

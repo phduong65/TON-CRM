@@ -8,6 +8,7 @@ use App\Models\Notification;
 use App\Models\Penalty;
 use App\Models\Reward;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class NotificationService
@@ -73,25 +74,77 @@ class NotificationService
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    private function approverIds(string $permission): Collection
+    {
+        return User::permission($permission)->pluck('id');
+    }
+
+    private function employeeUserIds(Collection $employeeIds): Collection
+    {
+        return Employee::whereIn('id', $employeeIds->filter()->unique())
+            ->whereNotNull('user_id')
+            ->pluck('user_id');
+    }
+
+    /**
+     * Send to a deduplicated set of user IDs, skipping the acting user ($excludeId).
+     */
+    private function dispatchToMany(
+        Collection $userIds,
+        string $type,
+        string $title,
+        string $body,
+        array $data,
+        ?int $excludeId = null
+    ): void {
+        foreach ($userIds->unique()->filter() as $userId) {
+            if ($excludeId !== null && (int) $userId === (int) $excludeId) {
+                continue;
+            }
+            Notification::create([
+                'user_id' => $userId,
+                'type'    => $type,
+                'title'   => $title,
+                'body'    => $body ?: null,
+                'data'    => $data ?: null,
+            ]);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Penalty notifications
+    // Recipients: người có quyền duyệt + người tạo + người bị phạt
+    // -------------------------------------------------------------------------
+
     public function notifyPenaltyCreated(Penalty $penalty): void
     {
         $penalty->loadMissing(['violation', 'employee']);
 
-        $body = sprintf(
+        $data        = ['penalty_id' => $penalty->id];
+        $approverIds = $this->approverIds('approve-penalties');
+
+        // Notify approvers
+        $approverBody = sprintf(
             '%s vừa tạo phiếu phạt %s — NV: %s — Vi phạm: %s',
             auth()->user()->name,
             $penalty->code ?? '#' . $penalty->id,
             $penalty->employee?->name ?? '—',
             $penalty->violation?->name ?? '—'
         );
+        $this->dispatchToMany($approverIds, 'penalty_created', 'Phiếu phạt mới cần duyệt', $approverBody, $data);
 
-        $this->sendToUsersWithPermission(
-            'approve-penalties',
-            'penalty_created',
-            'Phiếu phạt mới cần duyệt',
-            $body,
-            ['penalty_id' => $penalty->id]
-        );
+        // Notify creator (confirmation) — only if they are not already an approver
+        if ($penalty->created_by && ! $approverIds->contains($penalty->created_by)) {
+            $creatorBody = sprintf(
+                'Phiếu phạt %s của bạn đã được gửi đi và đang chờ phê duyệt',
+                $penalty->code ?? '#' . $penalty->id
+            );
+            $this->sendToUser($penalty->created_by, 'penalty_created', 'Phiếu phạt đã gửi duyệt', $creatorBody, $data);
+        }
     }
 
     public function notifyPenaltyApproved(Penalty $penalty): void
@@ -110,26 +163,17 @@ class NotificationService
         );
         $data = ['penalty_id' => $penalty->id];
 
-        // Notify creator
-        if ($penalty->created_by && $penalty->created_by !== auth()->id()) {
-            $this->sendToUser($penalty->created_by, 'penalty_approved', $title, $body, $data);
-        }
-
-        // Notify penalized employees (via linked user_id)
         $employeeIds = $penalty->members->pluck('employee_id')
             ->push($penalty->employee_id)
             ->unique()
             ->filter();
 
-        $affectedUserIds = Employee::whereIn('id', $employeeIds)
-            ->whereNotNull('user_id')
-            ->pluck('user_id');
+        $recipients = $this->approverIds('approve-penalties')
+            ->push($penalty->created_by)
+            ->merge($this->employeeUserIds($employeeIds));
 
-        foreach ($affectedUserIds as $userId) {
-            if ($userId !== auth()->id() && $userId !== $penalty->created_by) {
-                $this->sendToUser($userId, 'penalty_approved', $title, $body, $data);
-            }
-        }
+        // Exclude the current approver from self-notification
+        $this->dispatchToMany($recipients, 'penalty_approved', $title, $body, $data, auth()->id());
     }
 
     public function notifyPenaltyRejected(Penalty $penalty, string $reason): void
@@ -142,23 +186,29 @@ class NotificationService
             $penalty->employee?->name ?? '—',
             Str::limit($reason, 80)
         );
+        $data = ['penalty_id' => $penalty->id];
 
-        if ($penalty->created_by && $penalty->created_by !== auth()->id()) {
-            $this->sendToUser(
-                $penalty->created_by,
-                'penalty_rejected',
-                'Phiếu phạt bị từ chối',
-                $body,
-                ['penalty_id' => $penalty->id]
-            );
-        }
+        $recipients = $this->approverIds('approve-penalties')
+            ->push($penalty->created_by);
+
+        // Exclude the current rejecter from self-notification
+        $this->dispatchToMany($recipients, 'penalty_rejected', 'Phiếu phạt bị từ chối', $body, $data, auth()->id());
     }
+
+    // -------------------------------------------------------------------------
+    // Reward notifications
+    // Recipients: người có quyền duyệt + người tạo + người được thưởng
+    // -------------------------------------------------------------------------
 
     public function notifyRewardCreated(Reward $reward): void
     {
         $reward->loadMissing(['rewardType', 'employee']);
 
-        $body = sprintf(
+        $data        = ['reward_id' => $reward->id];
+        $approverIds = $this->approverIds('approve-rewards');
+
+        // Notify approvers
+        $approverBody = sprintf(
             '%s vừa tạo phiếu thưởng %s — NV: %s — Loại: %s — +%s điểm',
             auth()->user()->name,
             $reward->code,
@@ -166,14 +216,16 @@ class NotificationService
             $reward->rewardType?->name ?? '—',
             number_format($reward->total_points_awarded)
         );
+        $this->dispatchToMany($approverIds, 'reward_created', 'Phiếu thưởng mới cần duyệt', $approverBody, $data);
 
-        $this->sendToUsersWithPermission(
-            'approve-rewards',
-            'reward_created',
-            'Phiếu thưởng mới cần duyệt',
-            $body,
-            ['reward_id' => $reward->id]
-        );
+        // Notify creator (confirmation) — only if they are not already an approver
+        if ($reward->created_by && ! $approverIds->contains($reward->created_by)) {
+            $creatorBody = sprintf(
+                'Phiếu thưởng %s của bạn đã được gửi đi và đang chờ phê duyệt',
+                $reward->code
+            );
+            $this->sendToUser($reward->created_by, 'reward_created', 'Phiếu thưởng đã gửi duyệt', $creatorBody, $data);
+        }
     }
 
     public function notifyRewardApproved(Reward $reward): void
@@ -189,26 +241,17 @@ class NotificationService
         );
         $data = ['reward_id' => $reward->id];
 
-        // Notify creator
-        if ($reward->created_by && $reward->created_by !== auth()->id()) {
-            $this->sendToUser($reward->created_by, 'reward_approved', $title, $body, $data);
-        }
-
-        // Notify rewarded employees (via linked user_id)
         $employeeIds = $reward->members->pluck('employee_id')
             ->push($reward->employee_id)
             ->unique()
             ->filter();
 
-        $affectedUserIds = Employee::whereIn('id', $employeeIds)
-            ->whereNotNull('user_id')
-            ->pluck('user_id');
+        $recipients = $this->approverIds('approve-rewards')
+            ->push($reward->created_by)
+            ->merge($this->employeeUserIds($employeeIds));
 
-        foreach ($affectedUserIds as $userId) {
-            if ($userId !== auth()->id() && $userId !== $reward->created_by) {
-                $this->sendToUser($userId, 'reward_approved', $title, $body, $data);
-            }
-        }
+        // Exclude the current approver from self-notification
+        $this->dispatchToMany($recipients, 'reward_approved', $title, $body, $data, auth()->id());
     }
 
     public function notifyRewardRejected(Reward $reward, string $reason): void
@@ -221,65 +264,92 @@ class NotificationService
             $reward->employee?->name ?? '—',
             Str::limit($reason, 80)
         );
+        $data = ['reward_id' => $reward->id];
 
-        if ($reward->created_by && $reward->created_by !== auth()->id()) {
-            $this->sendToUser(
-                $reward->created_by,
-                'reward_rejected',
-                'Phiếu thưởng bị từ chối',
-                $body,
-                ['reward_id' => $reward->id]
-            );
-        }
+        $recipients = $this->approverIds('approve-rewards')
+            ->push($reward->created_by);
+
+        // Exclude the current rejecter from self-notification
+        $this->dispatchToMany($recipients, 'reward_rejected', 'Phiếu thưởng bị từ chối', $body, $data, auth()->id());
     }
+
+    // -------------------------------------------------------------------------
+    // Report notifications
+    // Recipients: người có quyền duyệt + người báo cáo + người bị báo cáo (khi duyệt)
+    // -------------------------------------------------------------------------
 
     public function notifyReportCreated(EmployeeReport $report): void
     {
         $report->loadMissing(['reporter', 'reported', 'violation']);
 
-        $body = sprintf(
+        $data        = ['report_id' => $report->id];
+        $approverIds = $this->approverIds('approve-reports');
+        $reporterUserId = $report->reporter?->user_id;
+
+        // Notify approvers
+        $approverBody = sprintf(
             '%s vừa tạo báo cáo %s — Báo cáo: %s — Vi phạm: %s',
             auth()->user()->name,
             $report->code,
             $report->reported?->name ?? '—',
             $report->violation?->name ?? 'Không xác định'
         );
+        $this->dispatchToMany($approverIds, 'report_created', 'Báo cáo mới cần duyệt', $approverBody, $data);
 
-        $this->sendToUsersWithPermission(
-            'approve-reports',
-            'report_created',
-            'Báo cáo mới cần duyệt',
-            $body,
-            ['report_id' => $report->id]
-        );
+        // Notify reporter (confirmation) — only if they are not already an approver
+        if ($reporterUserId && ! $approverIds->contains($reporterUserId)) {
+            $creatorBody = sprintf(
+                'Báo cáo %s của bạn đã được gửi đi và đang chờ phê duyệt',
+                $report->code
+            );
+            $this->sendToUser($reporterUserId, 'report_created', 'Báo cáo đã gửi duyệt', $creatorBody, $data);
+        }
+
+        // The reported person is NOT notified at creation — only upon approval
     }
 
     public function notifyReportApproved(EmployeeReport $report): void
     {
         $report->loadMissing(['reporter', 'reported', 'violation']);
 
-        $data = ['report_id' => $report->id];
+        $data           = ['report_id' => $report->id];
+        $deducted       = $report->violation?->points_deducted ?? 0;
+        $reporterUserId = $report->reporter?->user_id;
+        $reportedUserId = $report->reported?->user_id;
+        $approverIds    = $this->approverIds('approve-reports');
+        $actorId        = auth()->id();
 
-        // Thông báo cho reporter: được cộng điểm
-        if ($report->reporter?->user_id && $report->reporter->user_id !== auth()->id()) {
+        // Notify other approvers
+        $approverBody = sprintf(
+            'Báo cáo %s đã được duyệt — Người báo cáo: %s — Người bị báo cáo: %s',
+            $report->code,
+            $report->reporter?->name ?? '—',
+            $report->reported?->name ?? '—'
+        );
+        $this->dispatchToMany($approverIds, 'report_approved', 'Báo cáo đã được duyệt', $approverBody, $data, $actorId);
+
+        // Notify reporter: their report was accepted & points awarded
+        if ($reporterUserId && (int) $reporterUserId !== (int) $actorId) {
             $body = sprintf(
                 'Báo cáo %s của bạn đã được duyệt — Cộng +%s điểm vào tài khoản',
                 $report->code,
                 $report->reward_points
             );
-            $this->sendToUser($report->reporter->user_id, 'report_approved', 'Báo cáo được duyệt', $body, $data);
+            $this->sendToUser($reporterUserId, 'report_approved', 'Báo cáo được duyệt', $body, $data);
         }
 
-        // Thông báo cho người bị báo cáo (nếu có violation points)
-        if ($report->reported?->user_id && $report->reported->user_id !== auth()->id()) {
-            $deducted = $report->violation?->points_deducted ?? 0;
+        // Notify reported person: they were penalized
+        if ($reportedUserId
+            && (int) $reportedUserId !== (int) $actorId
+            && (int) $reportedUserId !== (int) $reporterUserId
+        ) {
             $body = sprintf(
                 'Bạn bị báo cáo vi phạm %s — %s — %s',
                 $report->violation?->name ?? 'vi phạm nội quy',
                 $deducted > 0 ? "Trừ {$deducted} điểm" : 'Không trừ điểm',
                 $report->code
             );
-            $this->sendToUser($report->reported->user_id, 'report_approved', 'Thông báo vi phạm từ báo cáo', $body, $data);
+            $this->sendToUser($reportedUserId, 'report_approved', 'Thông báo vi phạm từ báo cáo', $body, $data);
         }
     }
 
@@ -287,19 +357,20 @@ class NotificationService
     {
         $report->loadMissing(['reporter', 'reported']);
 
-        if ($report->reporter?->user_id && $report->reporter->user_id !== auth()->id()) {
-            $body = sprintf(
-                'Báo cáo %s của bạn bị từ chối — Lý do: %s',
-                $report->code,
-                Str::limit($reason, 80)
-            );
-            $this->sendToUser(
-                $report->reporter->user_id,
-                'report_rejected',
-                'Báo cáo bị từ chối',
-                $body,
-                ['report_id' => $report->id]
-            );
-        }
+        $reporterUserId = $report->reporter?->user_id;
+        $data           = ['report_id' => $report->id];
+
+        $body = sprintf(
+            'Báo cáo %s của bạn bị từ chối — Lý do: %s',
+            $report->code,
+            Str::limit($reason, 80)
+        );
+
+        $recipients = $this->approverIds('approve-reports')
+            ->push($reporterUserId);
+
+        // Exclude the current rejecter from self-notification
+        // The reported person is NOT notified on rejection (they were not penalized)
+        $this->dispatchToMany($recipients, 'report_rejected', 'Báo cáo bị từ chối', $body, $data, auth()->id());
     }
 }

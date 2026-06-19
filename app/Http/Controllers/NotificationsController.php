@@ -63,7 +63,7 @@ class NotificationsController extends Controller
     public function show(Notification $notification)
     {
         $user = auth()->user();
-        abort_if($notification->user_id !== $user->id && ! $user->can('create-notifications'), 403);
+        abort_if((int) $notification->user_id !== (int) $user->id && ! $user->can('create-notifications'), 403);
         $notification->markAsRead();
 
         $prev = Notification::where('user_id', auth()->id())
@@ -82,7 +82,7 @@ class NotificationsController extends Controller
     public function markRead(Notification $notification)
     {
         $user = auth()->user();
-        abort_if($notification->user_id !== $user->id && ! $user->can('create-notifications'), 403);
+        abort_if((int) $notification->user_id !== (int) $user->id && ! $user->can('create-notifications'), 403);
         $notification->markAsRead();
 
         if (request()->expectsJson()) {
@@ -108,7 +108,7 @@ class NotificationsController extends Controller
     public function destroy(Notification $notification)
     {
         $user = auth()->user();
-        abort_if($notification->user_id !== $user->id && ! $user->can('create-notifications'), 403);
+        abort_if((int) $notification->user_id !== (int) $user->id && ! $user->can('create-notifications'), 403);
         $notification->delete();
 
         return back()->with('success', 'Đã xóa thông báo!');

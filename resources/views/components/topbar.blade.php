@@ -267,6 +267,7 @@
                         </div>
                     </a>
 
+                    @can('manage-settings')
                     <a href="{{ route('settings.index') }}"
                         class="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                         <span
@@ -277,6 +278,7 @@
                             <p class="leading-tight">Cài đặt hệ thống</p>
                         </div>
                     </a>
+                    @endcan
 
                     @can('view-activity-log')
                         <a href="{{ route('activity.log') }}"
