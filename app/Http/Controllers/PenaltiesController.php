@@ -19,7 +19,7 @@ class PenaltiesController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Penalty::with(['employee', 'violation.regulation', 'approver', 'members', 'attachments'])
+        $query = Penalty::with(['employee', 'violation.regulation', 'approver', 'members', 'attachments', 'appeals' => fn($q) => $q->where('status', 'pending')])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('search')) {

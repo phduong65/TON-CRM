@@ -26,6 +26,7 @@ use App\Http\Controllers\EmployeeReportsController;
 use App\Http\Controllers\Dev\TestRunnerController;
 use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\LogViewerController;
+use App\Http\Controllers\AppealsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,6 +106,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/{penalty}/approve', [PenaltiesController::class, 'approve'])->name('approve')->middleware('can:approve-penalties');
         Route::post('/{penalty}/reject', [PenaltiesController::class, 'reject'])->name('reject')->middleware('can:approve-penalties');
         Route::post('/{penalty}/revoke', [PenaltiesController::class, 'revoke'])->name('revoke')->middleware('can:revoke-penalties');
+        Route::post('/{penalty}/appeal', [AppealsController::class, 'store'])->name('appeal')->middleware('can:create-appeals');
+    });
+
+    // Appeals — khiếu nại phiếu phạt
+    Route::prefix('appeals')->name('appeals.')->group(function () {
+        Route::get('/', [AppealsController::class, 'index'])->name('index')->middleware('can:view-appeals');
+        Route::post('/{appeal}/accept', [AppealsController::class, 'accept'])->name('accept')->middleware('can:review-appeals');
+        Route::post('/{appeal}/reject', [AppealsController::class, 'reject'])->name('reject')->middleware('can:review-appeals');
     });
 
     // Attendance Import — đi trễ / về sớm

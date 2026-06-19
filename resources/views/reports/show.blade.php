@@ -26,10 +26,16 @@
                     </div>
                     <div>
                         <p class="text-xs text-slate-400 uppercase tracking-wider">Người báo cáo</p>
-                        <p class="text-sm font-medium mt-0.5">{{ $report->reporter?->name ?? '—' }}</p>
-                        @if($report->reporter?->code)
-                            <p class="text-xs text-slate-400">{{ $report->reporter->code }} · {{ $report->reporter->branch?->name }}</p>
-                        @endif
+                        @can('approve-reports')
+                            <p class="text-sm font-medium mt-0.5">{{ $report->reporter?->name ?? '—' }}</p>
+                            @if($report->reporter?->code)
+                                <p class="text-xs text-slate-400">{{ $report->reporter->code }} · {{ $report->reporter->branch?->name }}</p>
+                            @endif
+                        @else
+                            <p class="text-sm font-medium mt-0.5 text-slate-400 dark:text-slate-500 italic flex items-center gap-1">
+                                <i class="bi bi-incognito text-xs"></i> Ẩn danh
+                            </p>
+                        @endcan
                     </div>
                     <div>
                         <p class="text-xs text-slate-400 uppercase tracking-wider">Nhân viên bị báo cáo</p>
@@ -126,7 +132,7 @@
                             Báo cáo đã được duyệt
                         </p>
                         <p class="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
-                            Cộng <strong>+{{ $report->reward_points }} điểm</strong> cho {{ $report->reporter?->name ?? 'người báo cáo' }}
+                            Cộng <strong>+{{ $report->reward_points }} điểm</strong> cho {{ auth()->user()->can('approve-reports') ? ($report->reporter?->name ?? 'người báo cáo') : 'người báo cáo' }}
                             @if($report->violation?->points_deducted > 0)
                                 · Trừ <strong>{{ $report->violation->points_deducted }} điểm</strong> của {{ $report->reported?->name ?? 'người bị báo cáo' }}
                             @endif

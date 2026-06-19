@@ -208,9 +208,9 @@
                                 {{ $penalty->created_at->format('d/m/Y') }}
                             </span>
 
-                            {{-- Quick actions (pending only, stop propagation) --}}
+                            {{-- Quick actions --}}
                             @if ($penalty->status === 'pending')
-                                <div class="flex items-center gap-1  transition-opacity" onclick="event.stopPropagation()">
+                                <div class="flex items-center gap-1 transition-opacity" onclick="event.stopPropagation()">
                                     @can('create-penalties')
                                         <button type="button" title="Sửa" data-ep-id="{{ $penalty->id }}"
                                             data-ep-violation="{{ $penalty->violation_id }}"
@@ -233,6 +233,23 @@
                                             <i class="bi bi-trash-fill text-sm"></i>
                                         </button>
                                     @endcan
+                                </div>
+                            @elseif ($penalty->status === 'approved')
+                                <div class="flex items-center gap-1 transition-opacity" onclick="event.stopPropagation()">
+                                    @can('revoke-penalties')
+                                        <button type="button" title="Thu hồi"
+                                            onclick="openRevokePenaltyModal({{ $penalty->id }}, '{{ $penalty->code ?? '#'.$penalty->id }}')"
+                                            class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
+                                            <i class="bi bi-arrow-counterclockwise text-sm"></i>
+                                        </button>
+                                    @endcan
+                                    @if($penalty->employee?->user_id === auth()->id())
+                                        <button type="button" title="Khiếu nại"
+                                            onclick="openAppealPenaltyModal({{ $penalty->id }}, '{{ $penalty->code ?? '#'.$penalty->id }}')"
+                                            class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                                            <i class="bi bi-chat-left-text text-sm"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             @endif
                         </div>
@@ -257,6 +274,8 @@
     @include('penalties.partials.create-modal')
     @include('penalties.partials.edit-modal')
     @include('penalties.partials.delete-modal')
+    @include('penalties.partials.revoke-modal')
+    @include('penalties.partials.appeal-modal')
 @endpush
 
 @if ($errors->any())

@@ -106,6 +106,64 @@
         @endforelse
     </div>
 
+    {{-- My Permissions Panel --}}
+    @php
+        $myPerms = auth()->user()->getAllPermissions()->pluck('name')->sort()->values();
+        $permGroups = $myPerms->groupBy(function ($p) {
+            $parts = explode('-', $p, 2);
+            return count($parts) === 2 ? $parts[1] : 'other';
+        });
+        $myRoleNames = auth()->user()->roles->map(fn($r) => match($r->name) {
+            'admin'       => 'Quản trị viên',
+            'manager'     => 'Quản lý',
+            'team_leader' => 'Trưởng nhóm',
+            'staff'       => 'Nhân viên',
+            default       => $r->name,
+        });
+    @endphp
+    <div class="card">
+        <div class="card-header">
+            <div class="flex items-center gap-2">
+                <i class="bi bi-person-badge text-pcrm-600 dark:text-pcrm-400"></i>
+                <h3 class="font-semibold text-slate-900 dark:text-white">Quyền hạn của tôi</h3>
+            </div>
+            <div class="flex items-center gap-2">
+                @foreach($myRoleNames as $rn)
+                    <span class="badge-info text-xs">{{ $rn }}</span>
+                @endforeach
+                <span class="text-xs text-slate-400">{{ $myPerms->count() }} quyền</span>
+            </div>
+        </div>
+        <div class="card-body">
+            @if ($myPerms->isEmpty())
+                <p class="text-sm text-slate-400 italic">Tài khoản chưa có quyền hạn nào.</p>
+            @else
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    @foreach ($permGroups as $module => $perms)
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5">
+                                {{ $module }}
+                            </p>
+                            <div class="flex flex-wrap gap-1">
+                                @foreach ($perms as $p)
+                                    @php $action = explode('-', $p, 2)[0]; @endphp
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium
+                                        {{ in_array($action, ['delete','manage']) ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800'
+                                          : (in_array($action, ['approve','review','revoke']) ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                                          : (in_array($action, ['create','edit','import']) ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
+                                          : 'bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-600')) }}">
+                                        <i class="bi bi-check2 text-[9px]"></i>
+                                        {{ $p }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+
 </div>
 
 @endsection

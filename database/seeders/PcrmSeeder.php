@@ -46,6 +46,7 @@ class PcrmSeeder extends Seeder
             'view-reward-types', 'create-reward-types', 'edit-reward-types', 'delete-reward-types',
             'view-reward-categories', 'create-reward-categories', 'edit-reward-categories', 'delete-reward-categories',
             'view-reports', 'create-reports', 'approve-reports',
+            'create-appeals', 'view-appeals', 'review-appeals',
             'view-activity-log',
             'manage-settings',
             'manage-users',
@@ -73,6 +74,7 @@ class PcrmSeeder extends Seeder
             'view-reward-types',
             'view-reward-categories',
             'view-reports', 'create-reports', 'approve-reports',
+            'create-appeals', 'view-appeals', 'review-appeals',
             'view-activity-log',
             'view-notifications', 'create-notifications',
         ]);
@@ -85,6 +87,7 @@ class PcrmSeeder extends Seeder
             'view-reward-types',
             'view-reward-categories',
             'view-reports', 'create-reports',
+            'create-appeals',
             'view-notifications',
         ]);
 
@@ -93,6 +96,7 @@ class PcrmSeeder extends Seeder
             'view-employees', 'view-penalties',
             'view-rewards',
             'view-reports', 'create-reports',
+            'create-appeals',
             'view-notifications',
         ]);
 

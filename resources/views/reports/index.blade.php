@@ -92,8 +92,14 @@
                                 <span class="font-mono text-xs font-medium text-pcrm-700 dark:text-pcrm-400">{{ $report->code }}</span>
                             </td>
                             <td class="px-4 py-3">
-                                <div class="font-medium text-slate-800 dark:text-slate-200">{{ $report->reporter?->name ?? '—' }}</div>
-                                <div class="text-xs text-slate-400 mt-1">{{ $report->reporter?->code }}</div>
+                                @if(auth()->user()->can('approve-reports'))
+                                    <div class="font-medium text-slate-800 dark:text-slate-200">{{ $report->reporter?->name ?? '—' }}</div>
+                                    <div class="text-xs text-slate-400 mt-1">{{ $report->reporter?->code }}</div>
+                                @else
+                                    <div class="font-medium text-slate-400 dark:text-slate-500 italic text-sm flex items-center gap-1">
+                                        <i class="bi bi-incognito text-xs"></i> Ẩn danh
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 <div class="font-medium text-slate-800 dark:text-slate-200">{{ $report->reported?->name ?? '—' }}</div>

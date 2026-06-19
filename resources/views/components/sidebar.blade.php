@@ -137,6 +137,14 @@
             </a>
         @endcan
 
+        @can('view-appeals')
+            <a href="{{ route('appeals.index') }}"
+                class="sidebar-link {{ $isActive(['appeals']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-chat-left-text text-base"></i>
+                <span>Khiếu nại</span>
+            </a>
+        @endcan
+
         @can('import-attendance')
             <a href="{{ route('attendance-import.index') }}"
                 class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -339,6 +347,12 @@
             <a href="{{ route('reports.index') }}"
                 class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-flag text-base"></i><span>Báo cáo vi phạm</span>
+            </a>
+        @endcan
+        @can('view-appeals')
+            <a href="{{ route('appeals.index') }}"
+                class="sidebar-link {{ $isActive(['appeals']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-chat-left-text text-base"></i><span>Khiếu nại</span>
             </a>
         @endcan
         @can('import-attendance')

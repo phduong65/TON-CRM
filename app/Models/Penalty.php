@@ -79,4 +79,9 @@ class Penalty extends Model
     {
         return $this->belongsTo(User::class, 'revoked_by');
     }
+
+    public function appeals(): HasMany
+    {
+        return $this->hasMany(Appeal::class);
+    }
 }
