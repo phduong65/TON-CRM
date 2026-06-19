@@ -225,10 +225,12 @@
                                             class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
                                             <i class="bi bi-pencil text-sm"></i>
                                         </button>
+                                    @endcan
+                                    @can('delete-penalties')
                                         <button type="button" title="Xóa"
                                             onclick="openDeletePenaltyModal({{ $penalty->id }}, '{{ $penalty->code ?? '#' . $penalty->id }}')"
                                             class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                            <i class="bi bi bi-trash-fill text-sm"></i>
+                                            <i class="bi bi-trash-fill text-sm"></i>
                                         </button>
                                     @endcan
                                 </div>

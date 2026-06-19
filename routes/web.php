@@ -101,7 +101,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{penalty}', [PenaltiesController::class, 'show'])->name('show')->middleware('can:view-penalties');
         Route::get('/{penalty}/detail-json', [PenaltiesController::class, 'detailJson'])->name('detail-json')->middleware('can:view-penalties');
         Route::put('/{penalty}', [PenaltiesController::class, 'update'])->name('update')->middleware('can:create-penalties');
-        Route::delete('/{penalty}', [PenaltiesController::class, 'destroy'])->name('destroy')->middleware('can:approve-penalties');
+        Route::delete('/{penalty}', [PenaltiesController::class, 'destroy'])->name('destroy')->middleware('can:delete-penalties');
         Route::post('/{penalty}/approve', [PenaltiesController::class, 'approve'])->name('approve')->middleware('can:approve-penalties');
         Route::post('/{penalty}/reject', [PenaltiesController::class, 'reject'])->name('reject')->middleware('can:approve-penalties');
         Route::post('/{penalty}/revoke', [PenaltiesController::class, 'revoke'])->name('revoke')->middleware('can:revoke-penalties');
