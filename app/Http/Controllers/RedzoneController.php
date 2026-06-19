@@ -14,6 +14,10 @@ class RedzoneController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->hasRole(['admin', 'manager'])) {
+            abort(403, 'Chỉ admin và quản lý mới có thể xem trang này.');
+        }
+
         $month = (int) ($request->month ?? now()->month);
         $year  = (int) ($request->year  ?? now()->year);
 

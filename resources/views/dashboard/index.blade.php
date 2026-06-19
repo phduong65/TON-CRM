@@ -1409,19 +1409,18 @@
                                             </p>
                                         </div>
 
-                                        {{-- Score + zone bar --}}
+                                        {{-- Score + zone bar (chỉ hiển thị điểm của chính mình) --}}
+                                        @if($isMe)
                                         <div class="leaderboard-card-score">
-                                            <p
-                                                class="font-extrabold text-sm
-                                            {{ $isMe ? 'text-pcrm-600 dark:text-pcrm-400' : ($memberRedzone ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300') }}">
+                                            <p class="font-extrabold text-sm text-pcrm-600 dark:text-pcrm-400">
                                                 {{ number_format($memberScore) }}
                                             </p>
-                                            <div
-                                                class="w-12 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 mt-1.5 overflow-hidden">
-                                                <div class="h-full rounded-full transition-all {{ $memberRedzone ? 'bg-rose-500' : ($isMe ? 'bg-pcrm-500' : 'bg-emerald-500') }}"
+                                            <div class="w-12 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 mt-1.5 overflow-hidden">
+                                                <div class="h-full rounded-full transition-all bg-pcrm-500"
                                                     style="width:{{ $memberPct }}%"></div>
                                             </div>
                                         </div>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
