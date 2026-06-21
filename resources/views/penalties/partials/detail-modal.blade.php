@@ -295,17 +295,18 @@
             /* ── open edit modal from detail ── */
             window.openEditFromDetail = function() {
                 if (!_current) return;
+                var data = _current;
                 closePenaltyDetail();
                 openEditPenaltyModal(
-                    _current.id,
-                    _current.violation_id,
-                    _current.regulation_id || 0,
-                    _current.employee_id,
-                    _current.total_points_deducted,
-                    _current.total_money_deducted,
-                    _current.description || '',
-                    _current.members_raw || [],
-                    _current.attachments || []
+                    data.id,
+                    data.violation_id,
+                    data.regulation_id || 0,
+                    data.employee_id,
+                    data.total_points_deducted,
+                    data.total_money_deducted,
+                    data.description || '',
+                    data.members_raw || [],
+                    data.attachments || []
                 );
             };
 
