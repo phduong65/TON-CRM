@@ -41,6 +41,8 @@ abstract class Controller extends BaseController
                 'view-penalties'    => 'Xem phiếu phạt',
                 'create-penalties'  => 'Tạo phiếu phạt',
                 'approve-penalties' => 'Duyệt phiếu phạt',
+                'revoke-penalties'  => 'Thu hồi phiếu phạt',
+                'delete-penalties'  => 'Xóa phiếu phạt',
             ],
             'Khen thưởng' => [
                 'view-rewards'           => 'Xem phiếu thưởng',
