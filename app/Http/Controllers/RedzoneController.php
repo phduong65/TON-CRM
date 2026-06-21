@@ -14,7 +14,7 @@ class RedzoneController extends Controller
 {
     public function index(Request $request)
     {
-        if (!auth()->user()->hasRole(['admin', 'manager'])) {
+        if (!auth()->user()->hasRole(['admin', 'manager', 'director'])) {
             abort(403, 'Chỉ admin và quản lý mới có thể xem trang này.');
         }
 
@@ -75,10 +75,16 @@ class RedzoneController extends Controller
         }
 
         return view('redzone.index', compact(
-            'byZone', 'month', 'year',
-            'greenMin', 'yellowMin', 'orangeMin',
-            'consecutiveMonths', 'consecutiveRedzoneIds',
-            'defaultScore', 'monthOptions'
+            'byZone',
+            'month',
+            'year',
+            'greenMin',
+            'yellowMin',
+            'orangeMin',
+            'consecutiveMonths',
+            'consecutiveRedzoneIds',
+            'defaultScore',
+            'monthOptions'
         ));
     }
 
@@ -114,7 +120,10 @@ class RedzoneController extends Controller
                 ])->value('zone');
 
                 if ($stored !== null) {
-                    if ($stored !== 'red') { $allRed = false; break; }
+                    if ($stored !== 'red') {
+                        $allRed = false;
+                        break;
+                    }
                     continue;
                 }
 
@@ -127,7 +136,10 @@ class RedzoneController extends Controller
                     ->sum(DB::raw('ABS(points)'));
 
                 $zone = MonthlyEmployeeScore::computeZone(max(0, $defaultScore - $deducted));
-                if ($zone !== 'red') { $allRed = false; break; }
+                if ($zone !== 'red') {
+                    $allRed = false;
+                    break;
+                }
             }
 
             if ($allRed) {

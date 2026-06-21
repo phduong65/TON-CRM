@@ -22,6 +22,7 @@
               class="flex flex-col flex-1 overflow-hidden">
             @csrf @method('PUT')
             <input type="hidden" name="_modal" value="editPenaltyModal">
+            <input type="hidden" name="_edit_id" id="editPenaltyFormId">
 
             <div class="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-5">
 
@@ -352,6 +353,7 @@
 
         // Form action
         document.getElementById('editPenaltyForm').action = '/penalties/' + id;
+        document.getElementById('editPenaltyFormId').value = id;
 
         // Regulation filter (set first, then filter violations)
         var regSel = document.getElementById('ep_regulation');

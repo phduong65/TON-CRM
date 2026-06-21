@@ -299,10 +299,13 @@
                 openEditPenaltyModal(
                     _current.id,
                     _current.violation_id,
+                    _current.regulation_id || 0,
                     _current.employee_id,
                     _current.total_points_deducted,
                     _current.total_money_deducted,
-                    _current.description || ''
+                    _current.description || '',
+                    _current.members_raw || [],
+                    _current.attachments || []
                 );
             };
 

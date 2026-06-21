@@ -281,10 +281,15 @@
     @include('penalties.partials.appeal-modal')
 @endpush
 
-@if ($errors->any())
+@if ($errors->any() && old('_modal'))
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    @if(old('_modal') === 'editPenaltyModal' && old('_edit_id'))
+    var editId = '{{ (int) old('_edit_id') }}';
+    document.getElementById('editPenaltyForm').action = '/penalties/' + editId;
+    document.getElementById('editPenaltyFormId').value = editId;
+    @endif
     openModal('{{ old('_modal', 'createPenaltyModal') }}');
 });
 </script>

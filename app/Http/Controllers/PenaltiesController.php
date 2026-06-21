@@ -224,13 +224,19 @@ class PenaltiesController extends Controller
             'can_approve'           => $user->can('approve-penalties'),
             'can_edit'              => $user->can('create-penalties'),
             'violation_id'          => $penalty->violation_id,
+            'regulation_id'         => $penalty->violation?->regulation_id,
             'employee_id'           => $penalty->employee_id,
+            'members_raw'           => $penalty->members->map(fn($m) => [
+                'employee_id'     => $m->employee_id,
+                'points_deducted' => $m->points_deducted,
+            ]),
             'attachments'           => $penalty->attachments->map(fn($a) => [
                 'url'      => $a->url,
                 'type'     => $a->type,
                 'filename' => $a->filename,
                 'size'     => $a->formatted_size,
                 'path'     => $a->path,
+                'id'       => $a->id,
             ]),
         ]);
     }

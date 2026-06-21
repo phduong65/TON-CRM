@@ -130,7 +130,6 @@ Route::middleware('auth')->group(function () {
 
     // Regulations (create/edit via modal)
     Route::get('/regulations', [RegulationsController::class, 'index'])->name('regulations.index')->middleware('can:view-regulations');
-    Route::get('/regulations/{regulation}', [RegulationsController::class, 'show'])->name('regulations.show')->middleware('can:view-regulations');
     Route::post('/regulations', [RegulationsController::class, 'store'])->name('regulations.store')->middleware('can:create-regulations');
     Route::put('/regulations/{regulation}', [RegulationsController::class, 'update'])->name('regulations.update')->middleware('can:edit-regulations');
     Route::delete('/regulations/{regulation}', [RegulationsController::class, 'destroy'])->name('regulations.destroy')->middleware('can:delete-regulations');
