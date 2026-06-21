@@ -23,6 +23,7 @@
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $user->name }}</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                     @if($user->hasRole('admin')) Quản trị viên
+                    @elseif($user->hasRole('director')) Giám đốc
                     @elseif($user->hasRole('manager')) Quản lý
                     @elseif($user->hasRole('team-leader')) Trưởng nhóm
                     @else Nhân viên

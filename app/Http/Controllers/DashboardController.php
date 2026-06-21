@@ -16,7 +16,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        if (auth()->user()->hasRole('admin')) {
+        if (auth()->user()->hasRole(['admin', 'manager', 'director'])) {
             return $this->adminDashboard();
         }
 

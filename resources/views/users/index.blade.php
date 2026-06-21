@@ -36,7 +36,7 @@
                         <select name="role" class="form-input h-9 text-sm w-full">
                             <option value="">Tất cả</option>
                             @foreach($roles as $role)
-                                @php $rLabels = ['admin'=>'Quản trị viên','manager'=>'Quản lý','team_leader'=>'Trưởng nhóm','staff'=>'Nhân viên']; @endphp
+                                @php $rLabels = ['admin'=>'Quản trị viên','director'=>'Giám đốc','manager'=>'Quản lý','team_leader'=>'Trưởng nhóm','staff'=>'Nhân viên']; @endphp
                                 <option value="{{ $role->name }}" @selected(request('role') === $role->name)>
                                     {{ $rLabels[$role->name] ?? $role->name }}
                                 </option>

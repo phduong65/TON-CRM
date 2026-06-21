@@ -109,7 +109,7 @@ class EmployeesController extends Controller
     public function show(Employee $employee)
     {
         $user = auth()->user();
-        $canViewSensitive = $user->hasRole(['admin', 'manager'])
+        $canViewSensitive = $user->hasRole(['admin', 'manager', 'director'])
             || $user->employee?->id === $employee->id;
 
         $employee->load(['branch', 'team']);
@@ -200,7 +200,7 @@ class EmployeesController extends Controller
     {
         $user = auth()->user();
         $isOwnProfile = $user->employee?->id === $employee->id;
-        $isPrivileged = $user->hasRole(['admin', 'manager']);
+        $isPrivileged = $user->hasRole(['admin', 'manager', 'director']);
 
         if (!$isOwnProfile && !$isPrivileged) {
             abort(403, 'Bạn không có quyền xem lịch sử vi phạm của nhân viên khác.');

@@ -70,7 +70,7 @@ class CheckConsecutiveRedzone extends Command
         }
 
         // Notify all admins/managers
-        $managers = User::role(['admin', 'manager'])->get();
+        $managers = User::role(['admin', 'manager', 'director'])->get();
         foreach ($flagged as $emp) {
             $body = "[{$emp->code}] {$emp->name} đã ở Redzone liên tiếp {$consecutive} tháng — cần xem xét xử phạt đặc biệt.";
             foreach ($managers as $manager) {

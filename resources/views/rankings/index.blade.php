@@ -88,7 +88,7 @@
 @endphp
 
 @section('content')
-    @php $isAdmin = auth()->user()->hasRole(['admin', 'manager']); @endphp
+    @php $isAdmin = auth()->user()->hasRole(['admin', 'manager', 'director']); @endphp
     <div class="flex items-center justify-between gap-2 mb-6">
         <div class="inline-flex items-center gap-1.5 sm:gap-2 min-w-0">
             <span

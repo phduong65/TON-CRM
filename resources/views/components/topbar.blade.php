@@ -208,6 +208,8 @@
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">
                         @if (auth()->user()->hasRole('admin'))
                             Quản trị viên
+                        @elseif(auth()->user()->hasRole('director'))
+                            Giám đốc
                         @elseif(auth()->user()->hasRole('manager'))
                             Quản lý
                         @elseif(auth()->user()->hasRole('team-leader'))

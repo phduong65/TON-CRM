@@ -79,6 +79,23 @@ class PcrmSeeder extends Seeder
             'view-notifications', 'create-notifications',
         ]);
 
+        $directorRole = Role::firstOrCreate(['name' => 'director', 'guard_name' => 'web']);
+        $directorRole->syncPermissions([
+            'view-employees',
+            'view-teams', 'view-branches',
+            'view-violations',
+            'view-penalties', 'create-penalties', 'delete-penalties', 'approve-penalties', 'revoke-penalties', 'import-attendance',
+            'view-regulations', 'create-regulations', 'edit-regulations', 'delete-regulations',
+            'view-rewards', 'create-rewards', 'delete-rewards', 'approve-rewards', 'revoke-rewards',
+            'view-reward-types',
+            'view-reward-categories',
+            'view-reports', 'create-reports', 'approve-reports',
+            'create-appeals', 'view-appeals', 'review-appeals',
+            'view-activity-log',
+            'manage-settings',
+            'view-notifications', 'create-notifications',
+        ]);
+
         $teamLeaderRole = Role::firstOrCreate(['name' => 'team_leader', 'guard_name' => 'web']);
         $teamLeaderRole->syncPermissions([
             'view-employees', 'view-teams', 'view-branches',

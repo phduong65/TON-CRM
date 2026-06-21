@@ -20,7 +20,7 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user         = auth()->user();
-        $canEditEmail = $user->can('edit-employees') || $user->hasRole('admin');
+        $canEditEmail = $user->can('edit-employees') || $user->hasRole(['admin', 'director']);
 
         $rules = [
             'name'     => 'required|string|max:255',
