@@ -224,9 +224,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
         @endforeach
-        </div>
+    </div>
 
     {{-- Pagination --}}
     @if ($rewards->hasPages())
