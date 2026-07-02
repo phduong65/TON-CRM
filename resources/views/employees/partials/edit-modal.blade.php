@@ -74,6 +74,8 @@
                     <label class="form-label">Loại hình nhân viên <span class="text-red-500">*</span></label>
                     <select id="editEmpEmploymentType" name="employment_type" class="form-input" required>
                         <option value="full_time">Chính thức</option>
+                        <option value="probation">Thử việc</option>
+                        <option value="intern">Thực tập</option>
                         <option value="part_time">Bán thời gian (Part-time)</option>
                     </select>
                     @error('employment_type') <p class="form-error">{{ $message }}</p> @enderror

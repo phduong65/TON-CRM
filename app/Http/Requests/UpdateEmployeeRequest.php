@@ -24,7 +24,7 @@ class UpdateEmployeeRequest extends FormRequest
             'team_id' => 'required|exists:teams,id',
             'is_active' => 'boolean',
             'joined_at' => 'nullable|date',
-            'employment_type' => 'required|in:full_time,part_time',
+            'employment_type' => 'required|in:full_time,part_time,probation,intern',
             'is_office' => 'boolean',
         ];
     }
