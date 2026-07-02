@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceLog;
 use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\MonthlyEmployeeScore;
@@ -255,6 +256,22 @@ class DashboardController extends Controller
             'rejected' => Penalty::where('status', 'rejected')->count(),
         ];
 
+        // ── Nhân viên đang trong ca làm (đã check-in, chưa check-out) theo chi nhánh ──
+        $onShiftLogs = AttendanceLog::query()
+            ->where('work_date', $now->toDateString())
+            ->whereNotNull('check_in_at')
+            ->whereNull('check_out_at')
+            ->whereHas('employee')
+            ->with(['employee.branch', 'employee.team', 'shiftSchedule.shift'])
+            ->get();
+
+        $onShiftByBranch = $onShiftLogs
+            ->sortBy('check_in_at')
+            ->groupBy(fn($log) => $log->employee->branch->name ?? 'Chưa gán chi nhánh')
+            ->sortKeys();
+
+        $onShiftTotalCount = $onShiftLogs->count();
+
         return view('dashboard.index', compact(
             'isAdmin',
             'now',
@@ -291,6 +308,8 @@ class DashboardController extends Controller
             'avgScoreTrend',
             'topViolators',
             'penaltyFunnel',
+            'onShiftByBranch',
+            'onShiftTotalCount',
         ));
     }
 

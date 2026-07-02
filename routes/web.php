@@ -27,6 +27,16 @@ use App\Http\Controllers\Dev\TestRunnerController;
 use App\Http\Controllers\GoogleSheetsController;
 use App\Http\Controllers\LogViewerController;
 use App\Http\Controllers\AppealsController;
+use App\Http\Controllers\ShiftsController;
+use App\Http\Controllers\HolidaysController;
+use App\Http\Controllers\AttendanceLocationsController;
+use App\Http\Controllers\ShiftSchedulesController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceLogsController;
+use App\Http\Controllers\LeaveRequestsController;
+use App\Http\Controllers\ShiftSwapRequestsController;
+use App\Http\Controllers\StaffRequestsController;
+use App\Http\Controllers\MyScheduleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -126,6 +136,87 @@ Route::middleware('auth')->group(function () {
         Route::put('/rules/{rule}', [AttendanceImportRulesController::class, 'update'])->name('rules.update');
         Route::delete('/rules/{rule}', [AttendanceImportRulesController::class, 'destroy'])->name('rules.destroy');
         Route::patch('/rules/{rule}/toggle', [AttendanceImportRulesController::class, 'toggleActive'])->name('rules.toggle');
+    });
+
+    // Shifts — mẫu ca làm việc (create/edit via modal)
+    Route::prefix('shifts')->name('shifts.')->group(function () {
+        Route::get('/', [ShiftsController::class, 'index'])->name('index')->middleware('can:view-shifts');
+        Route::post('/', [ShiftsController::class, 'store'])->name('store')->middleware('can:create-shifts');
+        Route::put('/{shift}', [ShiftsController::class, 'update'])->name('update')->middleware('can:edit-shifts');
+        Route::delete('/{shift}', [ShiftsController::class, 'destroy'])->name('destroy')->middleware('can:delete-shifts');
+    });
+
+    // Holidays — ngày nghỉ lễ có lương + thưởng (nếu có), dùng để tính công (create/edit via modal)
+    Route::prefix('holidays')->name('holidays.')->group(function () {
+        Route::get('/', [HolidaysController::class, 'index'])->name('index')->middleware('can:view-holidays');
+        Route::post('/', [HolidaysController::class, 'store'])->name('store')->middleware('can:create-holidays');
+        Route::put('/{holiday}', [HolidaysController::class, 'update'])->name('update')->middleware('can:edit-holidays');
+        Route::delete('/{holiday}', [HolidaysController::class, 'destroy'])->name('destroy')->middleware('can:delete-holidays');
+    });
+
+    // Attendance Locations — điểm chấm công GPS/IP theo chi nhánh (create/edit via modal)
+    Route::prefix('attendance-locations')->name('attendance-locations.')->group(function () {
+        Route::get('/', [AttendanceLocationsController::class, 'index'])->name('index')->middleware('can:view-attendance-locations');
+        Route::post('/', [AttendanceLocationsController::class, 'store'])->name('store')->middleware('can:create-attendance-locations');
+        Route::put('/{attendanceLocation}', [AttendanceLocationsController::class, 'update'])->name('update')->middleware('can:edit-attendance-locations');
+        Route::delete('/{attendanceLocation}', [AttendanceLocationsController::class, 'destroy'])->name('destroy')->middleware('can:delete-attendance-locations');
+    });
+
+    // Shift Schedules — xếp ca cố định & đa ca
+    Route::prefix('shift-schedules')->name('shift-schedules.')->group(function () {
+        Route::get('/', [ShiftSchedulesController::class, 'index'])->name('index')->middleware('can:view-shift-schedules');
+        Route::get('/export', [ShiftSchedulesController::class, 'export'])->name('export')->middleware('can:export-shift-schedules');
+        Route::get('/on-shift', [ShiftSchedulesController::class, 'onShiftJson'])->name('on-shift')->middleware('can:view-attendance');
+        Route::post('/', [ShiftSchedulesController::class, 'store'])->name('store')->middleware('can:create-shift-schedules');
+        Route::post('/bulk', [ShiftSchedulesController::class, 'bulkStore'])->name('bulk-store')->middleware('can:create-shift-schedules');
+        Route::put('/{shiftSchedule}', [ShiftSchedulesController::class, 'update'])->name('update')->middleware('can:edit-shift-schedules');
+        Route::delete('/{shiftSchedule}', [ShiftSchedulesController::class, 'destroy'])->name('destroy')->middleware('can:delete-shift-schedules');
+    });
+
+    // Lịch làm việc cá nhân — dạng lịch tháng (kiểu Google Calendar)
+    Route::get('/my-schedule', [MyScheduleController::class, 'index'])->name('my-schedule.index')->middleware('can:view-own-schedule');
+    Route::get('/my-schedule/events', [MyScheduleController::class, 'events'])->name('my-schedule.events')->middleware('can:view-own-schedule');
+    Route::get('/my-schedule/export', [MyScheduleController::class, 'export'])->name('my-schedule.export')->middleware('can:export-own-schedule');
+
+    // Attendance — chấm công cá nhân (check-in/out qua GPS + IP văn phòng)
+    Route::prefix('attendance')->name('attendance.')->middleware('can:checkin-attendance')->group(function () {
+        Route::get('/', [AttendanceController::class, 'index'])->name('index');
+        Route::post('/check-in', [AttendanceController::class, 'checkIn'])->name('check-in');
+        Route::post('/check-out', [AttendanceController::class, 'checkOut'])->name('check-out');
+    });
+
+    // Attendance Logs — báo cáo chấm công cho HR/Manager
+    Route::get('/attendance-logs', [AttendanceLogsController::class, 'index'])->name('attendance-logs.index')->middleware('can:view-attendance');
+    Route::get('/attendance-logs/export', [AttendanceLogsController::class, 'export'])->name('attendance-logs.export')->middleware('can:export-attendance');
+    Route::get('/attendance-logs/export-timesheet', [AttendanceLogsController::class, 'exportTimesheet'])->name('attendance-logs.export-timesheet')->middleware('can:export-attendance');
+
+    // Leave Requests — nhân viên xin nghỉ phép
+    Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
+        Route::get('/', [LeaveRequestsController::class, 'index'])->name('index')->middleware('can:view-leave-requests');
+        Route::post('/', [LeaveRequestsController::class, 'store'])->name('store')->middleware('can:create-leave-requests');
+        Route::post('/{leaveRequest}/approve', [LeaveRequestsController::class, 'approve'])->name('approve')->middleware('can:approve-leave-requests');
+        Route::post('/{leaveRequest}/reject', [LeaveRequestsController::class, 'reject'])->name('reject')->middleware('can:approve-leave-requests');
+        Route::delete('/{leaveRequest}', [LeaveRequestsController::class, 'destroy'])->name('destroy')->middleware('can:create-leave-requests');
+    });
+
+    // Shift Swap Requests — nhân viên xin đổi ca với nhau
+    Route::prefix('shift-swap-requests')->name('shift-swap-requests.')->group(function () {
+        Route::get('/', [ShiftSwapRequestsController::class, 'index'])->name('index')->middleware('can:view-shift-swaps');
+        Route::post('/', [ShiftSwapRequestsController::class, 'store'])->name('store')->middleware('can:create-shift-swaps');
+        Route::post('/{shiftSwapRequest}/approve', [ShiftSwapRequestsController::class, 'approve'])->name('approve')->middleware('can:approve-shift-swaps');
+        Route::post('/{shiftSwapRequest}/reject', [ShiftSwapRequestsController::class, 'reject'])->name('reject')->middleware('can:approve-shift-swaps');
+        Route::delete('/{shiftSwapRequest}', [ShiftSwapRequestsController::class, 'destroy'])->name('destroy')->middleware('can:create-shift-swaps');
+    });
+
+    // Staff Requests — hub "Yêu cầu và Phê duyệt": gộp hiển thị Lượt chấm công, Công tác/Ra ngoài,
+    // Đi muộn về sớm, Nghỉ phép, Thay đổi giờ vào/ra, Đổi ca làm. 4 loại đầu (không phải Nghỉ phép/Đổi ca)
+    // dùng bảng staff_requests riêng — xem StaffRequestsController.
+    Route::prefix('staff-requests')->name('staff-requests.')->group(function () {
+        Route::get('/', [StaffRequestsController::class, 'index'])->name('index')->middleware('can:view-staff-requests');
+        Route::post('/', [StaffRequestsController::class, 'store'])->name('store')->middleware('can:create-staff-requests');
+        Route::post('/{staffRequest}/approve', [StaffRequestsController::class, 'approve'])->name('approve')->middleware('can:approve-staff-requests');
+        Route::post('/{staffRequest}/reject', [StaffRequestsController::class, 'reject'])->name('reject')->middleware('can:approve-staff-requests');
+        Route::delete('/{staffRequest}', [StaffRequestsController::class, 'destroy'])->name('destroy')->middleware('can:create-staff-requests');
     });
 
     // Regulations (create/edit via modal)

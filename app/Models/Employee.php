@@ -23,13 +23,16 @@ class Employee extends Model
         'team_id',
         'is_active',
         'joined_at',
+        'employment_type',
+        'is_office',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
-            'joined_at' => 'date',
+            'is_active'  => 'boolean',
+            'joined_at'  => 'date',
+            'is_office'  => 'boolean',
         ];
     }
 
@@ -63,6 +66,31 @@ class Employee extends Model
         return $this->hasMany(MonthlyEmployeeScore::class);
     }
 
+    public function shiftSchedules(): HasMany
+    {
+        return $this->hasMany(ShiftSchedule::class);
+    }
+
+    public function attendanceLogs(): HasMany
+    {
+        return $this->hasMany(AttendanceLog::class);
+    }
+
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function shiftSwapRequestsSent(): HasMany
+    {
+        return $this->hasMany(ShiftSwapRequest::class, 'requester_employee_id');
+    }
+
+    public function shiftSwapRequestsReceived(): HasMany
+    {
+        return $this->hasMany(ShiftSwapRequest::class, 'target_employee_id');
+    }
+
     public function getTotalScoreAttribute(): int
     {
         return (int) $this->scores()->sum('points');
@@ -85,5 +113,22 @@ class Employee extends Model
             ->where('year', now()->year)
             ->first();
         return $record ? $record->zone : 'green';
+    }
+
+    /**
+     * Admin / Director tài khoản không thuộc diện chấm điểm kỷ luật nội bộ —
+     * không xuất hiện trong bảng xếp hạng, không bị trừ điểm khi bị báo cáo/xử phạt.
+     */
+    public function isExemptFromScoring(): bool
+    {
+        return $this->user?->hasRole(['admin', 'director']) ?? false;
+    }
+
+    /**
+     * Phép năm chỉ áp dụng cho nhân viên chính thức (full_time) và thuộc khối văn phòng.
+     */
+    public function isEligibleForAnnualLeave(): bool
+    {
+        return $this->employment_type === 'full_time' && $this->is_office;
     }
 }

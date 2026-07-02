@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\EmployeeReport;
+use App\Models\LeaveRequest;
 use App\Models\Notification;
 use App\Models\Penalty;
 use App\Models\Reward;
+use App\Models\ShiftSwapRequest;
+use App\Models\StaffRequest;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -286,18 +289,19 @@ class NotificationService
 
     public function notifyReportCreated(EmployeeReport $report): void
     {
-        $report->loadMissing(['reporter', 'reported', 'violation']);
+        $report->loadMissing(['reporter', 'reported', 'team', 'members.employee', 'violation']);
 
         $data        = ['report_id' => $report->id];
         $approverIds = $this->approverIds('approve-reports');
         $reporterUserId = $report->reporter?->user_id;
+        $targetLabel = $this->reportTargetLabel($report);
 
         // Notify approvers
         $approverBody = sprintf(
             '%s vừa tạo báo cáo %s — Báo cáo: %s — Vi phạm: %s',
             auth()->user()->name,
             $report->code,
-            $report->reported?->name ?? '—',
+            $targetLabel,
             $report->violation?->name ?? 'Không xác định'
         );
         $this->dispatchToMany($approverIds, 'report_created', 'Báo cáo mới cần duyệt', $approverBody, $data);
@@ -316,21 +320,21 @@ class NotificationService
 
     public function notifyReportApproved(EmployeeReport $report): void
     {
-        $report->loadMissing(['reporter', 'reported', 'violation']);
+        $report->loadMissing(['reporter', 'reported', 'team', 'members.employee', 'violation']);
 
         $data           = ['report_id' => $report->id];
         $deducted       = $report->violation?->points_deducted ?? 0;
         $reporterUserId = $report->reporter?->user_id;
-        $reportedUserId = $report->reported?->user_id;
         $approverIds    = $this->approverIds('approve-reports');
         $actorId        = auth()->id();
+        $targetLabel    = $this->reportTargetLabel($report);
 
         // Notify other approvers
         $approverBody = sprintf(
             'Báo cáo %s đã được duyệt — Người báo cáo: %s — Người bị báo cáo: %s',
             $report->code,
             $report->reporter?->name ?? '—',
-            $report->reported?->name ?? '—'
+            $targetLabel
         );
         $this->dispatchToMany($approverIds, 'report_approved', 'Báo cáo đã được duyệt', $approverBody, $data, $actorId);
 
@@ -344,11 +348,18 @@ class NotificationService
             $this->sendToUser($reporterUserId, 'report_approved', 'Báo cáo được duyệt', $body, $data);
         }
 
-        // Notify reported person: they were penalized
-        if ($reportedUserId
-            && (int) $reportedUserId !== (int) $actorId
-            && (int) $reportedUserId !== (int) $reporterUserId
-        ) {
+        // Notify each targeted employee that was actually deducted points
+        // (Admin/Director are exempt from scoring and are not notified as "penalized")
+        foreach ($report->chargeableTargetEmployees() as $target) {
+            $reportedUserId = $target->user_id;
+
+            if (!$reportedUserId
+                || (int) $reportedUserId === (int) $actorId
+                || (int) $reportedUserId === (int) $reporterUserId
+            ) {
+                continue;
+            }
+
             $body = sprintf(
                 'Bạn bị báo cáo vi phạm %s — %s — %s',
                 $report->violation?->name ?? 'vi phạm nội quy',
@@ -357,6 +368,15 @@ class NotificationService
             );
             $this->sendToUser($reportedUserId, 'report_approved', 'Thông báo vi phạm từ báo cáo', $body, $data);
         }
+    }
+
+    private function reportTargetLabel(EmployeeReport $report): string
+    {
+        return match ($report->type) {
+            'team'  => 'Team ' . ($report->team?->name ?? '—'),
+            'joint' => $report->targetEmployees()->pluck('name')->implode(', ') ?: '—',
+            default => $report->reported?->name ?? '—',
+        };
     }
 
     public function notifyReportRejected(EmployeeReport $report, string $reason): void
@@ -378,5 +398,194 @@ class NotificationService
         // Exclude the current rejecter from self-notification
         // The reported person is NOT notified on rejection (they were not penalized)
         $this->dispatchToMany($recipients, 'report_rejected', 'Báo cáo bị từ chối', $body, $data, auth()->id());
+    }
+
+    // -------------------------------------------------------------------------
+    // Leave request notifications
+    // Recipients: người có quyền duyệt + chính nhân viên xin nghỉ
+    // -------------------------------------------------------------------------
+
+    public function notifyLeaveRequestCreated(LeaveRequest $leaveRequest): void
+    {
+        $leaveRequest->loadMissing('employee');
+
+        $data        = ['leave_request_id' => $leaveRequest->id];
+        $approverIds = $this->approverIds('approve-leave-requests');
+
+        $approverBody = sprintf(
+            '%s vừa gửi đơn xin nghỉ %s — Từ %s đến %s',
+            $leaveRequest->employee?->name ?? '—',
+            $leaveRequest->code,
+            $leaveRequest->date_from->format('d/m/Y'),
+            $leaveRequest->date_to->format('d/m/Y')
+        );
+        $this->dispatchToMany($approverIds, 'leave_created', 'Đơn xin nghỉ mới cần duyệt', $approverBody, $data);
+
+        $creatorUserId = $leaveRequest->employee?->user_id;
+        if ($creatorUserId && ! $approverIds->contains($creatorUserId)) {
+            $creatorBody = sprintf('Đơn xin nghỉ %s của bạn đã được gửi đi và đang chờ phê duyệt', $leaveRequest->code);
+            $this->sendToUser($creatorUserId, 'leave_created', 'Đơn xin nghỉ đã gửi duyệt', $creatorBody, $data);
+        }
+    }
+
+    public function notifyLeaveRequestApproved(LeaveRequest $leaveRequest): void
+    {
+        $leaveRequest->loadMissing('employee');
+
+        $data  = ['leave_request_id' => $leaveRequest->id];
+        $title = 'Đơn xin nghỉ đã được duyệt';
+        $body  = sprintf(
+            'Đơn xin nghỉ %s (%s — %s) đã được duyệt',
+            $leaveRequest->code,
+            $leaveRequest->date_from->format('d/m/Y'),
+            $leaveRequest->date_to->format('d/m/Y')
+        );
+
+        $recipients = $this->approverIds('approve-leave-requests')
+            ->merge($this->employeeUserIds(collect([$leaveRequest->employee_id])));
+
+        $this->dispatchToMany($recipients, 'leave_approved', $title, $body, $data, auth()->id());
+    }
+
+    public function notifyLeaveRequestRejected(LeaveRequest $leaveRequest, string $reason): void
+    {
+        $leaveRequest->loadMissing('employee');
+
+        $data = ['leave_request_id' => $leaveRequest->id];
+        $body = sprintf(
+            'Đơn xin nghỉ %s của bạn đã bị từ chối — Lý do: %s',
+            $leaveRequest->code,
+            Str::limit($reason, 80)
+        );
+
+        $recipients = $this->approverIds('approve-leave-requests')
+            ->merge($this->employeeUserIds(collect([$leaveRequest->employee_id])));
+
+        $this->dispatchToMany($recipients, 'leave_rejected', 'Đơn xin nghỉ bị từ chối', $body, $data, auth()->id());
+    }
+
+    // -------------------------------------------------------------------------
+    // Shift swap notifications
+    // Recipients: người có quyền duyệt + người tạo (lúc gửi); + cả 2 bên khi đã duyệt/từ chối
+    // -------------------------------------------------------------------------
+
+    public function notifyShiftSwapCreated(ShiftSwapRequest $swap): void
+    {
+        $swap->loadMissing(['requesterEmployee', 'targetEmployee', 'requesterSchedule', 'targetSchedule']);
+
+        $data        = ['shift_swap_request_id' => $swap->id];
+        $approverIds = $this->approverIds('approve-shift-swaps');
+
+        $approverBody = sprintf(
+            '%s muốn đổi ca ngày %s với ca ngày %s của %s',
+            $swap->requesterEmployee?->name ?? '—',
+            $swap->requesterSchedule?->work_date?->format('d/m/Y') ?? '—',
+            $swap->targetSchedule?->work_date?->format('d/m/Y') ?? '—',
+            $swap->targetEmployee?->name ?? '—'
+        );
+        $this->dispatchToMany($approverIds, 'swap_created', 'Yêu cầu đổi ca mới cần duyệt', $approverBody, $data);
+
+        $creatorUserId = $swap->requesterEmployee?->user_id;
+        if ($creatorUserId && ! $approverIds->contains($creatorUserId)) {
+            $creatorBody = sprintf('Yêu cầu đổi ca %s của bạn đã được gửi đi và đang chờ phê duyệt', $swap->code);
+            $this->sendToUser($creatorUserId, 'swap_created', 'Yêu cầu đổi ca đã gửi duyệt', $creatorBody, $data);
+        }
+    }
+
+    public function notifyShiftSwapApproved(ShiftSwapRequest $swap): void
+    {
+        $swap->loadMissing(['requesterEmployee', 'targetEmployee', 'requesterSchedule', 'targetSchedule']);
+
+        $data  = ['shift_swap_request_id' => $swap->id];
+        $title = 'Yêu cầu đổi ca đã được duyệt';
+        $body  = sprintf(
+            'Đổi ca %s giữa %s và %s đã được duyệt',
+            $swap->code,
+            $swap->requesterEmployee?->name ?? '—',
+            $swap->targetEmployee?->name ?? '—'
+        );
+
+        $recipients = $this->approverIds('approve-shift-swaps')
+            ->merge($this->employeeUserIds(collect([$swap->requester_employee_id, $swap->target_employee_id])));
+
+        $this->dispatchToMany($recipients, 'swap_approved', $title, $body, $data, auth()->id());
+    }
+
+    public function notifyShiftSwapRejected(ShiftSwapRequest $swap, string $reason): void
+    {
+        $swap->loadMissing('requesterEmployee');
+
+        $data = ['shift_swap_request_id' => $swap->id];
+        $body = sprintf(
+            'Yêu cầu đổi ca %s của bạn đã bị từ chối — Lý do: %s',
+            $swap->code,
+            Str::limit($reason, 80)
+        );
+
+        $recipients = $this->approverIds('approve-shift-swaps')
+            ->merge($this->employeeUserIds(collect([$swap->requester_employee_id])));
+
+        $this->dispatchToMany($recipients, 'swap_rejected', 'Yêu cầu đổi ca bị từ chối', $body, $data, auth()->id());
+    }
+
+    // -------------------------------------------------------------------------
+    // Staff request notifications (Lượt chấm công / Công tác-Ra ngoài / Đi muộn về sớm /
+    // Thay đổi giờ vào-ra) — cùng 1 luồng thông báo cho cả 4 loại trong module "Yêu cầu & Phê duyệt".
+    // Recipients: người có quyền duyệt + chính nhân viên gửi yêu cầu.
+    // -------------------------------------------------------------------------
+
+    public function notifyStaffRequestCreated(StaffRequest $staffRequest): void
+    {
+        $staffRequest->loadMissing('employee');
+
+        $data        = ['staff_request_id' => $staffRequest->id];
+        $approverIds = $this->approverIds('approve-staff-requests');
+
+        $approverBody = sprintf(
+            '%s vừa gửi yêu cầu %s — %s (%s)',
+            $staffRequest->employee?->name ?? '—',
+            $staffRequest->typeLabel(),
+            $staffRequest->work_date->format('d/m/Y'),
+            $staffRequest->code
+        );
+        $this->dispatchToMany($approverIds, 'staff_request_created', 'Yêu cầu mới cần duyệt', $approverBody, $data);
+
+        $creatorUserId = $staffRequest->employee?->user_id;
+        if ($creatorUserId && ! $approverIds->contains($creatorUserId)) {
+            $creatorBody = sprintf('Yêu cầu %s (%s) của bạn đã được gửi đi và đang chờ phê duyệt', $staffRequest->typeLabel(), $staffRequest->code);
+            $this->sendToUser($creatorUserId, 'staff_request_created', 'Yêu cầu đã gửi duyệt', $creatorBody, $data);
+        }
+    }
+
+    public function notifyStaffRequestApproved(StaffRequest $staffRequest): void
+    {
+        $staffRequest->loadMissing('employee');
+
+        $data  = ['staff_request_id' => $staffRequest->id];
+        $title = 'Yêu cầu đã được duyệt';
+        $body  = sprintf('Yêu cầu %s (%s, %s) đã được duyệt', $staffRequest->typeLabel(), $staffRequest->code, $staffRequest->work_date->format('d/m/Y'));
+
+        $recipients = $this->approverIds('approve-staff-requests')
+            ->merge($this->employeeUserIds(collect([$staffRequest->employee_id])));
+
+        $this->dispatchToMany($recipients, 'staff_request_approved', $title, $body, $data, auth()->id());
+    }
+
+    public function notifyStaffRequestRejected(StaffRequest $staffRequest, string $reason): void
+    {
+        $staffRequest->loadMissing('employee');
+
+        $data = ['staff_request_id' => $staffRequest->id];
+        $body = sprintf(
+            'Yêu cầu %s (%s) của bạn đã bị từ chối — Lý do: %s',
+            $staffRequest->typeLabel(),
+            $staffRequest->code,
+            Str::limit($reason, 80)
+        );
+
+        $recipients = $this->approverIds('approve-staff-requests')
+            ->merge($this->employeeUserIds(collect([$staffRequest->employee_id])));
+
+        $this->dispatchToMany($recipients, 'staff_request_rejected', 'Yêu cầu bị từ chối', $body, $data, auth()->id());
     }
 }

@@ -231,7 +231,8 @@
                             </span>
                         </div>
                         <div class="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                            <table class="w-full text-sm">
+                            <div class="overflow-x-auto">
+                            <table class="w-full min-w-[480px] text-sm">
                                 <thead class="bg-slate-50 dark:bg-slate-700/50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-8">TN</th>
@@ -242,6 +243,7 @@
                                 </thead>
                                 <tbody id="cp_team_member_rows" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
                             </table>
+                            </div>
                         </div>
                         <div class="flex items-center justify-between mt-2 px-1">
                             <p id="cp_team_member_count" class="text-xs text-slate-400 dark:text-slate-500"></p>

@@ -15,7 +15,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+<body class="min-h-screen bg-[#F7F8FC] dark:bg-slate-900 flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <!-- Logo -->
         <div class="text-center mb-8">
@@ -29,7 +29,7 @@
         </div>
 
         <!-- Card -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-6 md:p-8">
+        <div class="bg-white dark:bg-slate-800 rounded-[20px] shadow-[0_10px_30px_rgba(15,23,42,0.06)] border border-slate-200 dark:border-slate-700 p-6 md:p-8">
             @if(session('status'))
                 <div class="alert-success mb-4">{{ session('status') }}</div>
             @endif

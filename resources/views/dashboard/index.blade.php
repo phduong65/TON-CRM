@@ -827,6 +827,101 @@
             </div>
         </div>
 
+        {{-- ─── Nhân viên đang trong ca làm (theo chi nhánh) ───────────────────── --}}
+        @can('view-attendance')
+            <div class="card mb-6">
+                <div class="card-header flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+                            <i class="bi bi-person-badge-fill text-emerald-600 dark:text-emerald-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-slate-900 dark:text-white text-sm">Nhân viên đang trong ca làm
+                            </h3>
+                            <p class="text-xs text-slate-400">Đã check-in, chưa check-out · Hôm nay
+                                {{ $now->format('d/m/Y') }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                            <i class="bi bi-record-circle-fill text-xs animate-pulse"></i>
+                            {{ $onShiftTotalCount ?? 0 }} đang làm việc
+                        </span>
+                        <a href="{{ route('attendance-logs.index') }}"
+                            class="text-xs text-pcrm-600 dark:text-pcrm-400 hover:underline flex items-center gap-1">
+                            Xem tất cả <i class="bi bi-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (isset($onShiftByBranch) && $onShiftByBranch->isNotEmpty())
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            @foreach ($onShiftByBranch as $branchName => $logs)
+                                <div class="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+                                    <div
+                                        class="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-700/40">
+                                        <div class="flex items-center gap-2">
+                                            <i class="bi bi-building text-slate-400 text-sm"></i>
+                                            <span
+                                                class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $branchName }}</span>
+                                        </div>
+                                        <span
+                                            class="text-xs font-bold text-emerald-600 dark:text-emerald-400">{{ $logs->count() }}
+                                            NV</span>
+                                    </div>
+                                    <div
+                                        class="divide-y divide-slate-100 dark:divide-slate-700/50 max-h-72 overflow-y-auto">
+                                        @foreach ($logs as $log)
+                                            <div
+                                                class="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors gap-3">
+                                                <div class="flex items-center gap-2 min-w-0">
+                                                    <div
+                                                        class="w-7 h-7 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex-shrink-0">
+                                                        {{ strtoupper(mb_substr($log->employee->name ?? 'N', 0, 1)) }}
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <p
+                                                            class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                                                            {{ $log->employee->name ?? 'N/A' }}</p>
+                                                        <p class="text-xs text-slate-400 truncate">
+                                                            {{ $log->employee->team->name ?? '—' }}
+                                                            @if ($log->shiftSchedule?->shift)
+                                                                <span
+                                                                    class="mx-1 opacity-40">·</span>{{ $log->shiftSchedule->shift->name }}
+                                                            @endif
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div class="flex flex-col items-end flex-shrink-0">
+                                                    <span
+                                                        class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                                        <i class="bi bi-record-circle-fill"
+                                                            style="font-size:0.5rem"></i> Đang làm
+                                                    </span>
+                                                    <span class="text-xs text-slate-400">Vào lúc
+                                                        {{ $log->check_in_at->format('H:i') }}</span>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="p-8 text-center">
+                            <div
+                                class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+                                <i class="bi bi-moon-stars text-xl text-slate-400"></i>
+                            </div>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Hiện không có nhân viên nào đang trong
+                                ca làm</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endcan
+
         {{-- ─── Analytics: Top Risk Employees ─────────────────────────────────── --}}
         @if ($topViolators->isNotEmpty())
             <div class="card mb-6">
@@ -1153,6 +1248,14 @@
 
                     {{-- Right: avatar + status --}}
                     <div class="flex flex-col items-end gap-5 flex-shrink-0">
+                        @can('checkin-attendance')
+                            <a href="{{ route('attendance.index') }}"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:bg-white/20 transition-colors"
+                                style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);">
+                                <i class="bi bi-fingerprint"></i>
+                                Chấm công
+                            </a>
+                        @endcan
                     </div>
                 </div>
             </div>

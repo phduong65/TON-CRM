@@ -31,4 +31,14 @@ class Branch extends Model
     {
         return $this->hasMany(Employee::class);
     }
+
+    public function shifts(): HasMany
+    {
+        return $this->hasMany(Shift::class);
+    }
+
+    public function attendanceLocations(): HasMany
+    {
+        return $this->hasMany(AttendanceLocation::class);
+    }
 }

@@ -1,3 +1,8 @@
+@php
+    // @json() splits its expression on every comma, so build the array here first —
+    // passing a multi-key array literal inline can silently corrupt the compiled view.
+    $crEmployeesData = $employees->map(fn($e) => ['id' => $e->id, 'label' => $e->name . ' (' . $e->code . ')'])->values();
+@endphp
 <div id="createReportModal"
      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('createReportModal')">
@@ -23,6 +28,7 @@
               class="flex flex-col flex-1 min-h-0">
             @csrf
             <input type="hidden" name="_modal" value="createReportModal">
+            <input type="hidden" name="type" id="cr_type" value="{{ old('type', 'individual') }}">
 
             {{-- Scrollable body --}}
             <div class="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
@@ -41,13 +47,34 @@
                     </div>
                 </div>
 
-                {{-- ── Chọn nhân viên bị báo cáo ─────────────────────────── --}}
+                {{-- ── Hình thức báo cáo ─────────────────────────────────── --}}
                 <div class="space-y-3">
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Hình thức báo cáo
+                    </p>
+
+                    <div class="flex rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+                        <button type="button" id="cr_type_btn_individual" onclick="crSetType('individual')"
+                                class="flex-1 py-2 flex items-center justify-center gap-1.5 text-sm font-medium transition-colors text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i class="bi bi-person"></i> Cá nhân
+                        </button>
+                        <button type="button" id="cr_type_btn_team" onclick="crSetType('team')"
+                                class="flex-1 py-2 flex items-center justify-center gap-1.5 text-sm font-medium transition-colors border-l border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i class="bi bi-people"></i> Cả nhóm
+                        </button>
+                        <button type="button" id="cr_type_btn_joint" onclick="crSetType('joint')"
+                                class="flex-1 py-2 flex items-center justify-center gap-1.5 text-sm font-medium transition-colors border-l border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                            <i class="bi bi-diagram-3"></i> Liên đới
+                        </button>
+                    </div>
+                </div>
+
+                {{-- ── INDIVIDUAL panel ─────────────────────────────────── --}}
+                <div id="cr_panel_individual" class="space-y-3">
                     <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Nhân viên bị báo cáo
                     </p>
 
-                    {{-- Branch + Team filter (không submit) --}}
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="form-label">Lọc theo chi nhánh</label>
@@ -60,7 +87,7 @@
                         </div>
                         <div>
                             <label class="form-label">Lọc theo team</label>
-                            <select id="cr_team" class="form-input" onchange="crFilterEmployees()">
+                            <select id="cr_team_filter" class="form-input" onchange="crFilterEmployees()">
                                 <option value="">Tất cả team</option>
                                 @foreach($teams as $t)
                                     <option value="{{ $t->id }}" data-branch="{{ $t->branch_id }}">{{ $t->name }}</option>
@@ -69,10 +96,10 @@
                         </div>
                     </div>
 
-                    {{-- Employee select (submitted) --}}
                     <div>
                         <label class="form-label">Chọn nhân viên <span class="text-red-500">*</span></label>
-                        <select name="reported_employee_id" id="cr_employee"
+                        <select name="reported_employee_id" id="cr_employee" data-combobox
+                                data-combobox-placeholder="Gõ tên hoặc mã nhân viên..."
                                 class="form-input @error('reported_employee_id') border-red-400 @enderror">
                             <option value="">-- Chọn nhân viên bị báo cáo --</option>
                             @foreach($employees as $emp)
@@ -90,6 +117,60 @@
                             <p class="form-error">{{ $message }}</p>
                         @enderror
                     </div>
+                </div>
+
+                {{-- ── TEAM panel ───────────────────────────────────────── --}}
+                <div id="cr_panel_team" class="space-y-3 hidden">
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Team bị báo cáo
+                    </p>
+                    <div>
+                        <label class="form-label">Chọn team <span class="text-red-500">*</span></label>
+                        <select name="team_id" id="cr_team" data-combobox
+                                data-combobox-placeholder="Gõ tên team..."
+                                class="form-input @error('team_id') border-red-400 @enderror">
+                            <option value="">-- Chọn team --</option>
+                            @foreach($teams as $t)
+                                <option value="{{ $t->id }}" @selected(old('team_id') == $t->id)>
+                                    {{ $t->name }} ({{ $t->employees_count }} nhân viên)
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('team_id')
+                            <p class="form-error">{{ $message }}</p>
+                        @enderror
+                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                            Toàn bộ nhân viên đang hoạt động trong team sẽ được ghi nhận vào báo cáo này.
+                        </p>
+                    </div>
+                </div>
+
+                {{-- ── JOINT (liên đới) panel ───────────────────────────── --}}
+                <div id="cr_panel_joint" class="space-y-3 hidden">
+                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Nhân viên liên đới <span class="font-normal normal-case text-slate-400">(nhiều người khác nhau)</span>
+                    </p>
+
+                    <div>
+                        <label class="form-label">Nhân viên chính <span class="text-red-500">*</span></label>
+                        <select id="cr_joint_primary" data-combobox
+                                data-combobox-placeholder="Gõ tên hoặc mã nhân viên..."
+                                class="form-input">
+                            <option value="">-- Chọn nhân viên --</option>
+                            @foreach($employees as $emp)
+                                @if($emp->id !== $currentEmployee->id)
+                                    <option value="{{ $emp->id }}">{{ $emp->name }} ({{ $emp->code }})</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="cr_joint_members" class="space-y-2"></div>
+
+                    <button type="button" onclick="crAddJointMember()"
+                            class="btn-secondary btn-sm">
+                        <i class="bi bi-plus-lg"></i> Thêm người liên đới
+                    </button>
                 </div>
 
                 <div class="border-t border-slate-100 dark:border-slate-700"></div>
@@ -113,7 +194,9 @@
                         </div>
                         <div>
                             <label class="form-label">Lỗi vi phạm cụ thể</label>
-                            <select name="violation_id" id="cr_violation" class="form-input">
+                            <select name="violation_id" id="cr_violation" data-combobox
+                                    data-combobox-placeholder="Gõ tên lỗi vi phạm..."
+                                    class="form-input">
                                 <option value="">-- Không chọn --</option>
                                 @foreach($violations as $v)
                                     <option value="{{ $v->id }}"
@@ -124,7 +207,7 @@
                                 @endforeach
                             </select>
                             <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                                Hệ thống tự trừ điểm khi báo cáo được duyệt.
+                                Hệ thống tự trừ điểm từng người khi báo cáo được duyệt.
                             </p>
                         </div>
                     </div>
@@ -222,9 +305,32 @@
 <script>
 // ── Create Report Modal ──────────────────────────────────────────────────────
 
+var CR_EMPLOYEES = @json($crEmployeesData);
+var crJointIdx = 0;
+
+function crSetType(type) {
+    document.getElementById('cr_type').value = type;
+
+    ['individual', 'team', 'joint'].forEach(function (t) {
+        var panel = document.getElementById('cr_panel_' + t);
+        var btn   = document.getElementById('cr_type_btn_' + t);
+        var active = t === type;
+        panel.classList.toggle('hidden', !active);
+        btn.classList.toggle('bg-pcrm-600', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-slate-600', !active);
+        btn.classList.toggle('dark:text-slate-300', !active);
+    });
+
+    // reported_employee_id is submitted for individual; joint uses its own primary select
+    // whose value gets copied into reported_employee_id on submit (see form submit handler).
+    document.getElementById('cr_employee').required = (type === 'individual');
+    document.getElementById('cr_team').required      = (type === 'team');
+}
+
 function crFilterTeams() {
     var branchId = document.getElementById('cr_branch').value;
-    var teamSel  = document.getElementById('cr_team');
+    var teamSel  = document.getElementById('cr_team_filter');
     teamSel.value = '';
     Array.from(teamSel.options).forEach(function(opt) {
         if (!opt.dataset.branch) return;
@@ -237,7 +343,7 @@ function crFilterTeams() {
 
 function crFilterEmployees() {
     var branchId = document.getElementById('cr_branch').value;
-    var teamId   = document.getElementById('cr_team').value;
+    var teamId   = document.getElementById('cr_team_filter').value;
     var empSel   = document.getElementById('cr_employee');
     empSel.value = '';
     Array.from(empSel.options).forEach(function(opt) {
@@ -247,6 +353,7 @@ function crFilterEmployees() {
         opt.hidden   = !ok;
         opt.disabled = !ok;
     });
+    if (window.comboboxRefresh) comboboxRefresh(empSel);
 }
 
 function crFilterViolations() {
@@ -259,7 +366,64 @@ function crFilterViolations() {
         opt.hidden   = !show;
         opt.disabled = !show;
     });
+    if (window.comboboxRefresh) comboboxRefresh(violSel);
 }
+
+// ── Joint (liên đới) member rows ────────────────────────────────────────────
+
+function crAddJointMember() {
+    var idx = crJointIdx++;
+    var wrap = document.createElement('div');
+    wrap.className = 'flex items-center gap-2';
+    wrap.id = 'cr_joint_row_' + idx;
+
+    var selectWrap = document.createElement('div');
+    selectWrap.className = 'flex-1';
+
+    var select = document.createElement('select');
+    select.name = 'members[]';
+    select.className = 'form-input text-sm';
+    select.setAttribute('data-combobox', '');
+    select.setAttribute('data-combobox-placeholder', 'Gõ tên hoặc mã nhân viên...');
+
+    var opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = '-- Chọn người liên đới --';
+    select.appendChild(opt0);
+
+    CR_EMPLOYEES.forEach(function (e) {
+        var o = document.createElement('option');
+        o.value = e.id;
+        o.textContent = e.label;
+        select.appendChild(o);
+    });
+
+    selectWrap.appendChild(select);
+    wrap.appendChild(selectWrap);
+
+    var rmBtn = document.createElement('button');
+    rmBtn.type = 'button';
+    rmBtn.className = 'w-9 h-9 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 shrink-0';
+    rmBtn.innerHTML = '<i class="bi bi-trash"></i>';
+    rmBtn.onclick = function () { wrap.remove(); };
+    wrap.appendChild(rmBtn);
+
+    document.getElementById('cr_joint_members').appendChild(wrap);
+    if (window.comboboxInit) window.comboboxInit(wrap);
+}
+
+// Copy the "primary" joint employee select into the real reported_employee_id
+// field right before submit, so the backend always reads one field name.
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('createReportModal')?.querySelector('form');
+    if (!form) return;
+    form.addEventListener('submit', function () {
+        if (document.getElementById('cr_type').value === 'joint') {
+            document.getElementById('cr_employee').value = document.getElementById('cr_joint_primary').value;
+        }
+    });
+    crSetType(document.getElementById('cr_type').value || 'individual');
+});
 
 // ── Drag-and-drop ────────────────────────────────────────────────────────────
 

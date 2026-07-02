@@ -79,13 +79,26 @@
                     <input type="date" name="joined_at" class="form-input" value="{{ old('joined_at') }}">
                     @error('joined_at') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
-                <div class="flex items-end pb-1">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
-                               class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
-                        <span class="text-sm text-slate-700 dark:text-slate-300">Đang làm việc</span>
-                    </label>
+                <div>
+                    <label class="form-label">Loại hình nhân viên <span class="text-red-500">*</span></label>
+                    <select name="employment_type" class="form-input" required>
+                        <option value="full_time" @selected(old('employment_type', 'full_time') === 'full_time')>Chính thức</option>
+                        <option value="part_time" @selected(old('employment_type') === 'part_time')>Bán thời gian (Part-time)</option>
+                    </select>
+                    @error('employment_type') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
+                           class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
+                    <span class="text-sm text-slate-700 dark:text-slate-300">Đang làm việc</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_office" value="1" {{ old('is_office') ? 'checked' : '' }}
+                           class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
+                    <span class="text-sm text-slate-700 dark:text-slate-300">Nhân viên văn phòng (đủ điều kiện phép năm nếu chính thức)</span>
+                </label>
             </div>
             <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                 <button type="button" onclick="closeModal('createEmployeeModal')" class="btn-secondary">Hủy</button>

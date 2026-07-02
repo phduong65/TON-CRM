@@ -13,6 +13,12 @@ class DatabaseSeeder extends Seeder
         $this->call(RewardTypesSeeder::class);
         $this->call(RealEmployeeSeeder::class);
         $this->call(UserManagementSeeder::class);
+        $this->call(ShiftAttendancePermissionsSeeder::class);
+        $this->call(ShiftsSeeder::class);
+        $this->call(LeaveSwapPermissionsSeeder::class);
+        $this->call(StaffRequestsPermissionsSeeder::class);
         $this->call(LogViewerSeeder::class);
+        $this->call(ExportPermissionsSeeder::class);
+        $this->call(HolidaysPermissionsSeeder::class);
     }
 }

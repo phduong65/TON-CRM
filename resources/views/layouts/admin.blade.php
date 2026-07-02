@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        if (localStorage.getItem('sidebarCollapsed') === '1') {
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
+    </script>
     <title>@yield('title', config('app.name', 'TON-HR'))</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('assets/images/TON CAPITAL_LOGO-06.png')}}">
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -11,25 +16,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/phosphor-icons/1.4.2/css/phosphor.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('styles')
 </head>
-<body class="bg-slate-100 dark:bg-slate-900 min-h-screen">
+<body class="bg-[#F7F8FC] dark:bg-slate-900 min-h-screen">
 
     <!-- Top Navigation Bar -->
     @include('components.topbar')
 
     <!-- Body layout: left panel + main content -->
-    <div class="flex" style="height: calc(100vh - 56px);">
+    <div class="flex" style="height: calc(100vh - 70px);">
 
         <!-- Left Profile Panel -->
         @include('components.sidebar')
 
         <!-- Main content scroll area -->
         <div class="flex-1 overflow-y-auto flex flex-col">
-            <main class="flex-1 p-5 md:p-6 pcrm-animate-in">
+            <main class="flex-1 p-6 md:p-8 pcrm-animate-in">
                 @hasSection('page-title')
                 <div class="mb-5">
                     @hasSection('breadcrumb')
@@ -93,6 +99,7 @@
     @stack('scripts')
 
     <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <script>
     (function () {
         // Auto-stagger: cards inside .aos-stagger containers get incremental delays

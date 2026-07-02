@@ -37,11 +37,28 @@
                             </p>
                         @endcan
                     </div>
-                    <div>
-                        <p class="text-xs text-slate-400 uppercase tracking-wider">Nhân viên bị báo cáo</p>
-                        <p class="text-sm font-medium mt-0.5">{{ $report->reported?->name ?? '—' }}</p>
-                        @if($report->reported?->code)
-                            <p class="text-xs text-slate-400">{{ $report->reported->code }} · {{ $report->reported->branch?->name }}</p>
+                    <div class="col-span-2">
+                        <p class="text-xs text-slate-400 uppercase tracking-wider">
+                            Nhân viên bị báo cáo
+                            <span class="badge badge-neutral ml-1">{{ $report->typeLabel() }}</span>
+                            @if($report->type === 'team' && $report->team)
+                                <span class="text-slate-400 normal-case font-normal">— Team {{ $report->team->name }}</span>
+                            @endif
+                        </p>
+                        @php $targets = $report->targetEmployees(); @endphp
+                        @if($targets->isEmpty())
+                            <p class="text-sm font-medium mt-0.5">—</p>
+                        @else
+                            <div class="flex flex-wrap gap-1.5 mt-1.5">
+                                @foreach($targets as $t)
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                        {{ $t->name }} ({{ $t->code }})
+                                        @if($t->isExemptFromScoring())
+                                            <i class="bi bi-shield-check text-pcrm-500" title="Không thuộc diện chấm điểm kỷ luật"></i>
+                                        @endif
+                                    </span>
+                                @endforeach
+                            </div>
                         @endif
                     </div>
                     @if($report->violation)
@@ -49,7 +66,10 @@
                         <p class="text-xs text-slate-400 uppercase tracking-wider">Vi phạm được báo cáo</p>
                         <p class="text-sm font-medium mt-0.5">{{ $report->violation->name }}</p>
                         @if($report->violation->points_deducted > 0)
-                            <p class="text-xs text-red-500 dark:text-red-400 mt-0.5">Trừ {{ $report->violation->points_deducted }} điểm khi duyệt</p>
+                            <p class="text-xs text-red-500 dark:text-red-400 mt-0.5">
+                                Trừ {{ $report->violation->points_deducted }} điểm / người khi duyệt
+                                (Admin, Giám đốc được miễn trừ điểm)
+                            </p>
                         @endif
                     </div>
                     @endif
@@ -133,8 +153,9 @@
                         </p>
                         <p class="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
                             Cộng <strong>+{{ $report->reward_points }} điểm</strong> cho {{ auth()->user()->can('approve-reports') ? ($report->reporter?->name ?? 'người báo cáo') : 'người báo cáo' }}
-                            @if($report->violation?->points_deducted > 0)
-                                · Trừ <strong>{{ $report->violation->points_deducted }} điểm</strong> của {{ $report->reported?->name ?? 'người bị báo cáo' }}
+                            @if($report->deducted_points > 0)
+                                · Đã trừ tổng <strong>{{ $report->deducted_points }} điểm</strong>
+                                ({{ $report->chargeableTargetEmployees()->pluck('name')->implode(', ') }})
                             @endif
                         </p>
                     </div>
@@ -168,15 +189,26 @@
                     </div>
                 </div>
                 @if($report->violation?->points_deducted > 0)
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/20">
-                    <div class="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
-                        <i class="bi bi-dash-circle-fill text-red-600 dark:text-red-400"></i>
+                    @php $chargeableCount = $report->chargeableTargetEmployees()->count(); @endphp
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/20">
+                        <div class="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                            <i class="bi bi-dash-circle-fill text-red-600 dark:text-red-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-red-600 dark:text-red-500">
+                                Điểm trừ {{ $chargeableCount > 1 ? "mỗi người ({$chargeableCount} người)" : 'người bị báo cáo' }}
+                            </p>
+                            <p class="text-lg font-bold text-red-700 dark:text-red-300">
+                                -{{ $report->violation->points_deducted }} điểm
+                                @if($chargeableCount > 1)
+                                    <span class="text-xs font-normal text-red-500">(tổng -{{ $report->violation->points_deducted * $chargeableCount }})</span>
+                                @endif
+                            </p>
+                            @if($chargeableCount < $report->targetEmployees()->count())
+                                <p class="text-[11px] text-slate-400 mt-0.5">Admin/Giám đốc trong danh sách được miễn trừ điểm</p>
+                            @endif
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-xs text-red-600 dark:text-red-500">Điểm trừ người bị báo cáo</p>
-                        <p class="text-lg font-bold text-red-700 dark:text-red-300">-{{ $report->violation->points_deducted }} điểm</p>
-                    </div>
-                </div>
                 @endif
             </div>
         </div>
@@ -189,10 +221,12 @@
                     <h3 class="font-semibold text-slate-900 dark:text-white text-sm">Duyệt báo cáo</h3>
                 </div>
                 <div class="card-body">
+                    @php $approveTargets = $report->chargeableTargetEmployees(); @endphp
                     <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
                         Khi duyệt, hệ thống sẽ tự động cộng <strong class="text-emerald-600">+{{ $report->reward_points }} điểm</strong> cho <strong>{{ $report->reporter?->name }}</strong>
-                        @if($report->violation?->points_deducted > 0)
-                            và trừ <strong class="text-red-600">{{ $report->violation->points_deducted }} điểm</strong> của <strong>{{ $report->reported?->name }}</strong>
+                        @if($report->violation?->points_deducted > 0 && $approveTargets->isNotEmpty())
+                            và trừ <strong class="text-red-600">{{ $report->violation->points_deducted }} điểm</strong> của
+                            <strong>{{ $approveTargets->pluck('name')->implode(', ') }}</strong>
                         @endif.
                     </p>
                     <form action="{{ route('reports.approve', $report) }}" method="POST">

@@ -17,7 +17,7 @@ class RankingsController extends Controller
 
         // ── All-time employee ranking (sum of monthly final_score + surplus) ──
         $employees = Employee::where('is_active', true)
-            ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'director')))
+            ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['director', 'admin'])))
             ->with(['branch', 'team', 'monthlyScores'])
             ->get()
             ->map(function ($emp) use ($defaultScore) {
@@ -111,7 +111,7 @@ class RankingsController extends Controller
             ->keyBy('employee_id');
 
         $ranked = Employee::where('is_active', true)
-            ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'director')))
+            ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['director', 'admin'])))
             ->with(['branch', 'team'])
             ->get()
             ->map(function ($emp) use ($scoreMap, $defaultScore) {
@@ -148,7 +148,7 @@ class RankingsController extends Controller
     private function buildYearlyRanking(int $year, int $defaultScore)
     {
         $ranked = Employee::where('is_active', true)
-            ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'director')))
+            ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['director', 'admin'])))
             ->with(['branch', 'team', 'monthlyScores' => fn($q) => $q->where('year', $year)])
             ->get()
             ->map(function ($emp) use ($defaultScore) {

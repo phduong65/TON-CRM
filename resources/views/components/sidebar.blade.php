@@ -25,7 +25,13 @@
 
 <!-- Left sidebar (desktop) -->
 <aside id="left-panel"
-    class="hidden lg:flex w-56 shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex-col overflow-y-auto">
+    class="hidden lg:flex relative w-[260px] shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex-col overflow-visible">
+
+    <!-- Thu nhỏ / mở rộng sidebar (chỉ desktop) -->
+    <button type="button" onclick="toggleSidebar()" title="Thu nhỏ/mở rộng menu"
+        class="sidebar-toggle-btn hidden lg:flex absolute -right-3 top-6 z-10 w-6 h-6 items-center justify-center rounded-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-600">
+        <i class="bi bi-chevron-left text-xs"></i>
+    </button>
 
     <!-- User Profile -->
     {{-- <div class="px-4 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
@@ -52,7 +58,7 @@
     </div> --}}
 
     <!-- Full navigation -->
-    <nav class="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
 
         {{-- ── TỔNG QUAN ─────────────────────────────── --}}
         <p
@@ -109,6 +115,77 @@
                 <span>Chi nhánh</span>
             </a>
         @endcan
+
+        {{-- ── CA LÀM VIỆC & CHẤM CÔNG ──────────────── --}}
+        @canany(['view-own-schedule', 'checkin-attendance', 'view-shifts', 'view-shift-schedules', 'view-attendance-locations', 'view-attendance', 'view-leave-requests', 'view-shift-swaps', 'view-staff-requests', 'view-holidays'])
+        <p
+            class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            Ca làm việc &amp; Chấm công</p>
+
+        @can('view-own-schedule')
+            <a href="{{ route('my-schedule.index') }}"
+                class="sidebar-link {{ $isActive(['my-schedule']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar3 text-base"></i>
+                <span>Lịch làm việc</span>
+            </a>
+        @endcan
+
+        @can('checkin-attendance')
+            <a href="{{ route('attendance.index') }}"
+                class="sidebar-link {{ $isActive(['attendance.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-fingerprint text-base"></i>
+                <span>Chấm công</span>
+            </a>
+        @endcan
+
+        @can('view-shifts')
+            <a href="{{ route('shifts.index') }}"
+                class="sidebar-link {{ $isActive(['shifts']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-clock-history text-base"></i>
+                <span>Ca làm việc</span>
+            </a>
+        @endcan
+
+        @can('view-holidays')
+            <a href="{{ route('holidays.index') }}"
+                class="sidebar-link {{ $isActive(['holidays']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar-event text-base"></i>
+                <span>Ngày nghỉ lễ</span>
+            </a>
+        @endcan
+
+        @can('view-shift-schedules')
+            <a href="{{ route('shift-schedules.index') }}"
+                class="sidebar-link {{ $isActive(['shift-schedules']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar-week text-base"></i>
+                <span>Xếp ca</span>
+            </a>
+        @endcan
+
+        @can('view-attendance-locations')
+            <a href="{{ route('attendance-locations.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-locations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-geo-alt text-base"></i>
+                <span>Điểm chấm công</span>
+            </a>
+        @endcan
+
+        @can('view-attendance')
+            <a href="{{ route('attendance-logs.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-logs']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-clipboard-check text-base"></i>
+                <span>Báo cáo chấm công</span>
+            </a>
+        @endcan
+
+        @canany(['view-staff-requests', 'view-leave-requests', 'view-shift-swaps'])
+            <a href="{{ route('staff-requests.index') }}"
+                class="sidebar-link {{ $isActive(['staff-requests', 'leave-requests', 'shift-swap-requests']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-clipboard2-check text-base"></i>
+                <span>Yêu cầu và Phê duyệt</span>
+            </a>
+        @endcanany
+        @endcanany
 
         {{-- ── THƯỞNG PHẠT ──────────────────────────── --}}
         <p
@@ -332,6 +409,58 @@
             </a>
         @endcan
 
+        @canany(['view-own-schedule', 'checkin-attendance', 'view-shifts', 'view-shift-schedules', 'view-attendance-locations', 'view-attendance', 'view-leave-requests', 'view-shift-swaps', 'view-staff-requests', 'view-holidays'])
+        <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Ca làm việc &amp; Chấm công</p>
+        @can('view-own-schedule')
+            <a href="{{ route('my-schedule.index') }}"
+                class="sidebar-link {{ $isActive(['my-schedule']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar3 text-base"></i><span>Lịch làm việc</span>
+            </a>
+        @endcan
+        @can('checkin-attendance')
+            <a href="{{ route('attendance.index') }}"
+                class="sidebar-link {{ $isActive(['attendance.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-fingerprint text-base"></i><span>Chấm công</span>
+            </a>
+        @endcan
+        @can('view-shifts')
+            <a href="{{ route('shifts.index') }}"
+                class="sidebar-link {{ $isActive(['shifts']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-clock-history text-base"></i><span>Mẫu ca làm việc</span>
+            </a>
+        @endcan
+        @can('view-holidays')
+            <a href="{{ route('holidays.index') }}"
+                class="sidebar-link {{ $isActive(['holidays']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar-event text-base"></i><span>Ngày nghỉ lễ</span>
+            </a>
+        @endcan
+        @can('view-shift-schedules')
+            <a href="{{ route('shift-schedules.index') }}"
+                class="sidebar-link {{ $isActive(['shift-schedules']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar-week text-base"></i><span>Xếp ca</span>
+            </a>
+        @endcan
+        @can('view-attendance-locations')
+            <a href="{{ route('attendance-locations.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-locations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-geo-alt text-base"></i><span>Điểm chấm công</span>
+            </a>
+        @endcan
+        @can('view-attendance')
+            <a href="{{ route('attendance-logs.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-logs']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-clipboard-check text-base"></i><span>Báo cáo chấm công</span>
+            </a>
+        @endcan
+        @canany(['view-staff-requests', 'view-leave-requests', 'view-shift-swaps'])
+            <a href="{{ route('staff-requests.index') }}"
+                class="sidebar-link {{ $isActive(['staff-requests', 'leave-requests', 'shift-swap-requests']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-clipboard2-check text-base"></i><span>Yêu cầu và Phê duyệt</span>
+            </a>
+        @endcanany
+        @endcanany
+
         <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Thưởng phạt</p>
         @can('view-penalties')
             <a href="{{ route('penalties.index') }}"
@@ -462,4 +591,15 @@
         panel.classList.remove('flex');
         overlay.classList.add('hidden');
     }
+
+    // ── Thu nhỏ sidebar (desktop only — state lưu ở localStorage) ──────────
+    function toggleSidebar() {
+        const collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
+    }
+
+    // Tooltip khi thu nhỏ: dùng chính label làm title, không cần sửa từng link
+    document.querySelectorAll('#left-panel .sidebar-link').forEach(function (link) {
+        if (!link.title) link.title = link.textContent.trim();
+    });
 </script>

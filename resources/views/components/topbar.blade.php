@@ -19,7 +19,7 @@
 @endphp
 
 <header
-    class="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-stretch justify-between sticky top-0 z-40 shrink-0">
+    class="h-[70px] bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-stretch justify-between sticky top-0 z-40 shrink-0">
 
     <!-- Logo -->
     <div class="flex">
@@ -34,6 +34,16 @@
             <span
                 class="font-bold text-slate-900 dark:text-white text-[15px] tracking-tight hidden sm:block">TON-HR</span>
         </a>
+    </div>
+
+    <!-- Search -->
+    <div class="hidden md:flex flex-1 items-center px-4 max-w-xl">
+        <label class="relative w-full">
+            <span class="sr-only">Tìm kiếm</span>
+            <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" placeholder="Tìm kiếm nhân viên, phiếu phạt, quy chế..."
+                class="w-full h-11 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 pl-11 pr-4 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-pcrm-500 focus:ring-4 focus:ring-pcrm-500/10 transition-colors">
+        </label>
     </div>
 
 

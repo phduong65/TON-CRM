@@ -142,7 +142,7 @@
                                         <i class="bi bi-file-earmark-text"></i>
                                     </a>
                                     @can('edit-employees')
-                                    <button onclick='openEditEmployeeModal({{ json_encode(["id"=>$emp->id,"code"=>$emp->code,"name"=>$emp->name,"position"=>$emp->position,"email"=>$emp->email,"phone"=>$emp->phone,"branch_id"=>$emp->branch_id,"team_id"=>$emp->team_id,"joined_at"=>optional($emp->joined_at)->format("Y-m-d"),"is_active"=>$emp->is_active]) }})'
+                                    <button onclick='openEditEmployeeModal({{ json_encode(["id"=>$emp->id,"code"=>$emp->code,"name"=>$emp->name,"position"=>$emp->position,"email"=>$emp->email,"phone"=>$emp->phone,"branch_id"=>$emp->branch_id,"team_id"=>$emp->team_id,"joined_at"=>optional($emp->joined_at)->format("Y-m-d"),"is_active"=>$emp->is_active,"employment_type"=>$emp->employment_type,"is_office"=>$emp->is_office]) }})'
                                             class="btn-ghost btn-sm text-amber-600 dark:text-amber-400" title="Sửa">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -196,6 +196,8 @@ function openEditEmployeeModal(data) {
     document.getElementById('editEmpTeam').value     = data.team_id    ?? '';
     document.getElementById('editEmpJoined').value   = data.joined_at  ?? '';
     document.getElementById('editEmpActive').checked = !!data.is_active;
+    document.getElementById('editEmpEmploymentType').value = data.employment_type ?? 'full_time';
+    document.getElementById('editEmpOffice').checked = !!data.is_office;
     document.getElementById('editEmployeeForm').action = '/employees/' + data.id;
     openModal('editEmployeeModal');
 }
@@ -220,7 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
         branch_id: '{{ old("branch_id") }}',
         team_id: '{{ old("team_id") }}',
         joined_at: '{{ old("joined_at") }}',
-        is_active: {{ old('is_active') ? 'true' : 'false' }}
+        is_active: {{ old('is_active') ? 'true' : 'false' }},
+        employment_type: '{{ old("employment_type", "full_time") }}',
+        is_office: {{ old('is_office') ? 'true' : 'false' }}
     });
     @else
     openModal('{{ old("_modal") }}');

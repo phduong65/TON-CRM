@@ -65,9 +65,28 @@ class Notification extends Model
         return $id ? route('reports.show', $id) : null;
     }
 
+    public function leaveRequestUrl(): ?string
+    {
+        $id = $this->data['leave_request_id'] ?? null;
+        return $id ? route('staff-requests.index') : null;
+    }
+
+    public function shiftSwapUrl(): ?string
+    {
+        $id = $this->data['shift_swap_request_id'] ?? null;
+        return $id ? route('staff-requests.index') : null;
+    }
+
+    public function staffRequestUrl(): ?string
+    {
+        $id = $this->data['staff_request_id'] ?? null;
+        return $id ? route('staff-requests.index') : null;
+    }
+
     public function actionUrl(): ?string
     {
-        return $this->penaltyUrl() ?? $this->rewardUrl() ?? $this->reportUrl();
+        return $this->penaltyUrl() ?? $this->rewardUrl() ?? $this->reportUrl()
+            ?? $this->leaveRequestUrl() ?? $this->shiftSwapUrl() ?? $this->staffRequestUrl();
     }
 
     public function typeIcon(): string
@@ -83,6 +102,15 @@ class Notification extends Model
             'report_created'   => 'bi-flag-fill',
             'report_approved'  => 'bi-check2-circle',
             'report_rejected'  => 'bi-flag',
+            'leave_created'    => 'bi-calendar-plus',
+            'leave_approved'   => 'bi-calendar-check-fill',
+            'leave_rejected'   => 'bi-calendar-x-fill',
+            'swap_created'     => 'bi-arrow-left-right',
+            'swap_approved'    => 'bi-check-circle-fill',
+            'swap_rejected'    => 'bi-x-circle-fill',
+            'staff_request_created'  => 'bi-file-earmark-plus',
+            'staff_request_approved' => 'bi-check-circle-fill',
+            'staff_request_rejected' => 'bi-x-circle-fill',
             default            => 'bi-bell-fill',
         };
     }
@@ -100,6 +128,15 @@ class Notification extends Model
             'report_created'   => 'text-violet-500 bg-violet-50 dark:bg-violet-900/30',
             'report_approved'  => 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30',
             'report_rejected'  => 'text-red-500 bg-red-50 dark:bg-red-900/30',
+            'leave_created'    => 'text-sky-500 bg-sky-50 dark:bg-sky-900/30',
+            'leave_approved'   => 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30',
+            'leave_rejected'   => 'text-red-500 bg-red-50 dark:bg-red-900/30',
+            'swap_created'     => 'text-violet-500 bg-violet-50 dark:bg-violet-900/30',
+            'swap_approved'    => 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30',
+            'swap_rejected'    => 'text-red-500 bg-red-50 dark:bg-red-900/30',
+            'staff_request_created'  => 'text-sky-500 bg-sky-50 dark:bg-sky-900/30',
+            'staff_request_approved' => 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30',
+            'staff_request_rejected' => 'text-red-500 bg-red-50 dark:bg-red-900/30',
             default            => 'text-pcrm-500 bg-pcrm-50 dark:bg-pcrm-900/30',
         };
     }
@@ -117,6 +154,15 @@ class Notification extends Model
             'report_created'   => 'Báo cáo mới',
             'report_approved'  => 'Báo cáo duyệt',
             'report_rejected'  => 'Báo cáo từ chối',
+            'leave_created'    => 'Đơn xin nghỉ mới',
+            'leave_approved'   => 'Đơn nghỉ duyệt',
+            'leave_rejected'   => 'Đơn nghỉ từ chối',
+            'swap_created'     => 'Yêu cầu đổi ca mới',
+            'swap_approved'    => 'Đổi ca duyệt',
+            'swap_rejected'    => 'Đổi ca từ chối',
+            'staff_request_created'  => 'Yêu cầu mới',
+            'staff_request_approved' => 'Yêu cầu duyệt',
+            'staff_request_rejected' => 'Yêu cầu từ chối',
             default            => 'Thông báo chung',
         };
     }
@@ -134,6 +180,15 @@ class Notification extends Model
             'report_created'   => 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
             'report_approved'  => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
             'report_rejected'  => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+            'leave_created'    => 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+            'leave_approved'   => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+            'leave_rejected'   => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+            'swap_created'     => 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
+            'swap_approved'    => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+            'swap_rejected'    => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+            'staff_request_created'  => 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+            'staff_request_approved' => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+            'staff_request_rejected' => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
             default            => 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
         };
     }

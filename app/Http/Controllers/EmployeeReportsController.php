@@ -6,6 +6,7 @@ use App\Http\Requests\StoreEmployeeReportRequest;
 use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\EmployeeReport;
+use App\Models\EmployeeReportMember;
 use App\Models\EmployeeScore;
 use App\Models\MonthlyEmployeeScore;
 use App\Models\Regulation;
@@ -27,6 +28,8 @@ class EmployeeReportsController extends Controller
         $query = EmployeeReport::with([
                 'reporter.branch',
                 'reported.branch',
+                'team',
+                'members.employee',
                 'violation',
                 'creator',
             ])
@@ -52,10 +55,16 @@ class EmployeeReportsController extends Controller
         $reports = $query->paginate(15)->withQueryString();
 
         $branches    = Branch::where('is_active', true)->orderBy('name')->get();
-        $teams       = Team::where('is_active', true)->orderBy('name')->get();
+        $teams       = Team::where('is_active', true)->withCount(['employees as employees_count' => fn($q) => $q->where('is_active', true)])->orderBy('name')->get();
         $regulations = Regulation::where('is_active', true)->orderBy('name')->get();
         $violations  = Violation::where('is_active', true)->orderBy('name')->get();
-        $employees   = Employee::where('is_active', true)->with('branch')->orderBy('name')->get();
+
+        // Admin/Director không thuộc diện bị báo cáo/chấm điểm kỷ luật nội bộ
+        $employees = Employee::where('is_active', true)
+            ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['admin', 'director'])))
+            ->with('branch')
+            ->orderBy('name')
+            ->get();
 
         $currentEmployee = auth()->user()->employee;
 
@@ -75,7 +84,34 @@ class EmployeeReportsController extends Controller
                 ->withInput();
         }
 
-        if ($reporterEmployee->id === (int) $request->reported_employee_id) {
+        $type = $request->type;
+
+        // ── Xác định danh sách nhân viên bị báo cáo theo từng hình thức ────────
+        $primaryEmployeeId = null;
+        $memberEmployeeIds = [];
+
+        if ($type === 'team') {
+            $team = Team::with(['employees' => fn($q) => $q->where('is_active', true)])->findOrFail($request->team_id);
+            $memberEmployeeIds = $team->employees->pluck('id')->all();
+
+            if (empty($memberEmployeeIds)) {
+                return back()->withErrors(['team_id' => 'Team này hiện không có nhân viên nào.'])->withInput();
+            }
+        } elseif ($type === 'joint') {
+            $primaryEmployeeId = (int) $request->reported_employee_id;
+            $memberEmployeeIds = collect($request->members ?? [])
+                ->map(fn($id) => (int) $id)
+                ->filter(fn($id) => $id !== $primaryEmployeeId)
+                ->unique()
+                ->values()
+                ->all();
+        } else { // individual
+            $primaryEmployeeId = (int) $request->reported_employee_id;
+        }
+
+        $allTargetIds = collect([$primaryEmployeeId])->merge($memberEmployeeIds)->filter()->unique();
+
+        if ($allTargetIds->contains($reporterEmployee->id)) {
             return back()
                 ->withErrors(['reported_employee_id' => 'Không thể tự báo cáo chính mình.'])
                 ->withInput();
@@ -90,33 +126,57 @@ class EmployeeReportsController extends Controller
         $rewardPoints  = (int) Setting::getValue('report_reward_points', 5);
         $evidenceFiles = $this->processEvidenceFiles($request);
 
-        $report = EmployeeReport::create([
-            'code'                  => $code,
-            'reporter_employee_id'  => $reporterEmployee->id,
-            'reported_employee_id'  => $request->reported_employee_id,
-            'violation_id'          => $request->violation_id ?: null,
-            'description'           => $request->description,
-            'evidence_note'         => $request->evidence_note ?: null,
-            'evidence_files'        => $evidenceFiles ?: null,
-            'status'                => 'pending',
-            'reward_points'         => $rewardPoints,
-            'created_by'            => auth()->id(),
-        ]);
+        $report = DB::transaction(function () use (
+            $type, $primaryEmployeeId, $memberEmployeeIds, $request,
+            $reporterEmployee, $code, $rewardPoints, $evidenceFiles
+        ) {
+            $report = EmployeeReport::create([
+                'code'                  => $code,
+                'reporter_employee_id'  => $reporterEmployee->id,
+                'reported_employee_id'  => $primaryEmployeeId,
+                'type'                  => $type,
+                'team_id'               => $type === 'team' ? $request->team_id : null,
+                'violation_id'          => $request->violation_id ?: null,
+                'description'           => $request->description,
+                'evidence_note'         => $request->evidence_note ?: null,
+                'evidence_files'        => $evidenceFiles ?: null,
+                'status'                => 'pending',
+                'reward_points'         => $rewardPoints,
+                'created_by'            => auth()->id(),
+            ]);
 
-        $report->loadMissing(['reporter', 'reported', 'violation']);
+            foreach ($memberEmployeeIds as $empId) {
+                EmployeeReportMember::create([
+                    'employee_report_id' => $report->id,
+                    'employee_id'        => $empId,
+                ]);
+            }
+
+            return $report;
+        });
+
+        $report->loadMissing(['reporter', 'reported', 'team', 'members.employee', 'violation']);
+
+        $targetLabel = match ($type) {
+            'team'  => 'team ' . ($report->team?->name ?? '—'),
+            'joint' => $report->targetEmployees()->pluck('name')->implode(', '),
+            default => $report->reported?->name ?? '—',
+        };
+
         activity()->causedBy(auth()->user())
             ->performedOn($report)
             ->inLog('report')
             ->withProperties([
                 'code'           => $report->code,
                 'reporter'       => $report->reporter?->name,
-                'reported'       => $report->reported?->name,
+                'type'           => $report->type,
+                'reported'       => $targetLabel,
                 'violation'      => $report->violation?->name,
                 'evidence_count' => count($evidenceFiles),
             ])
             ->log('Tạo báo cáo ' . $report->code
                 . ' — ' . ($report->reporter?->name ?? '—')
-                . ' báo cáo ' . ($report->reported?->name ?? '—'));
+                . ' báo cáo ' . $targetLabel);
 
         app(NotificationService::class)->notifyReportCreated($report);
 
@@ -130,23 +190,19 @@ class EmployeeReportsController extends Controller
             abort(403);
         }
 
-        $report->load(['reporter.branch', 'reported.branch', 'violation', 'creator', 'reviewer']);
+        $report->load(['reporter.branch', 'reported.branch', 'team', 'members.employee.branch', 'violation', 'creator', 'reviewer']);
         return view('reports.show', compact('report'));
     }
 
     public function approve(EmployeeReport $report)
     {
-        DB::transaction(function () use ($report) {
+        $deductedTotal = 0;
+
+        DB::transaction(function () use ($report, &$deductedTotal) {
             $fresh = EmployeeReport::lockForUpdate()->findOrFail($report->id);
             abort_if($fresh->status !== 'pending', 403, 'Báo cáo không ở trạng thái chờ duyệt.');
 
-            $fresh->update([
-                'status'      => 'approved',
-                'reviewed_by' => auth()->id(),
-                'reviewed_at' => now(),
-            ]);
-
-            $fresh->load('violation');
+            $fresh->load(['violation', 'members']);
 
             if ($fresh->reward_points > 0 && $fresh->reporter_employee_id) {
                 EmployeeScore::create([
@@ -164,36 +220,57 @@ class EmployeeReportsController extends Controller
                 )->reward($fresh->reward_points);
             }
 
-            if ($fresh->violation_id && $fresh->violation?->points_deducted > 0) {
-                EmployeeScore::create([
-                    'employee_id'    => $fresh->reported_employee_id,
-                    'points'         => -$fresh->violation->points_deducted,
-                    'reason'         => 'Bị báo cáo vi phạm: ' . $fresh->violation->name . ' (' . $fresh->code . ')',
-                    'type'           => 'penalty',
-                    'reference_type' => EmployeeReport::class,
-                    'reference_id'   => $fresh->id,
-                ]);
-                MonthlyEmployeeScore::ensureExists(
-                    $fresh->reported_employee_id,
-                    now()->month,
-                    now()->year
-                )->deduct($fresh->violation->points_deducted);
+            $pointsPerTarget = $fresh->violation_id ? (int) ($fresh->violation?->points_deducted ?? 0) : 0;
+
+            if ($pointsPerTarget > 0) {
+                $targetIds = collect([$fresh->reported_employee_id])
+                    ->merge($fresh->members->pluck('employee_id'))
+                    ->filter()
+                    ->unique();
+
+                // Admin/Director không bị trừ điểm — loại khỏi danh sách chịu phạt
+                $exemptIds = Employee::whereIn('id', $targetIds)
+                    ->whereHas('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['admin', 'director'])))
+                    ->pluck('id');
+
+                $chargeableIds = $targetIds->diff($exemptIds);
+
+                foreach ($chargeableIds as $empId) {
+                    EmployeeScore::create([
+                        'employee_id'    => $empId,
+                        'points'         => -$pointsPerTarget,
+                        'reason'         => 'Bị báo cáo vi phạm: ' . $fresh->violation->name . ' (' . $fresh->code . ')',
+                        'type'           => 'penalty',
+                        'reference_type' => EmployeeReport::class,
+                        'reference_id'   => $fresh->id,
+                    ]);
+                    MonthlyEmployeeScore::ensureExists($empId, now()->month, now()->year)
+                        ->deduct($pointsPerTarget);
+                    $deductedTotal += $pointsPerTarget;
+                }
             }
+
+            $fresh->update([
+                'status'          => 'approved',
+                'reviewed_by'     => auth()->id(),
+                'reviewed_at'     => now(),
+                'deducted_points' => $deductedTotal,
+            ]);
 
             $report->fill($fresh->getAttributes());
             $report->setRelation('violation', $fresh->violation);
         });
 
-        $report->loadMissing(['reporter', 'reported', 'violation']);
+        $report->loadMissing(['reporter', 'reported', 'team', 'members.employee', 'violation']);
         activity()->causedBy(auth()->user())
             ->performedOn($report)
             ->inLog('report')
             ->withProperties([
-                'code'          => $report->code,
-                'reporter'      => $report->reporter?->name,
-                'reported'      => $report->reported?->name,
-                'reward_points' => $report->reward_points,
-                'approved_by'   => auth()->user()->name,
+                'code'            => $report->code,
+                'reporter'        => $report->reporter?->name,
+                'reward_points'   => $report->reward_points,
+                'deducted_points' => $deductedTotal,
+                'approved_by'     => auth()->user()->name,
             ])
             ->log('Duyệt báo cáo ' . $report->code
                 . ' — Cộng ' . $report->reward_points . ' điểm cho ' . ($report->reporter?->name ?? '—'));

@@ -102,8 +102,24 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3">
-                                <div class="font-medium text-slate-800 dark:text-slate-200">{{ $report->reported?->name ?? '—' }}</div>
-                                <div class="text-xs text-slate-400 mt-1">{{ $report->reported?->branch?->name }}</div>
+                                @if($report->type === 'team')
+                                    <div class="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                        <i class="bi bi-people text-pcrm-500 text-xs"></i>
+                                        {{ $report->team?->name ?? '—' }}
+                                    </div>
+                                    <div class="text-xs text-slate-400 mt-1">{{ $report->members->count() }} nhân viên</div>
+                                @elseif($report->type === 'joint')
+                                    <div class="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                        <i class="bi bi-diagram-3 text-pcrm-500 text-xs"></i>
+                                        {{ $report->reported?->name ?? '—' }}
+                                    </div>
+                                    @if($report->members->count() > 0)
+                                        <div class="text-xs text-slate-400 mt-1">+{{ $report->members->count() }} người liên đới</div>
+                                    @endif
+                                @else
+                                    <div class="font-medium text-slate-800 dark:text-slate-200">{{ $report->reported?->name ?? '—' }}</div>
+                                    <div class="text-xs text-slate-400 mt-1">{{ $report->reported?->branch?->name }}</div>
+                                @endif
                             </td>
                             <td class="px-4 py-3">
                                 @if($report->violation)

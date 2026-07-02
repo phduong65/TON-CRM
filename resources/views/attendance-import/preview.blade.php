@@ -110,7 +110,7 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full min-w-[1000px] text-sm">
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700">
                         <th class="px-3 py-3 text-center w-10"></th>
