@@ -101,6 +101,50 @@ class AttendanceTimesheetBuilderTest extends TestCase
         $this->assertEquals(1.0, $summary['actual_workdays']);
     }
 
+    public function test_overtime_hours_add_extra_cong_on_top_of_normal_workday(): void
+    {
+        $employee = $this->makeEmployee();
+        $shift = Shift::create([
+            'code' => 'CA-VP3', 'name' => 'Văn phòng', 'start_time' => '08:00', 'end_time' => '17:00',
+            'shift_type' => 'fulltime', 'standard_work_hours' => 8, 'work_mode' => 'onsite',
+        ]);
+        $day = now()->startOfDay();
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $employee->id, 'shift_id' => $shift->id,
+            'work_date' => $day->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+        AttendanceLog::create([
+            'employee_id' => $employee->id, 'shift_schedule_id' => $schedule->id, 'work_date' => $day->toDateString(),
+            'check_in_at' => $day->copy()->setTime(8, 0), 'check_out_at' => $day->copy()->setTime(17, 0),
+            'overtime_hours' => 4,
+        ]);
+
+        $summary = $this->summaryFor($employee, $day, $day);
+
+        // Ca fulltime = 1 công cố định + 4h tăng ca / 8h chuẩn = 1.5 công.
+        $this->assertEquals(1.5, $summary['actual_workdays']);
+        $this->assertEquals(1, $summary['overtime_shifts']);
+        $this->assertEquals(4.0, $summary['overtime_hours']);
+        $this->assertEquals(4.0, $summary['extra_hours']);
+    }
+
+    public function test_overtime_only_log_on_day_off_still_counts_as_overtime_shift(): void
+    {
+        $employee = $this->makeEmployee();
+        $day = now()->startOfDay();
+        AttendanceLog::create([
+            'employee_id' => $employee->id, 'work_date' => $day->toDateString(),
+            'overtime_hours' => 3,
+        ]);
+
+        $summary = $this->summaryFor($employee, $day, $day);
+
+        // Không có ca -> mặc định 8h chuẩn: 3h tăng ca / 8h = 0.38 công (làm tròn 2 số lẻ).
+        $this->assertEquals(0.38, $summary['actual_workdays']);
+        $this->assertEquals(1, $summary['overtime_shifts']);
+        $this->assertEquals(3.0, $summary['overtime_hours']);
+    }
+
     public function test_paid_holiday_with_no_schedule_counts_as_holiday_day(): void
     {
         $employee = $this->makeEmployee();

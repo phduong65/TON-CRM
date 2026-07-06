@@ -3,7 +3,8 @@
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col">
         <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
             <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <i class="bi bi-pencil-square text-amber-500"></i> Sửa người dùng
+                <i id="editUserModalIcon" class="bi bi-pencil-square text-amber-500"></i>
+                <span id="editUserModalTitle">Sửa người dùng</span>
             </h3>
             <button onclick="closeModal('editUserModal')" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
                 <i class="bi bi-x-lg text-sm"></i>
@@ -45,6 +46,9 @@
             {{-- Role selection --}}
             <div class="space-y-2">
                 <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vai trò <span class="text-red-500">*</span></h4>
+                <p id="editUserPendingHint" class="hidden text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+                    <i class="bi bi-hourglass-split"></i> Tài khoản này đang chờ duyệt — chọn vai trò rồi lưu để duyệt và kích hoạt.
+                </p>
                 @error('role') <p class="form-error">{{ $message }}</p> @enderror
                 <div class="grid grid-cols-2 gap-2" id="editUserRoleList">
                     @php
@@ -74,7 +78,7 @@
 
             <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                 <button type="button" onclick="closeModal('editUserModal')" class="btn-secondary">Hủy</button>
-                <button type="submit" class="btn-primary"><i class="bi bi-floppy"></i> Cập nhật</button>
+                <button type="submit" id="editUserSubmitBtn" class="btn-primary"><i class="bi bi-floppy"></i> Cập nhật</button>
             </div>
         </form>
     </div>

@@ -4,6 +4,7 @@
     'selected' => null,
     'label' => null,
     'placeholder' => 'Tìm theo tên, mã NV...',
+    'compact' => false,
 ])
 
 @php
@@ -22,11 +23,11 @@
 
 <div data-employee-combobox class="relative" {{ $attributes }}>
     @if($label)
-        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{{ $label }}</label>
+        <label class=" form-label">{{ $label }}</label>
     @endif
     <div class="relative">
         <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
-        <input type="text" class="emp-combobox-input form-input pl-7 pr-7 h-9 text-sm w-full"
+        <input type="text" class="emp-combobox-input form-input pl-7 pr-7 {{ $compact ? 'h-9 text-sm' : '' }}"
                placeholder="{{ $placeholder }}" value="{{ $selectedLabel }}" autocomplete="off"
                role="combobox" aria-expanded="false" aria-controls="{{ $comboId }}_dropdown">
         <input type="hidden" name="{{ $name }}" class="emp-combobox-value" value="{{ $selected }}">
@@ -37,7 +38,7 @@
         </button>
     </div>
     <div id="{{ $comboId }}_dropdown"
-         class="emp-combobox-dropdown hidden absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-56 overflow-y-auto text-sm"></div>
+         class="emp-combobox-dropdown hidden absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg max-h-56 overflow-y-auto text-sm"></div>
     <script type="application/json" class="emp-combobox-data">@json($employeeComboData)</script>
 </div>
 

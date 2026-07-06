@@ -32,7 +32,7 @@
                 @if($isApprover)
                 <div class="min-w-[220px]">
                     <x-employee-combobox name="employee_id" :employees="$employees" :selected="request('employee_id')"
-                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." />
+                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." :compact="true" />
                 </div>
                 @endif
                 <div>

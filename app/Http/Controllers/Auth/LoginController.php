@@ -24,13 +24,20 @@ class LoginController extends Controller
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
-            if (Auth::user()->status === 'inactive') {
+            $status = Auth::user()->status;
+
+            if ($status !== 'active') {
                 Auth::logout();
                 $request->session()->invalidate();
-                throw ValidationException::withMessages([
-                    'email' => 'Tài khoản của bạn đã bị tạm khóa. Vui lòng liên hệ quản trị viên.',
-                ]);
+
+                $message = match ($status) {
+                    'pending' => 'Tài khoản của bạn đang chờ quản trị viên duyệt. Vui lòng đợi email xác nhận trước khi đăng nhập.',
+                    default   => 'Tài khoản của bạn đã bị tạm khóa. Vui lòng liên hệ quản trị viên.',
+                };
+
+                throw ValidationException::withMessages(['email' => $message]);
             }
+
             $request->session()->regenerate();
             return redirect()->intended('/dashboard');
         }

@@ -194,6 +194,144 @@ class StaffRequestTest extends TestCase
         $this->assertDatabaseHas('staff_requests', ['type' => 'time_change', 'status' => 'pending']);
     }
 
+    public function test_employee_can_create_overtime_request(): void
+    {
+        $response = $this->actingAs($this->staffUser)->post(route('staff-requests.store'), [
+            'type'         => 'overtime',
+            'work_date'    => now()->toDateString(),
+            'ot_from_time' => '18:00',
+            'ot_to_time'   => '20:30',
+            'reason'       => 'Hỗ trợ sự kiện buổi tối',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('staff_requests', ['type' => 'overtime', 'status' => 'pending']);
+        $this->assertEquals(['from_time' => '18:00', 'to_time' => '20:30'], StaffRequest::first()->payload);
+    }
+
+    public function test_overtime_to_time_same_as_from_time_is_rejected(): void
+    {
+        $response = $this->actingAs($this->staffUser)->post(route('staff-requests.store'), [
+            'type'         => 'overtime',
+            'work_date'    => now()->toDateString(),
+            'ot_from_time' => '20:30',
+            'ot_to_time'   => '20:30',
+            'reason'       => 'Hỗ trợ sự kiện buổi tối',
+        ]);
+
+        $response->assertSessionHasErrors('ot_to_time');
+    }
+
+    public function test_overtime_spanning_more_than_sixteen_hours_is_rejected(): void
+    {
+        // 08:00 hôm nay -> 03:00 hôm sau (hiểu là qua đêm) = 19 giờ, vượt quá 16 giờ cho phép.
+        $response = $this->actingAs($this->staffUser)->post(route('staff-requests.store'), [
+            'type'         => 'overtime',
+            'work_date'    => now()->toDateString(),
+            'ot_from_time' => '08:00',
+            'ot_to_time'   => '03:00',
+            'reason'       => 'Hỗ trợ sự kiện dài ngày',
+        ]);
+
+        $response->assertSessionHasErrors('ot_to_time');
+    }
+
+    /**
+     * Tăng ca qua đêm (VD 23:00 hôm nay -> 03:00 hôm sau) trước đây bị chặn hoàn toàn bởi rule
+     * "after" (so sánh 2 giờ như cùng 1 ngày, 03:00 không "sau" 23:00) — nay được hiểu là kéo
+     * dài sang ngày hôm sau, giống cách Shift::is_overnight xử lý ca qua đêm.
+     */
+    public function test_employee_can_create_overnight_overtime_request(): void
+    {
+        $response = $this->actingAs($this->staffUser)->post(route('staff-requests.store'), [
+            'type'         => 'overtime',
+            'work_date'    => now()->toDateString(),
+            'ot_from_time' => '23:00',
+            'ot_to_time'   => '03:00',
+            'reason'       => 'Trực ca đêm sự kiện',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseHas('staff_requests', ['type' => 'overtime', 'status' => 'pending']);
+        $staffRequest = StaffRequest::first();
+        $this->assertEquals(['from_time' => '23:00', 'to_time' => '03:00'], $staffRequest->payload);
+        $this->assertTrue($staffRequest->isOvernightOvertime());
+        $this->assertEquals(4.0, $staffRequest->overtimeHours());
+    }
+
+    public function test_manager_approving_overnight_overtime_credits_four_hours_to_the_start_date(): void
+    {
+        $workDate = now()->toDateString();
+        $staffRequest = StaffRequest::create([
+            'code' => 'OT-TEST-0003', 'employee_id' => $this->staffEmployee->id,
+            'type' => 'overtime', 'work_date' => $workDate,
+            'payload' => ['from_time' => '23:00', 'to_time' => '03:00'], 'reason' => 'Trực ca đêm', 'status' => 'pending',
+        ]);
+
+        $this->actingAs($this->manager)->post(route('staff-requests.approve', $staffRequest))->assertRedirect();
+
+        // Công tăng ca qua đêm được cộng vào đúng ngày bắt đầu (work_date), không phải ngày hôm sau.
+        $log = AttendanceLog::where('employee_id', $this->staffEmployee->id)->where('work_date', $workDate)->first();
+        $this->assertNotNull($log);
+        $this->assertEquals(4.0, (float) $log->overtime_hours);
+    }
+
+    public function test_manager_approving_overtime_adds_hours_to_existing_attendance_log(): void
+    {
+        $shift = Shift::create([
+            'code' => 'CA-HC2', 'name' => 'Ca hành chính', 'start_time' => '08:00', 'end_time' => '17:00',
+            'work_mode' => 'onsite', 'standard_work_hours' => 8, 'break_minutes' => 60,
+        ]);
+        $workDate = now()->toDateString();
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->staffEmployee->id, 'shift_id' => $shift->id,
+            'work_date' => $workDate, 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+        $log = AttendanceLog::create([
+            'employee_id' => $this->staffEmployee->id, 'shift_schedule_id' => $schedule->id, 'work_date' => $workDate,
+            'check_in_at' => $workDate . ' 08:00:00', 'check_out_at' => $workDate . ' 17:00:00',
+        ]);
+        $this->assertEquals(1.0, $log->fresh()->computeCong($shift));
+
+        $staffRequest = StaffRequest::create([
+            'code' => 'OT-TEST-0001', 'employee_id' => $this->staffEmployee->id,
+            'type' => 'overtime', 'work_date' => $workDate,
+            'payload' => ['from_time' => '18:00', 'to_time' => '22:00'], 'reason' => 'Tăng ca', 'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($this->manager)->post(route('staff-requests.approve', $staffRequest));
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('staff_requests', ['id' => $staffRequest->id, 'status' => 'approved']);
+
+        $log = $log->fresh();
+        $this->assertEquals(4.0, (float) $log->overtime_hours);
+        // 1 công thường + 4h tăng ca / 8h chuẩn = 1 + 0.5 = 1.5 công
+        $this->assertEquals(1.5, $log->computeCong($shift));
+    }
+
+    public function test_manager_approving_overtime_on_day_off_creates_log_with_only_overtime_cong(): void
+    {
+        $workDate = now()->toDateString();
+        $this->assertDatabaseMissing('attendance_logs', ['employee_id' => $this->staffEmployee->id, 'work_date' => $workDate]);
+
+        $staffRequest = StaffRequest::create([
+            'code' => 'OT-TEST-0002', 'employee_id' => $this->staffEmployee->id,
+            'type' => 'overtime', 'work_date' => $workDate,
+            'payload' => ['from_time' => '09:00', 'to_time' => '13:00'], 'reason' => 'Tăng ca ngày nghỉ', 'status' => 'pending',
+        ]);
+
+        $this->actingAs($this->manager)->post(route('staff-requests.approve', $staffRequest))->assertRedirect();
+
+        $log = AttendanceLog::where('employee_id', $this->staffEmployee->id)->where('work_date', $workDate)->first();
+        $this->assertNotNull($log);
+        $this->assertNull($log->check_in_at);
+        $this->assertEquals(4.0, (float) $log->overtime_hours);
+        // Không có ca/giờ chuẩn xác định -> mặc định 8h: 4h tăng ca / 8h = 0.5 công
+        $this->assertEquals(0.5, $log->computeCong());
+    }
+
     public function test_manager_approving_attendance_correction_updates_attendance_log_with_late_minutes(): void
     {
         $shift = Shift::create([

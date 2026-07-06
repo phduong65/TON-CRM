@@ -48,6 +48,7 @@
                         <select name="status" class="form-input h-9 text-sm w-full">
                             <option value="">Tất cả</option>
                             <option value="active"   @selected(request('status') === 'active')>Hoạt động</option>
+                            <option value="pending"  @selected(request('status') === 'pending')>Chờ duyệt</option>
                             <option value="inactive" @selected(request('status') === 'inactive')>Tạm khóa</option>
                         </select>
                     </div>
@@ -126,7 +127,11 @@
                         @endif
                     </td>
                     <td class="px-4 py-3">
-                        @if($user->status === 'inactive')
+                        @if($user->status === 'pending')
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                <i class="bi bi-hourglass-split text-[9px]"></i> Chờ duyệt
+                            </span>
+                        @elseif($user->status === 'inactive')
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                                 <i class="bi bi-lock text-[9px]"></i> Tạm khóa
                             </span>
@@ -153,27 +158,46 @@
                     <td class="px-4 py-3 text-right">
                         <div class="flex items-center justify-end gap-1">
                             @can('manage-users')
-                            <button onclick='openEditUserModal({{ json_encode(["id"=>$user->id,"name"=>$user->name,"email"=>$user->email,"role"=>$user->roles->first()?->name ?? ""]) }})'
-                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                                <i class="bi bi-pencil text-xs"></i> Sửa
-                            </button>
-                            @if($user->id !== auth()->id())
-                            <form action="{{ route('users.toggleStatus', $user) }}" method="POST" class="inline">
-                                @csrf
-                                @if($user->status === 'inactive')
-                                <button type="submit"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                                        title="Kích hoạt tài khoản">
-                                    <i class="bi bi-unlock text-xs"></i> Kích hoạt
+                            @if($user->status === 'pending')
+                                <button onclick='openEditUserModal({{ json_encode(["id"=>$user->id,"name"=>$user->name,"email"=>$user->email,"role"=>$user->roles->first()?->name ?? "","status"=>$user->status]) }})'
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                                        title="Chọn vai trò và kích hoạt tài khoản">
+                                    <i class="bi bi-check-lg text-xs"></i> Duyệt
                                 </button>
-                                @else
-                                <button type="submit"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-                                        title="Tạm khóa tài khoản">
-                                    <i class="bi bi-lock text-xs"></i> Khóa
-                                </button>
+                                @if($user->id !== auth()->id())
+                                <form action="{{ route('users.reject', $user) }}" method="POST" class="inline"
+                                      onsubmit="return confirm('Từ chối đăng ký của {{ addslashes($user->name) }}?');">
+                                    @csrf
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                                            title="Từ chối đăng ký">
+                                        <i class="bi bi-x-lg text-xs"></i> Từ chối
+                                    </button>
+                                </form>
                                 @endif
-                            </form>
+                            @else
+                                <button onclick='openEditUserModal({{ json_encode(["id"=>$user->id,"name"=>$user->name,"email"=>$user->email,"role"=>$user->roles->first()?->name ?? "","status"=>$user->status]) }})'
+                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                    <i class="bi bi-pencil text-xs"></i> Sửa
+                                </button>
+                                @if($user->id !== auth()->id())
+                                <form action="{{ route('users.toggleStatus', $user) }}" method="POST" class="inline">
+                                    @csrf
+                                    @if($user->status === 'inactive')
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                            title="Kích hoạt tài khoản">
+                                        <i class="bi bi-unlock text-xs"></i> Kích hoạt
+                                    </button>
+                                    @else
+                                    <button type="submit"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+                                            title="Tạm khóa tài khoản">
+                                        <i class="bi bi-lock text-xs"></i> Khóa
+                                    </button>
+                                    @endif
+                                </form>
+                                @endif
                             @endif
                             @endcan
                             @if($user->id !== auth()->id())
@@ -275,6 +299,16 @@ function openEditUserModal(data) {
     document.getElementById('editUserName').value  = data.name  ?? '';
     document.getElementById('editUserEmail').value = data.email ?? '';
     document.getElementById('editUserForm').action = '/users/' + data.id;
+
+    // Tài khoản 'pending' (tự đăng ký chờ duyệt) — đổi label modal để rõ hành động "Duyệt"
+    // thay vì "Sửa" thông thường. UsersController::update() tự chuyển pending -> active khi lưu.
+    const isPending = data.status === 'pending';
+    document.getElementById('editUserModalTitle').textContent = isPending ? 'Duyệt tài khoản' : 'Sửa người dùng';
+    document.getElementById('editUserModalIcon').className = isPending ? 'bi bi-person-check text-emerald-500' : 'bi bi-pencil-square text-amber-500';
+    document.getElementById('editUserPendingHint').classList.toggle('hidden', !isPending);
+    document.getElementById('editUserSubmitBtn').innerHTML = isPending
+        ? '<i class="bi bi-check-lg"></i> Duyệt & Kích hoạt'
+        : '<i class="bi bi-floppy"></i> Cập nhật';
 
     // Reset all role cards
     document.querySelectorAll('.edit-role-card').forEach(function(card) {

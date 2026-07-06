@@ -10,11 +10,17 @@
         $cellData = $shiftSchedules->map(fn($s) => [
             'id' => $s->id,
             'shift_id' => $s->shift_id,
-            'shift_name' => $s->shift?->name,
+            'is_flexible' => $s->isFlexible(),
+            'shift_name' => $s->shift?->name ?? 'Ca linh hoạt',
             'shift_code' => $s->shift?->code,
-            'start_time' => substr($s->shift?->start_time ?? '', 0, 5),
-            'end_time' => substr($s->shift?->end_time ?? '', 0, 5),
-            'is_wfh' => (bool) $s->shift?->isWfh(),
+            'start_time' => substr($s->shift?->start_time ?? $s->custom_start_time ?? '', 0, 5),
+            'end_time' => substr($s->shift?->end_time ?? $s->custom_end_time ?? '', 0, 5),
+            'is_wfh' => $s->shift ? (bool) $s->shift->isWfh() : (bool) $s->custom_is_wfh,
+            'custom_start_time' => $s->custom_start_time ? substr($s->custom_start_time, 0, 5) : null,
+            'custom_end_time' => $s->custom_end_time ? substr($s->custom_end_time, 0, 5) : null,
+            'custom_break_minutes' => $s->custom_break_minutes,
+            'custom_is_overnight' => (bool) $s->custom_is_overnight,
+            'custom_is_wfh' => (bool) $s->custom_is_wfh,
             'assignment_type' => $s->assignment_type,
             'note' => $s->note,
             'assigned_by' => null,
@@ -26,6 +32,7 @@
                 'early_minutes' => $s->attendanceLog->early_minutes,
                 'check_in_method' => $s->attendanceLog->check_in_method,
                 'check_out_method' => $s->attendanceLog->check_out_method,
+                'device_changed' => $s->attendanceLog->deviceChanged(),
             ] : null,
         ])->values();
     @endphp
@@ -58,7 +65,7 @@
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white/90 mt-5 hover:bg-white/10 transition"
                         style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);">
                         <i class="bi bi-clock-history"></i>
-                        {{ $shiftSchedules->count() >= 2 ? $shiftSchedules->count() . ' ca hôm nay' : 'Ca hôm nay: ' . $shiftSchedules->first()->shift?->name }}
+                        {{ $shiftSchedules->count() >= 2 ? $shiftSchedules->count() . ' ca hôm nay' : 'Ca hôm nay: ' . ($shiftSchedules->first()->shift?->name ?? 'Ca linh hoạt') }}
                         <i class="bi bi-chevron-right text-xs"></i>
                     </button>
                 @else
@@ -76,12 +83,12 @@
             <div class="card p-5 sm:p-6">
                 <div class="flex items-center justify-between gap-2 mb-4">
                     <div class="min-w-0">
-                        <p class="font-semibold text-slate-900 dark:text-white truncate">{{ $sched->shift?->name }}</p>
+                        <p class="font-semibold text-slate-900 dark:text-white truncate">{{ $sched->shift?->name ?? 'Ca linh hoạt' }}</p>
                         <p class="text-xs text-slate-400">
-                            {{ substr($sched->shift?->start_time,0,5) }}–{{ substr($sched->shift?->end_time,0,5) }}
+                            {{ substr($sched->shift?->start_time ?? $sched->custom_start_time ?? '',0,5) }}–{{ substr($sched->shift?->end_time ?? $sched->custom_end_time ?? '',0,5) }}
                         </p>
                     </div>
-                    @if($sched->shift?->isWfh())
+                    @if($sched->shift ? $sched->shift->isWfh() : $sched->custom_is_wfh)
                         <span class="badge badge-info flex-shrink-0">WFH</span>
                     @endif
                 </div>
@@ -119,6 +126,11 @@
                                         <span class="text-amber-600 dark:text-amber-400 font-normal text-xs block sm:inline">(sớm {{ $sched->attendanceLog->early_minutes }}p)</span>
                                     @endif
                                 </p>
+                                @if($sched->attendanceLog->deviceChanged())
+                                    <p class="text-amber-600 dark:text-amber-400 text-xs flex items-center gap-1 mt-0.5" title="Thiết bị check-out khác với lúc check-in">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> Khác thiết bị
+                                    </p>
+                                @endif
                             @else
                                 <p class="text-slate-400 font-semibold text-sm sm:text-base truncate">Chưa check-out</p>
                             @endif
@@ -173,6 +185,11 @@
                                 <p class="font-semibold tabular-nums text-sm sm:text-base whitespace-nowrap text-slate-800 dark:text-slate-100">
                                     {{ $unscheduledLog->check_out_at->format('H:i:s') }}
                                 </p>
+                                @if($unscheduledLog->deviceChanged())
+                                    <p class="text-amber-600 dark:text-amber-400 text-xs flex items-center gap-1 mt-0.5" title="Thiết bị check-out khác với lúc check-in">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> Khác thiết bị
+                                    </p>
+                                @endif
                             @else
                                 <p class="text-slate-400 font-semibold text-sm sm:text-base truncate">Chưa check-out</p>
                             @endif
@@ -198,8 +215,8 @@
         @endforelse
 
         <p class="text-xs text-slate-400 text-center px-2">
-            Hệ thống sẽ yêu cầu quyền truy cập vị trí (GPS) để xác thực bạn đang ở trong khu vực chấm công cho phép,
-            trừ khi ca là WFH.
+            Hệ thống yêu cầu quyền truy cập vị trí (GPS) và kết nối WiFi văn phòng — cần đạt <strong>cả hai</strong>
+            để xác thực chấm công, trừ khi ca là WFH.
         </p>
 
         {{-- ── Truy cập nhanh ──────────────────────────────────────────────── --}}

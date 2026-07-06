@@ -34,53 +34,54 @@
     </div>
 
     <div class="card">
+        {{-- Quick-action tabs — chia thông báo theo loại, mỗi tab lọc theo cả nhóm type con --}}
+        @php
+            $notifTabActive   = 'bg-pcrm-600 text-white border-pcrm-600 shadow-sm';
+            $notifTabInactive = 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700';
+        @endphp
+        <div class="px-4 pt-3 pb-3 border-b border-slate-100 dark:border-slate-700 overflow-x-auto">
+            <div class="flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap">
+                <a href="{{ route('notifications.index', array_filter(['status' => request('status')])) }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors {{ !$activeCategory ? $notifTabActive : $notifTabInactive }}">
+                    <i class="bi bi-grid-fill text-[11px]"></i> Tất cả
+                </a>
+                @foreach($categories as $key => $cat)
+                    @php $catUnread = $categoryUnreadCounts[$key] ?? 0; @endphp
+                    <a href="{{ route('notifications.index', array_filter(['status' => request('status'), 'category' => $key])) }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors {{ $activeCategory === $key ? $notifTabActive : $notifTabInactive }}">
+                        <i class="bi {{ $cat['icon'] }} text-[11px]"></i>
+                        {{ $cat['label'] }}
+                        @if($catUnread > 0)
+                            <span class="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full text-[10px] font-bold
+                                {{ $activeCategory === $key ? 'bg-white/25 text-white' : 'bg-red-500 text-white' }}">
+                                {{ $catUnread }}
+                            </span>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+        </div>
+
         {{-- Filter bar --}}
-        @php $notifFilterActive = request()->anyFilled(['status', 'type']); @endphp
+        {{-- @php $notifFilterActive = request()->anyFilled(['status', 'category']); @endphp
         <form action="{{ route('notifications.index') }}" method="GET"
               class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
-                <div class="grid grid-cols-2 gap-2 sm:contents">
-                    <div>
-                        <select name="status" class="form-input h-9 text-sm w-full" onchange="this.form.submit()">
-                            <option value="">Tất cả TT</option>
-                            <option value="unread" @selected(request('status') === 'unread')>Chưa đọc</option>
-                            <option value="read"   @selected(request('status') === 'read')>Đã đọc</option>
-                        </select>
-                    </div>
-                    <div>
-                        <select name="type" class="form-input h-9 text-sm w-full" onchange="this.form.submit()">
-                            <option value="">Tất cả loại</option>
-                            <option value="general"          @selected(request('type') === 'general')>Thông báo chung</option>
-                            <optgroup label="Phiếu phạt">
-                                <option value="penalty_created"  @selected(request('type') === 'penalty_created')>Phiếu phạt mới</option>
-                                <option value="penalty_approved" @selected(request('type') === 'penalty_approved')>Đã duyệt</option>
-                                <option value="penalty_rejected" @selected(request('type') === 'penalty_rejected')>Từ chối</option>
-                            </optgroup>
-                            <optgroup label="Phiếu thưởng">
-                                <option value="reward_created"   @selected(request('type') === 'reward_created')>Phiếu thưởng mới</option>
-                                <option value="reward_approved"  @selected(request('type') === 'reward_approved')>Đã duyệt</option>
-                                <option value="reward_rejected"  @selected(request('type') === 'reward_rejected')>Từ chối</option>
-                            </optgroup>
-                            <option value="redzone_alert"    @selected(request('type') === 'redzone_alert')>Cảnh báo Redzone</option>
-                            <optgroup label="Báo cáo vi phạm">
-                                <option value="report_created"   @selected(request('type') === 'report_created')>Báo cáo mới</option>
-                                <option value="report_approved"  @selected(request('type') === 'report_approved')>Đã duyệt</option>
-                                <option value="report_rejected"  @selected(request('type') === 'report_rejected')>Từ chối</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    @if($notifFilterActive)
-                        <a href="{{ route('notifications.index') }}"
-                           class="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-600">
-                            <i class="bi bi-x text-sm"></i> Xóa lọc
-                        </a>
-                    @endif
-                    <span class="text-xs text-slate-400 dark:text-slate-500 {{ $notifFilterActive ? '' : 'sm:ml-0' }} ml-auto">{{ $notifications->total() }} thông báo</span>
-                </div>
+            <input type="hidden" name="category" value="{{ $activeCategory }}">
+            <div class="flex items-center gap-2 flex-wrap">
+                <select name="status" class="form-input h-9 text-sm w-auto min-w-[140px]" onchange="this.form.submit()">
+                    <option value="">Tất cả TT</option>
+                    <option value="unread" @selected(request('status') === 'unread')>Chưa đọc</option>
+                    <option value="read"   @selected(request('status') === 'read')>Đã đọc</option>
+                </select>
+                @if($notifFilterActive)
+                    <a href="{{ route('notifications.index') }}"
+                       class="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-600">
+                        <i class="bi bi-x text-sm"></i> Xóa lọc
+                    </a>
+                @endif
+                <span class="text-xs text-slate-400 dark:text-slate-500 ml-auto">{{ $notifications->total() }} thông báo</span>
             </div>
-        </form>
+        </form> --}}
 
         {{-- Notification list --}}
         <div class="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -184,4 +185,14 @@
 @push('modals')
     @include('notifications.partials.create-modal')
 @endpush
+
+@if($errors->any() && old('_modal') === 'createNotificationModal')
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    openModal('createNotificationModal');
+});
+</script>
+@endpush
+@endif
 @endcan

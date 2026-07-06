@@ -55,6 +55,7 @@ class StaffRequest extends Model
             'business_trip'         => 'Công tác/Ra ngoài',
             'late_early'            => 'Đi muộn về sớm',
             'time_change'           => 'Thay đổi giờ vào/ra',
+            'overtime'              => 'Tăng ca',
             default                 => $this->type,
         };
     }
@@ -96,7 +97,45 @@ class StaffRequest extends Model
                 ? 'Về sớm ' . ($p['minutes'] ?? 0) . ' phút'
                 : 'Đến muộn ' . ($p['minutes'] ?? 0) . ' phút',
             'time_change' => 'Giờ vào/ra mới: ' . ($p['new_check_in'] ?? '—') . ' – ' . ($p['new_check_out'] ?? '—'),
+            'overtime'    => trim(($p['from_time'] ?? '') . '–' . ($p['to_time'] ?? ''))
+                . ($this->isOvernightOvertime() ? ' (qua đêm)' : '') . ' (' . $this->overtimeHours() . 'h)',
             default       => '—',
         };
+    }
+
+    /**
+     * True nếu "Đến giờ" <= "Từ giờ" — tăng ca kéo dài qua ngày hôm sau (VD 23:00–03:00).
+     * Không có trường hợp hợp lệ nào to_time <= from_time trong cùng 1 ngày, nên coi đây luôn
+     * là qua đêm thay vì lỗi nhập liệu (xem StoreStaffRequestRequest — validation cũng cho phép).
+     */
+    public function isOvernightOvertime(): bool
+    {
+        $p = $this->payload ?? [];
+        if (empty($p['from_time']) || empty($p['to_time'])) {
+            return false;
+        }
+
+        return \Carbon\Carbon::parse($p['to_time'])->lessThanOrEqualTo(\Carbon\Carbon::parse($p['from_time']));
+    }
+
+    /**
+     * Số giờ tăng ca tính từ from_time/to_time trong payload — dùng cho summary() và khi duyệt
+     * (StaffRequestsController::applyOvertime()). Tự nhận diện qua đêm: nếu to_time <= from_time
+     * thì cộng thêm 1 ngày vào to_time trước khi tính (xem isOvernightOvertime()).
+     */
+    public function overtimeHours(): float
+    {
+        $p = $this->payload ?? [];
+        if (empty($p['from_time']) || empty($p['to_time'])) {
+            return 0.0;
+        }
+
+        $from = \Carbon\Carbon::parse($p['from_time']);
+        $to   = \Carbon\Carbon::parse($p['to_time']);
+        if ($to->lessThanOrEqualTo($from)) {
+            $to->addDay();
+        }
+
+        return round($from->diffInMinutes($to) / 60, 2);
     }
 }

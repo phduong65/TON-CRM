@@ -12,6 +12,7 @@
             'late_early'            => 'bg-orange-500',
             'leave'                 => 'bg-pcrm-500',
             'time_change'           => 'bg-violet-500',
+            'overtime'              => 'bg-rose-500',
             'shift_swap'            => 'bg-emerald-500',
         ];
         $typeLabels = [
@@ -20,6 +21,7 @@
             'late_early'            => 'Đi muộn về sớm',
             'leave'                 => 'Nghỉ phép',
             'time_change'           => 'Thay đổi giờ vào/ra',
+            'overtime'              => 'Tăng ca',
             'shift_swap'            => 'Đổi ca làm',
         ];
         $typeColors = [
@@ -28,6 +30,7 @@
             'late_early'            => 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
             'leave'                 => 'bg-pcrm-100 dark:bg-pcrm-900/30 text-pcrm-700 dark:text-pcrm-400',
             'time_change'           => 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
+            'overtime'              => 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
             'shift_swap'            => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
         ];
     @endphp
@@ -36,9 +39,9 @@
         <div>
             <p class="page-subtitle">
                 @if($isApprover)
-                    Lượt chấm công, Công tác/Ra ngoài, Đi muộn về sớm, Nghỉ phép, Thay đổi giờ vào/ra, Đổi ca làm — của toàn bộ nhân viên
+                    Lượt chấm công, Công tác/Ra ngoài, Đi muộn về sớm, Nghỉ phép, Thay đổi giờ vào/ra, Tăng ca, Đổi ca làm — của toàn bộ nhân viên
                 @else
-                    Yêu cầu của bạn — Lượt chấm công, Công tác/Ra ngoài, Đi muộn về sớm, Nghỉ phép, Thay đổi giờ vào/ra, Đổi ca làm
+                    Yêu cầu của bạn — Lượt chấm công, Công tác/Ra ngoài, Đi muộn về sớm, Nghỉ phép, Thay đổi giờ vào/ra, Tăng ca, Đổi ca làm
                 @endif
             </p>
         </div>
@@ -90,7 +93,7 @@
                 </div>
                 <div class="min-w-[220px]">
                     <x-employee-combobox name="employee_id" :employees="$employees" :selected="request('employee_id')"
-                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." />
+                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." :compact="true" />
                 </div>
                 @endif
                 <div>
@@ -102,6 +105,7 @@
                         <option value="late_early" @selected(request('type') === 'late_early')>Đi muộn về sớm</option>
                         <option value="leave" @selected(request('type') === 'leave')>Nghỉ phép</option>
                         <option value="time_change" @selected(request('type') === 'time_change')>Thay đổi giờ vào/ra</option>
+                        <option value="overtime" @selected(request('type') === 'overtime')>Tăng ca</option>
                         <option value="shift_swap" @selected(request('type') === 'shift_swap')>Đổi ca làm</option>
                     </select>
                 </div>
@@ -242,6 +246,7 @@
                     <option value="late_early">Đi muộn về sớm</option>
                     <option value="leave">Nghỉ phép</option>
                     <option value="time_change">Thay đổi giờ vào/ra</option>
+                    <option value="overtime">Tăng ca</option>
                     <option value="shift_swap">Đổi ca làm</option>
                 </select>
             </div>
@@ -249,7 +254,8 @@
             {{-- ── 4 loại dùng chung form → staff-requests.store ── --}}
             <form id="srStaffForm" action="{{ route('staff-requests.store') }}" method="POST" class="space-y-4">
                 @csrf
-                <input type="hidden" name="type" id="srStaffType" value="attendance_correction">
+                <input type="hidden" name="_modal" value="srStaffForm">
+                <input type="hidden" name="type" id="srStaffType" value="{{ old('type', 'attendance_correction') }}">
 
                 @if($isApprover)
                 <div>
@@ -328,6 +334,22 @@
                     </div>
                 </div>
 
+                {{-- overtime --}}
+                <div class="sr-field-group hidden" data-type="overtime">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Từ giờ <span class="text-red-500">*</span></label>
+                            <input type="time" name="ot_from_time" class="form-input">
+                        </div>
+                        <div>
+                            <label class="form-label">Đến giờ <span class="text-red-500">*</span></label>
+                            <input type="time" name="ot_to_time" class="form-input">
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Sau khi được duyệt, số giờ tăng ca sẽ được cộng trực tiếp vào công của ngày đã chọn.
+                        Nếu "Đến giờ" sớm hơn hoặc bằng "Từ giờ", hệ thống tự hiểu là tăng ca qua đêm sang ngày hôm sau (VD 23:00–03:00 = 4 giờ).</p>
+                </div>
+
                 <div>
                     <label class="form-label">Lý do <span class="text-red-500">*</span></label>
                     <textarea name="reason" rows="3" class="form-input" placeholder="Lý do..." required></textarea>
@@ -343,30 +365,35 @@
             {{-- ── Nghỉ phép — dùng đúng route/field của LeaveRequestsController ── --}}
             <form id="srLeaveForm" action="{{ route('leave-requests.store') }}" method="POST" class="space-y-4 hidden" data-own-employee-id="{{ auth()->user()->employee?->id }}">
                 @csrf
+                <input type="hidden" name="_modal" value="srLeaveForm">
                 @if($isApprover)
                 <div>
-                    <x-employee-combobox name="employee_id" :employees="$employees"
+                    <x-employee-combobox name="employee_id" :employees="$employees" :selected="old('employee_id')"
                         label="Nhân viên" placeholder="Chọn nhân viên cần tạo đơn..." />
                 </div>
                 @endif
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="form-label">Ngày bắt đầu <span class="text-red-500">*</span></label>
-                        <input type="date" name="date_from" class="form-input" required>
+                        <input type="date" name="date_from" class="form-input" value="{{ old('date_from') }}" required>
                     </div>
                     <div>
                         <label class="form-label">Đến ngày <span class="text-red-500">*</span></label>
-                        <input type="date" name="date_to" class="form-input" required>
+                        <input type="date" name="date_to" class="form-input" value="{{ old('date_to') }}" required>
                     </div>
                 </div>
                 <div>
                     <label class="form-label">Loại nghỉ phép <span class="text-red-500">*</span></label>
-                    <select name="type" class="form-input" required>
-                        <option value="annual">Nghỉ phép năm</option>
-                        <option value="sick">Nghỉ ốm</option>
-                        <option value="unpaid">Nghỉ không lương</option>
-                        <option value="other">Khác</option>
+                    <select name="type" class="form-input" id="srLeaveType" required>
+                        <option value="annual" @selected(old('type', 'annual') === 'annual')>Nghỉ phép năm</option>
+                        <option value="sick" @selected(old('type') === 'sick')>Nghỉ ốm</option>
+                        <option value="unpaid" @selected(old('type') === 'unpaid')>Nghỉ không lương</option>
+                        <option value="other" @selected(old('type') === 'other')>Khác</option>
                     </select>
+                    <div id="srLeaveBalanceNote" class="mt-1.5 hidden">
+                        <span id="srLeaveBalanceBadge" class="badge"></span>
+                    </div>
+                    @error('type') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="form-label">Ca làm</label>
@@ -376,22 +403,24 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <x-employee-combobox name="handover_employee_id" :employees="$allEmployees"
+                        <x-employee-combobox name="handover_employee_id" :employees="$allEmployees" :selected="old('handover_employee_id')"
                             label="Người nhận bàn giao" placeholder="Tìm theo tên, mã NV..." />
                     </div>
                     <div>
                         <label class="form-label">Số điện thoại</label>
-                        <input type="text" name="handover_phone" class="form-input" placeholder="SĐT người nhận bàn giao...">
+                        <input type="text" name="handover_phone" class="form-input" value="{{ old('handover_phone') }}" placeholder="SĐT người nhận bàn giao...">
                     </div>
                 </div>
                 <div>
                     <label class="form-label">Nội dung trao đổi</label>
-                    <textarea name="handover_note" rows="2" class="form-input" placeholder="Nội dung bàn giao, trao đổi công việc..."></textarea>
+                    <textarea name="handover_note" rows="2" class="form-input" placeholder="Nội dung bàn giao, trao đổi công việc...">{{ old('handover_note') }}</textarea>
                 </div>
                 <div>
                     <label class="form-label">Lý do <span class="text-red-500">*</span></label>
-                    <textarea name="reason" rows="3" class="form-input" placeholder="Lý do xin nghỉ..." required></textarea>
+                    <textarea name="reason" rows="3" class="form-input" placeholder="Lý do xin nghỉ..." required>{{ old('reason') }}</textarea>
+                    @error('reason') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
+                <script type="application/json" id="srLeaveBalanceData">@json($annualLeaveBalances)</script>
                 <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                     <button type="button" onclick="closeModal('createStaffRequestModal')" class="btn-secondary">Hủy</button>
                     <button type="submit" class="btn-primary"><i class="bi bi-send"></i> Gửi đơn</button>
@@ -533,10 +562,89 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!leaveForm) return;
     ['date_from', 'date_to'].forEach(function (name) {
         const el = leaveForm.querySelector('[name="' + name + '"]');
-        if (el) el.addEventListener('change', srRefreshLeaveShifts);
+        if (el) el.addEventListener('change', function () {
+            srRefreshLeaveShifts();
+            srRefreshLeaveBalanceNote();
+        });
     });
     const empHidden = leaveForm.querySelector('.emp-combobox-value');
-    if (empHidden) empHidden.addEventListener('change', srRefreshLeaveShifts);
+    if (empHidden) empHidden.addEventListener('change', function () {
+        srRefreshLeaveShifts();
+        srRefreshLeaveBalanceNote();
+    });
+    const typeSelect = document.getElementById('srLeaveType');
+    if (typeSelect) typeSelect.addEventListener('change', srRefreshLeaveBalanceNote);
 });
+
+// Hiển thị số ngày phép năm còn lại của nhân viên đang chọn (hoặc chính mình nếu không phải approver)
+// khi chọn "Nghỉ phép năm", cảnh báo trực tiếp nếu số ngày đang xin nghỉ vượt quá số ngày còn lại.
+function srRefreshLeaveBalanceNote() {
+    const form = document.getElementById('srLeaveForm');
+    const typeSelect = document.getElementById('srLeaveType');
+    const note = document.getElementById('srLeaveBalanceNote');
+    const badge = document.getElementById('srLeaveBalanceBadge');
+    if (!form || !typeSelect || !note || !badge) return;
+
+    if (typeSelect.value !== 'annual') {
+        note.classList.add('hidden');
+        return;
+    }
+
+    const empHidden = form.querySelector('.emp-combobox-value');
+    const employeeId = (empHidden && empHidden.value) ? empHidden.value : form.dataset.ownEmployeeId;
+    const balances = JSON.parse(document.getElementById('srLeaveBalanceData').textContent || '{}');
+    const remaining = employeeId ? balances[employeeId] : undefined;
+
+    badge.classList.remove('badge-success', 'badge-warning', 'badge-danger');
+    note.classList.remove('hidden');
+
+    if (!employeeId) {
+        badge.classList.add('badge-warning');
+        badge.innerHTML = '<i class="bi bi-info-circle-fill mr-1"></i>Chọn nhân viên để xem số ngày phép năm còn lại';
+        return;
+    }
+
+    if (remaining === undefined) {
+        badge.classList.add('badge-danger');
+        badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill mr-1"></i>Không đủ điều kiện nghỉ phép năm — hãy chọn loại nghỉ khác (Nghỉ ốm / Nghỉ không lương / Khác)';
+        return;
+    }
+
+    const dateFrom = form.querySelector('[name="date_from"]').value;
+    const dateTo = form.querySelector('[name="date_to"]').value;
+    let requestedDays = null;
+    if (dateFrom && dateTo) {
+        const diffMs = new Date(dateTo) - new Date(dateFrom);
+        if (diffMs >= 0) requestedDays = Math.round(diffMs / 86400000) + 1;
+    }
+
+    if (requestedDays !== null && requestedDays > remaining) {
+        badge.classList.add('badge-danger');
+        badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill mr-1"></i>Còn ' + remaining + ' ngày phép năm — không đủ cho ' + requestedDays + ' ngày đang xin. Hãy chọn loại nghỉ khác hoặc giảm số ngày.';
+    } else if (remaining <= 2) {
+        badge.classList.add('badge-warning');
+        badge.innerHTML = '<i class="bi bi-info-circle-fill mr-1"></i>Phép năm còn lại: ' + remaining + ' ngày';
+    } else {
+        badge.classList.add('badge-success');
+        badge.innerHTML = '<i class="bi bi-calendar-check-fill mr-1"></i>Phép năm còn lại: ' + remaining + ' ngày';
+    }
+}
+
+@if($errors->any() && old('_modal') === 'srLeaveForm')
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('srTypeSelect').value = 'leave';
+    srSwitchType('leave');
+    srRefreshLeaveShifts();
+    srRefreshLeaveBalanceNote();
+    openModal('createStaffRequestModal');
+});
+@elseif($errors->any() && old('_modal') === 'srStaffForm')
+document.addEventListener('DOMContentLoaded', function() {
+    const t = '{{ old('type', 'attendance_correction') }}';
+    document.getElementById('srTypeSelect').value = t;
+    srSwitchType(t);
+    openModal('createStaffRequestModal');
+});
+@endif
 </script>
 @endpush

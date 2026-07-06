@@ -60,6 +60,19 @@ class AttendanceLogsTest extends TestCase
         $response->assertDontSee('Trần Thị B');
     }
 
+    public function test_overtime_hours_shown_as_badge_when_present(): void
+    {
+        AttendanceLog::create([
+            'employee_id' => $this->employeeA->id, 'work_date' => now()->addDay()->toDateString(),
+            'check_in_at' => now(), 'check_out_at' => now()->addHours(9), 'overtime_hours' => 2.5,
+        ]);
+
+        $response = $this->actingAs($this->manager)->get(route('attendance-logs.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('+2.5h');
+    }
+
     public function test_user_without_permission_cannot_view_attendance_logs(): void
     {
         $noPermUser = User::factory()->create();

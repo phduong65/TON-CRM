@@ -157,6 +157,7 @@ Route::middleware('auth')->group(function () {
     // Attendance Locations — điểm chấm công GPS/IP theo chi nhánh (create/edit via modal)
     Route::prefix('attendance-locations')->name('attendance-locations.')->group(function () {
         Route::get('/', [AttendanceLocationsController::class, 'index'])->name('index')->middleware('can:view-attendance-locations');
+        Route::get('/detect-ip', [AttendanceLocationsController::class, 'detectIp'])->name('detect-ip')->middleware('can:view-attendance-locations');
         Route::post('/', [AttendanceLocationsController::class, 'store'])->name('store')->middleware('can:create-attendance-locations');
         Route::put('/{attendanceLocation}', [AttendanceLocationsController::class, 'update'])->name('update')->middleware('can:edit-attendance-locations');
         Route::delete('/{attendanceLocation}', [AttendanceLocationsController::class, 'destroy'])->name('destroy')->middleware('can:delete-attendance-locations');
@@ -170,6 +171,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [ShiftSchedulesController::class, 'store'])->name('store')->middleware('can:create-shift-schedules');
         Route::post('/bulk', [ShiftSchedulesController::class, 'bulkStore'])->name('bulk-store')->middleware('can:create-shift-schedules');
         Route::put('/{shiftSchedule}', [ShiftSchedulesController::class, 'update'])->name('update')->middleware('can:edit-shift-schedules');
+        Route::delete('/bulk', [ShiftSchedulesController::class, 'destroyBulk'])->name('bulk-destroy')->middleware('can:delete-shift-schedules');
+        Route::delete('/destroy-all', [ShiftSchedulesController::class, 'destroyAll'])->name('destroy-all')->middleware('can:delete-shift-schedules');
         Route::delete('/{shiftSchedule}', [ShiftSchedulesController::class, 'destroy'])->name('destroy')->middleware('can:delete-shift-schedules');
     });
 
@@ -296,6 +299,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('can:manage-users')->group(function () {
         Route::resource('users', UsersController::class)->except(['create', 'edit', 'show']);
         Route::post('/users/{user}/toggle-status', [UsersController::class, 'toggleStatus'])->name('users.toggleStatus');
+        Route::post('/users/{user}/reject', [UsersController::class, 'reject'])->name('users.reject');
     });
 
     // Role & Permission Management (admin: manage-roles) — create/edit via modal

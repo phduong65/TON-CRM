@@ -55,7 +55,10 @@ class AttendanceCheckInTest extends TestCase
             'latitude'      => self::OFFICE_LAT,
             'longitude'     => self::OFFICE_LNG,
             'radius_meters' => 100,
-            'allowed_ips'   => [self::OFFICE_IP],
+            // '127.0.0.1' — IP mặc định của request trong test HTTP client — được thêm vào đây để
+            // các test "happy path" (chỉ set toạ độ GPS đúng, không set REMOTE_ADDR) vẫn đạt điều
+            // kiện IP, vì từ khi đổi sang yêu cầu CẢ HAI (GPS và IP) thì thiếu 1 trong 2 sẽ bị chặn.
+            'allowed_ips'   => [self::OFFICE_IP, '127.0.0.1'],
             'is_active'     => true,
         ]);
     }
@@ -108,7 +111,27 @@ class AttendanceCheckInTest extends TestCase
         ]);
     }
 
-    public function test_checkin_succeeds_with_matching_office_ip_even_if_gps_off(): void
+    public function test_checkin_succeeds_when_both_gps_and_ip_match(): void
+    {
+        $this->makeOnsiteShiftToday();
+
+        $response = $this->actingAs($this->user)
+            ->withServerVariables(['REMOTE_ADDR' => self::OFFICE_IP])
+            ->postJson(route('attendance.check-in'), [
+                'lat' => self::OFFICE_LAT,
+                'lng' => self::OFFICE_LNG,
+            ]);
+
+        $response->assertStatus(200)->assertJson(['success' => true]);
+        $this->assertDatabaseHas('attendance_logs', [
+            'employee_id'     => $this->employee->id,
+            'check_in_method' => 'gps_ip',
+        ]);
+    }
+
+    // Trước đây hệ thống chỉ cần đạt 1 trong 2 (GPS hoặc IP) — nay bắt buộc phải đạt CẢ HAI.
+
+    public function test_checkin_blocked_when_ip_matches_but_gps_off(): void
     {
         $this->makeOnsiteShiftToday();
 
@@ -119,8 +142,23 @@ class AttendanceCheckInTest extends TestCase
                 'lng' => 0,
             ]);
 
-        $response->assertStatus(200)->assertJson(['success' => true]);
-        $this->assertDatabaseHas('attendance_logs', ['employee_id' => $this->employee->id]);
+        $response->assertStatus(422)->assertJson(['success' => false]);
+        $this->assertDatabaseMissing('attendance_logs', ['employee_id' => $this->employee->id]);
+    }
+
+    public function test_checkin_blocked_when_gps_matches_but_ip_wrong(): void
+    {
+        $this->makeOnsiteShiftToday();
+
+        $response = $this->actingAs($this->user)
+            ->withServerVariables(['REMOTE_ADDR' => '1.2.3.4'])
+            ->postJson(route('attendance.check-in'), [
+                'lat' => self::OFFICE_LAT,
+                'lng' => self::OFFICE_LNG,
+            ]);
+
+        $response->assertStatus(422)->assertJson(['success' => false]);
+        $this->assertDatabaseMissing('attendance_logs', ['employee_id' => $this->employee->id]);
     }
 
     public function test_wfh_shift_bypasses_location_check(): void
@@ -213,6 +251,55 @@ class AttendanceCheckInTest extends TestCase
         ]);
         $log = \App\Models\AttendanceLog::where('employee_id', $this->employee->id)->first();
         $this->assertNotNull($log->check_out_at);
+    }
+
+    // ── Thiết bị chấm công (check_in_device / check_out_device) ─────────
+
+    public function test_checkout_flags_device_changed_when_user_agent_differs_from_checkin(): void
+    {
+        $this->makeOnsiteShiftToday();
+
+        $this->actingAs($this->user)
+            ->withHeaders(['User-Agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0) AppleWebKit/605.1.15'])
+            ->postJson(route('attendance.check-in'), [
+                'lat' => self::OFFICE_LAT, 'lng' => self::OFFICE_LNG,
+            ])->assertStatus(200);
+
+        $response = $this->actingAs($this->user)
+            ->withHeaders(['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'])
+            ->postJson(route('attendance.check-out'), [
+                'lat' => self::OFFICE_LAT, 'lng' => self::OFFICE_LNG,
+            ]);
+
+        $response->assertStatus(200)->assertJson(['success' => true, 'device_changed' => true]);
+        $response->assertJsonFragment(['device_changed' => true]);
+
+        $log = \App\Models\AttendanceLog::where('employee_id', $this->employee->id)->first();
+        $this->assertTrue($log->deviceChanged());
+        $this->assertNotEquals($log->check_in_device, $log->check_out_device);
+    }
+
+    public function test_checkout_does_not_flag_device_changed_when_same_user_agent(): void
+    {
+        $this->makeOnsiteShiftToday();
+        $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+
+        $this->actingAs($this->user)
+            ->withHeaders(['User-Agent' => $ua])
+            ->postJson(route('attendance.check-in'), [
+                'lat' => self::OFFICE_LAT, 'lng' => self::OFFICE_LNG,
+            ])->assertStatus(200);
+
+        $response = $this->actingAs($this->user)
+            ->withHeaders(['User-Agent' => $ua])
+            ->postJson(route('attendance.check-out'), [
+                'lat' => self::OFFICE_LAT, 'lng' => self::OFFICE_LNG,
+            ]);
+
+        $response->assertStatus(200)->assertJson(['success' => true, 'device_changed' => false]);
+
+        $log = \App\Models\AttendanceLog::where('employee_id', $this->employee->id)->first();
+        $this->assertFalse($log->deviceChanged());
     }
 
     // ── Race condition (double-submit) ──────────────────────────────────

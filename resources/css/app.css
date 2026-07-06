@@ -1014,6 +1014,359 @@
     @media (min-width: 640px) {
         .filter-mobile-actions { display: none; }
     }
+
+    /* ── Shift schedule grid (lịch làm việc) ──────────────────────────── */
+    .sched-legend {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem 1rem;
+        padding: 0.625rem 1rem;
+        font-size: 0.75rem;
+        color: var(--color-slate-500);
+        border-bottom: 1px solid var(--color-slate-100);
+        background-color: color-mix(in srgb, var(--color-slate-50) 60%, transparent);
+    }
+    .dark .sched-legend {
+        color: var(--color-slate-400);
+        border-color: var(--color-slate-700);
+        background-color: color-mix(in srgb, var(--color-slate-900) 25%, transparent);
+    }
+    .sched-legend-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-weight: 600;
+        color: var(--color-slate-400);
+    }
+    .dark .sched-legend-label {
+        color: var(--color-slate-500);
+    }
+    .sched-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+
+    /* Sticky "Nhân viên" column — background set here (not via bg-white utility)
+       so the row-hover tint below can still win: Tailwind v4 utilities always
+       beat @layer components regardless of specificity, so mixing the two
+       would make the hover rule silently no-op. */
+    .sched-sticky-col {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        box-shadow: 2px 0 6px -2px rgb(15 23 42 / 0.10);
+    }
+    .dark .sched-sticky-col {
+        box-shadow: 2px 0 6px -2px rgb(0 0 0 / 0.4);
+    }
+    tbody .sched-sticky-col {
+        background-color: var(--color-white);
+    }
+    .dark tbody .sched-sticky-col {
+        background-color: var(--color-slate-800);
+    }
+    .table-tr-hover:hover .sched-sticky-col {
+        background-color: var(--color-slate-50);
+    }
+    .dark .table-tr-hover:hover .sched-sticky-col {
+        background-color: color-mix(in srgb, var(--color-slate-700) 30%, transparent);
+    }
+
+    /* Day header cells */
+    .sched-th {
+        padding-top: 0.625rem;
+        padding-bottom: 0.625rem;
+        transition: background-color 0.15s ease;
+    }
+    .sched-th-dow {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-slate-500);
+    }
+    .dark .sched-th-dow {
+        color: var(--color-slate-400);
+    }
+    .sched-th-date {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.625rem;
+        height: 1.625rem;
+        padding: 0 0.375rem;
+        margin-top: 0.25rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-slate-400);
+    }
+    .dark .sched-th-date {
+        color: var(--color-slate-500);
+    }
+    .sched-th-weekend {
+        background-color: var(--color-slate-50);
+    }
+    .dark .sched-th-weekend {
+        background-color: color-mix(in srgb, var(--color-slate-900) 40%, transparent);
+    }
+    .sched-th-today {
+        background-color: var(--color-pcrm-50);
+    }
+    .dark .sched-th-today {
+        background-color: color-mix(in srgb, var(--color-pcrm-900) 25%, transparent);
+    }
+    .sched-th-today .sched-th-dow {
+        color: var(--color-pcrm-700);
+    }
+    .dark .sched-th-today .sched-th-dow {
+        color: var(--color-pcrm-400);
+    }
+    .sched-th-date-today {
+        background-color: var(--color-pcrm-600);
+        color: white;
+        font-weight: 700;
+    }
+    .dark .sched-th-date-today {
+        background-color: var(--color-pcrm-500);
+    }
+
+    /* Day body cells */
+    .sched-td-weekend {
+        background-color: var(--color-slate-50);
+    }
+    .dark .sched-td-weekend {
+        background-color: color-mix(in srgb, var(--color-slate-900) 30%, transparent);
+    }
+    .sched-td-today {
+        background-color: color-mix(in srgb, var(--color-pcrm-50) 55%, transparent);
+    }
+    .dark .sched-td-today {
+        background-color: color-mix(in srgb, var(--color-pcrm-900) 12%, transparent);
+    }
+
+    /* Empty slot — "+ Xếp ca" affordance */
+    .sched-cell-empty {
+        width: 100%;
+        min-width: 84px;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        padding: 0.375rem 0.5rem;
+        border-radius: 0.625rem;
+        border: 1px dashed var(--color-slate-300);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-slate-400);
+        background: transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+    }
+    .sched-cell-empty:hover {
+        border-color: var(--color-pcrm-400);
+        color: var(--color-pcrm-600);
+        background-color: color-mix(in srgb, var(--color-pcrm-50) 60%, transparent);
+    }
+    .dark .sched-cell-empty {
+        border-color: var(--color-slate-600);
+        color: var(--color-slate-500);
+    }
+    .dark .sched-cell-empty:hover {
+        border-color: var(--color-pcrm-500);
+        color: var(--color-pcrm-400);
+        background-color: color-mix(in srgb, var(--color-pcrm-900) 20%, transparent);
+    }
+
+    /* Ngày không có ca xếp nhưng có tăng ca đã duyệt (ngày nghỉ) — stack nút "Xếp ca"
+       (nếu có quyền) phía trên, badge tăng ca phía dưới, trong cùng 1 ô. */
+    .sched-cell-ot-only {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+    .sched-ot-badge-standalone {
+        margin-top: 0;
+    }
+
+    /* Filled slot — assigned shift(s) */
+    .sched-cell {
+        width: 100%;
+        min-width: 150px;
+        min-height: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        padding: 0.5rem;
+        border-radius: 0.75rem;
+        border: 1px solid color-mix(in srgb, var(--color-pcrm-500) 18%, var(--color-pcrm-50));
+        background-color: color-mix(in srgb, var(--color-pcrm-50) 70%, transparent);
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-pcrm-700);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .sched-cell:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px -8px rgb(37 99 235 / 0.35);
+        border-color: color-mix(in srgb, var(--color-pcrm-500) 35%, transparent);
+        background-color: var(--color-pcrm-50);
+    }
+    .dark .sched-cell {
+        background-color: color-mix(in srgb, var(--color-pcrm-900) 18%, transparent);
+        border-color: color-mix(in srgb, var(--color-pcrm-500) 25%, transparent);
+        color: var(--color-pcrm-400);
+    }
+    .dark .sched-cell:hover {
+        background-color: color-mix(in srgb, var(--color-pcrm-900) 30%, transparent);
+        box-shadow: 0 6px 16px -8px rgb(0 0 0 / 0.5);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .sched-cell:hover {
+            transform: none;
+        }
+    }
+
+    /* Shift-code chip badge + time label inside a cell */
+    .sched-chip-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.0625rem 0.5rem;
+        border-radius: 9999px;
+        color: var(--color-pcrm-700);
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .dark .sched-chip-badge {
+        background-color: color-mix(in srgb, var(--color-slate-900) 40%, transparent);
+        color: var(--color-pcrm-300);
+    }
+    .sched-cell-time {
+        font-size: 0.6875rem;
+        font-weight: 400;
+        color: var(--color-pcrm-600);
+        opacity: 0.75;
+    }
+    .dark .sched-cell-time {
+        color: var(--color-pcrm-400);
+    }
+
+    /* Check-in/out status dots */
+    .sched-dot-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-top: 0.125rem;
+    }
+    .sched-dot {
+        width: 0.375rem;
+        height: 0.375rem;
+        border-radius: 9999px;
+        flex-shrink: 0;
+    }
+    .sched-dot-pending {
+        background-color: var(--color-slate-400);
+    }
+    .sched-dot-ontime {
+        background-color: var(--color-emerald-500);
+    }
+    .sched-dot-late {
+        background-color: var(--color-red-500);
+    }
+
+    /* Multi-shift cell (2+ ca cùng ngày) — stacked rows instead of a cramped dash list */
+    .sched-multi-count {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--color-pcrm-700);
+        text-transform: uppercase;
+    }
+    .dark .sched-multi-count {
+        color: var(--color-pcrm-400);
+    }
+    .sched-multi-list {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    .sched-multi-row {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.125rem;
+        padding-top: 0.25rem;
+    }
+
+    .sched-multi-time {
+        font-size: 0.625rem;
+        color: var(--color-pcrm-600);
+        opacity: 0.7;
+    }
+    .dark .sched-multi-time {
+        color: var(--color-pcrm-400);
+    }
+
+    /* Badge nhỏ báo hiệu ca đó có tăng ca đã duyệt (overtime_hours > 0) */
+    .sched-ot-badge {
+        display: inline-flex;
+        align-items: center;
+        margin-top: 0.125rem;
+        padding: 0.0625rem 0.375rem;
+        border-radius: 9999px;
+        font-size: 0.625rem;
+        font-weight: 700;
+        color: var(--color-rose-700);
+        background-color: color-mix(in srgb, var(--color-rose-100) 80%, transparent);
+    }
+    .dark .sched-ot-badge {
+        color: var(--color-rose-300);
+        background-color: color-mix(in srgb, var(--color-rose-900) 35%, transparent);
+    }
+
+    /* Select-mode checkbox overlay (chọn nhiều ô để xoá hàng loạt) — custom styled,
+       không dùng checkbox mặc định của trình duyệt. */
+    .sched-select-checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 1.125rem;
+        height: 1.125rem;
+        border-radius: 0.375rem;
+        border: 1.5px solid var(--color-slate-300);
+        background-color: white;
+        box-shadow: 0 1px 4px rgb(0 0 0 / 0.18);
+        cursor: pointer;
+        transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+    }
+    .sched-select-checkbox:hover {
+        border-color: var(--color-pcrm-400);
+        transform: scale(1.08);
+    }
+    .sched-select-checkbox:checked {
+        background-color: var(--color-pcrm-600);
+        border-color: var(--color-pcrm-600);
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 0.7rem;
+    }
+    .dark .sched-select-checkbox {
+        background-color: var(--color-slate-700);
+        border-color: var(--color-slate-500);
+    }
+    .dark .sched-select-checkbox:checked {
+        background-color: var(--color-pcrm-500);
+        border-color: var(--color-pcrm-500);
+    }
 }
 
 /*

@@ -16,7 +16,7 @@
             <form action="{{ route('attendance-logs.index') }}" method="GET" class="flex flex-wrap items-end gap-2">
                 <div class="min-w-[220px]">
                     <x-employee-combobox name="employee_id" :employees="$employees" :selected="request('employee_id')"
-                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." />
+                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." :compact="true" />
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Chi nhánh</label>
@@ -102,12 +102,20 @@
                             <th class="table-th">Ca</th>
                             <th class="table-th text-center">Check-in</th>
                             <th class="table-th text-center">Check-out</th>
+                            <th class="table-th text-center">Giờ công</th>
+                            <th class="table-th text-center">Công</th>
+                            <th class="table-th text-center">Tăng ca</th>
                             <th class="table-th text-center">Trễ/Sớm</th>
                             <th class="table-th text-center">Phương thức</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($logs as $log)
+                        @php
+                            $workedHours = $log->netWorkedHours();
+                            $cong        = $log->computeCong();
+                            $fmt         = fn($n) => rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
+                        @endphp
                         <tr class="table-tr-hover">
                             <td class="table-td text-sm">{{ $log->work_date->format('d/m/Y') }}</td>
                             <td class="table-td">
@@ -120,6 +128,27 @@
                             </td>
                             <td class="table-td text-center text-sm">
                                 {{ $log->check_out_at?->format('H:i:s') ?? '—' }}
+                                @if($log->deviceChanged())
+                                    <i class="bi bi-exclamation-triangle-fill text-amber-500 text-xs ml-1"
+                                       title="Chấm công bằng thiết bị khác với lúc check-in"></i>
+                                @endif
+                            </td>
+                            <td class="table-td text-center text-sm text-slate-500">
+                                {{ $workedHours !== null ? $fmt($workedHours) . 'h' : '—' }}
+                            </td>
+                            <td class="table-td text-center">
+                                @if($cong !== null)
+                                    <span class="badge badge-info font-semibold">{{ $fmt($cong) }} công</span>
+                                @else
+                                    <span class="text-slate-400 text-sm">—</span>
+                                @endif
+                            </td>
+                            <td class="table-td text-center">
+                                @if($log->overtime_hours > 0)
+                                    <span class="badge badge-danger font-semibold">+{{ $fmt((float) $log->overtime_hours) }}h</span>
+                                @else
+                                    <span class="text-slate-300 dark:text-slate-600 text-sm">—</span>
+                                @endif
                             </td>
                             <td class="table-td text-center text-xs">
                                 @if($log->late_minutes > 0)
@@ -138,7 +167,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="table-td text-center py-8 text-slate-400">
+                            <td colspan="10" class="table-td text-center py-8 text-slate-400">
                                 <i class="bi bi-calendar-x text-3xl mb-2 block opacity-40"></i>
                                 <p>Chưa có dữ liệu chấm công</p>
                             </td>

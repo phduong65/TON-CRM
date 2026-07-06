@@ -15,22 +15,21 @@ class PcrmSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Default settings
-        Setting::create(['key' => 'default_score_per_month',    'value' => '100', 'description' => 'Điểm mặc định cấp cho mỗi nhân viên đầu tháng']);
-        Setting::create(['key' => 'greenzone_min',              'value' => '90',  'description' => 'Ngưỡng tối thiểu để xếp vào Greenzone (90–100đ)']);
-        Setting::create(['key' => 'yellowzone_min',             'value' => '80',  'description' => 'Ngưỡng tối thiểu để xếp vào Yellowzone (80–89đ)']);
-        Setting::create(['key' => 'orangezone_min',             'value' => '70',  'description' => 'Ngưỡng tối thiểu để xếp vào Orangezone (70–79đ)']);
-        Setting::create(['key' => 'consecutive_redzone_months', 'value' => '2',   'description' => 'Số tháng Redzone liên tiếp để kích hoạt cảnh báo xử phạt đặc biệt']);
-        Setting::create(['key' => 'company_name',               'value' => 'Công ty TNHH F&B', 'description' => 'Tên công ty']);
-        Setting::create(['key' => 'rows_per_page',              'value' => '15',  'description' => 'Số dòng mỗi trang']);
-        Setting::create(['key' => 'report_reward_points',       'value' => '5',   'description' => 'Điểm thưởng cho nhân viên khi báo cáo chéo được duyệt']);
+        // 1. Default settings — firstOrCreate để chạy lại an toàn trên DB đã có dữ liệu
+        Setting::firstOrCreate(['key' => 'default_score_per_month'],    ['value' => '100', 'description' => 'Điểm mặc định cấp cho mỗi nhân viên đầu tháng']);
+        Setting::firstOrCreate(['key' => 'greenzone_min'],              ['value' => '90',  'description' => 'Ngưỡng tối thiểu để xếp vào Greenzone (90–100đ)']);
+        Setting::firstOrCreate(['key' => 'yellowzone_min'],             ['value' => '80',  'description' => 'Ngưỡng tối thiểu để xếp vào Yellowzone (80–89đ)']);
+        Setting::firstOrCreate(['key' => 'orangezone_min'],             ['value' => '70',  'description' => 'Ngưỡng tối thiểu để xếp vào Orangezone (70–79đ)']);
+        Setting::firstOrCreate(['key' => 'consecutive_redzone_months'], ['value' => '2',   'description' => 'Số tháng Redzone liên tiếp để kích hoạt cảnh báo xử phạt đặc biệt']);
+        Setting::firstOrCreate(['key' => 'company_name'],               ['value' => 'Công ty TNHH F&B', 'description' => 'Tên công ty']);
+        Setting::firstOrCreate(['key' => 'rows_per_page'],              ['value' => '15',  'description' => 'Số dòng mỗi trang']);
+        Setting::firstOrCreate(['key' => 'report_reward_points'],       ['value' => '5',   'description' => 'Điểm thưởng cho nhân viên khi báo cáo chéo được duyệt']);
 
-        // 2. Admin user
-        $admin = User::create([
-            'name'     => 'Quản trị viên',
-            'email'    => 'admin@hr.vn',
-            'password' => Hash::make('admin123'),
-        ]);
+        // 2. Admin user — firstOrCreate để chạy lại an toàn trên DB đã có dữ liệu
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@hr.vn'],
+            ['name' => 'Quản trị viên', 'password' => Hash::make('admin123')]
+        );
 
         // 2b. Roles & Permissions — dùng firstOrCreate để tránh conflict với migrations
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
@@ -60,11 +59,14 @@ class PcrmSeeder extends Seeder
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
 
+        // givePermissionTo() (không dùng syncPermissions) để seeder có thể chạy lại nhiều lần
+        // trên DB đã có dữ liệu mà không xóa mất các quyền được gán thêm bởi seeder khác
+        // (Shift/Attendance/LeaveSwap/StaffRequests/Holidays/Export...) hoặc do admin tự cấu hình qua UI.
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $adminRole->syncPermissions($allPermissions);
+        $adminRole->givePermissionTo($allPermissions);
 
         $managerRole = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
-        $managerRole->syncPermissions([
+        $managerRole->givePermissionTo([
             'view-employees', 'create-employees', 'edit-employees',
             'view-teams', 'view-branches',
             'view-violations',
@@ -80,7 +82,7 @@ class PcrmSeeder extends Seeder
         ]);
 
         $directorRole = Role::firstOrCreate(['name' => 'director', 'guard_name' => 'web']);
-        $directorRole->syncPermissions([
+        $directorRole->givePermissionTo([
             'view-employees',
             'view-teams', 'view-branches',
             'view-violations',
@@ -97,7 +99,7 @@ class PcrmSeeder extends Seeder
         ]);
 
         $teamLeaderRole = Role::firstOrCreate(['name' => 'team_leader', 'guard_name' => 'web']);
-        $teamLeaderRole->syncPermissions([
+        $teamLeaderRole->givePermissionTo([
             'view-employees', 'view-teams', 'view-branches',
             'view-penalties', 'create-penalties',
             'view-rewards', 'create-rewards',
@@ -109,7 +111,7 @@ class PcrmSeeder extends Seeder
         ]);
 
         $staffRole = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
-        $staffRole->syncPermissions([
+        $staffRole->givePermissionTo([
             'view-employees', 'view-penalties',
             'view-rewards',
             'view-reports', 'create-reports',

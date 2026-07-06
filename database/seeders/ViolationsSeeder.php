@@ -19,8 +19,11 @@ class ViolationsSeeder extends Seeder
 
     public function run(): void
     {
-        Violation::query()->delete();
-        Regulation::query()->delete();
+        // Không xoá dữ liệu cũ ở đây — trước có Violation::query()->delete() +
+        // Regulation::query()->delete(), nhưng penalties.violation_id là
+        // cascadeOnDelete() nên chạy lại seeder này trên DB thật sẽ xoá sạch
+        // toàn bộ lịch sử phiếu phạt đang tham chiếu đến violation bị xoá.
+        // Dùng firstOrCreate bên dưới để chạy lại an toàn, không mất dữ liệu.
 
         // Cấu trúc mỗi violation: name, severity, penalty_type, money_deducted, description
         // points_deducted được tự động tính từ severity theo POINTS_MAP
@@ -217,14 +220,19 @@ class ViolationsSeeder extends Seeder
         ];
 
         foreach ($regulations as $item) {
-            $regulation = Regulation::create(array_merge($item['regulation'], ['is_active' => true]));
+            $regulation = Regulation::firstOrCreate(
+                ['name' => $item['regulation']['name']],
+                array_merge($item['regulation'], ['is_active' => true])
+            );
 
             foreach ($item['violations'] as $violationData) {
-                Violation::create(array_merge($violationData, [
-                    'regulation_id'  => $regulation->id,
-                    'is_active'      => true,
-                    'points_deducted' => self::POINTS_MAP[$violationData['severity']],
-                ]));
+                Violation::firstOrCreate(
+                    ['regulation_id' => $regulation->id, 'name' => $violationData['name']],
+                    array_merge($violationData, [
+                        'is_active'       => true,
+                        'points_deducted' => self::POINTS_MAP[$violationData['severity']],
+                    ])
+                );
             }
         }
     }

@@ -56,4 +56,13 @@ class User extends Authenticatable
     {
         return $this->hasOne(Employee::class);
     }
+
+    /**
+     * Tài khoản tự đăng ký (routes/auth.php — register) đang chờ Admin duyệt (gán vai trò +
+     * kích hoạt) trước khi được phép đăng nhập. Xem LoginController, UsersController::update().
+     */
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
 }

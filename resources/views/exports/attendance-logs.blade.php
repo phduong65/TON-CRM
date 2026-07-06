@@ -1,5 +1,6 @@
 @php
-    $headers = ['STT', 'Ngày', 'Nhân viên', 'Mã NV', 'Chi nhánh', 'Đội nhóm', 'Ca', 'Check-in', 'Check-out', 'Trễ (phút)', 'Sớm (phút)', 'Phương thức'];
+    $headers = ['STT', 'Ngày', 'Nhân viên', 'Mã NV', 'Chi nhánh', 'Đội nhóm', 'Ca', 'Check-in', 'Check-out', 'Giờ công', 'Công', 'Giờ tăng ca', 'Trễ (phút)', 'Sớm (phút)', 'Phương thức'];
+    $fmt = fn($n) => rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.');
 @endphp
 <table>
     @include('exports.partials.banner', ['title' => 'BÁO CÁO CHẤM CÔNG', 'subtitle' => $rangeLabel, 'colspan' => count($headers)])
@@ -16,6 +17,8 @@
         @php
             $rowBg = $i % 2 === 0 ? '#ffffff' : '#f8fafc';
             $onTime = $log->late_minutes == 0 && $log->early_minutes == 0;
+            $workedHours = $log->netWorkedHours();
+            $cong        = $log->computeCong();
         @endphp
         <tr>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $i + 1 }}</td>
@@ -24,9 +27,12 @@
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $log->employee?->code }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $log->employee?->branch?->name }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $log->employee?->team?->name }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $log->shiftSchedule?->shift?->name ?? '—' }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $log->shiftSchedule?->isFlexible() ? 'Ca linh hoạt' : ($log->shiftSchedule?->shift?->name ?? '—') }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $log->check_in_at?->format('H:i:s') ?? '—' }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $log->check_out_at?->format('H:i:s') ?? '—' }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $workedHours !== null ? $fmt($workedHours) : '—' }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; font-weight:bold;">{{ $cong !== null ? $fmt($cong) : '—' }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:{{ $log->overtime_hours > 0 ? '#b91c1c' : '#94a3b8' }};">{{ $log->overtime_hours > 0 ? $fmt((float) $log->overtime_hours) : '' }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:{{ $log->late_minutes > 0 ? '#b45309' : '#94a3b8' }};">{{ $log->late_minutes ?: '' }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:{{ $log->early_minutes > 0 ? '#b45309' : '#94a3b8' }};">{{ $log->early_minutes ?: '' }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:{{ $onTime ? '#15803d' : '#b45309' }};">

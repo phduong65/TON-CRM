@@ -11,16 +11,16 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Dựng dữ liệu cho "Bảng chấm công" (báo cáo công dạng lưới NV x ngày), theo
- * mẫu bảng công truyền thống: mỗi ô ngày là số "công" quy đổi từ giờ làm thực
- * tế trên giờ công chuẩn của ca (Shift::standard_work_hours) — trừ ca loại
- * fulltime/văn phòng (Shift::shift_type = fulltime) luôn tính flat 1 công cho
- * 1 ca chấm công đủ vào-ra, không quy đổi theo giờ — cộng các cột tổng hợp
- * (ngày công, nghỉ có/không lương, nghỉ lễ, đi trễ/về sớm, quên chấm công...).
+ * Dựng dữ liệu cho "Bảng chấm công" (báo cáo công dạng lưới NV x ngày). Công thức quy đổi
+ * giờ làm thực tế sang "công" cho từng lượt chấm công nằm ở AttendanceLog::computeCong() —
+ * dùng chung với cột "Công" ở Báo cáo chấm công (attendance-logs) để 2 màn hình luôn khớp
+ * nhau — cộng thêm các cột tổng hợp (ngày công, nghỉ có/không lương, nghỉ lễ, đi trễ/về
+ * sớm, quên chấm công...).
  *
- * Các khái niệm hệ thống chưa lưu trữ (trạng thái Thử việc, tăng ca) được giữ
- * nguyên bố cục cột như file mẫu nhưng luôn trả về 0 — theo yêu cầu người
- * dùng khi xác nhận phạm vi tính năng.
+ * Tăng ca (overtime_shifts/overtime_hours/extra_hours) lấy từ AttendanceLog::overtime_hours —
+ * cộng dồn khi duyệt yêu cầu "Tăng ca" (StaffRequestsController::applyOvertime()). Trạng thái
+ * Thử việc thì hệ thống chưa lưu trữ, vẫn giữ nguyên bố cục cột "Chính thức/Thử việc" như file
+ * mẫu nhưng cột "Thử việc" luôn trả về 0.
  */
 class AttendanceTimesheetBuilder
 {
@@ -116,6 +116,8 @@ class AttendanceTimesheetBuilder
         $earlyCount      = 0;
         $missingCheckInCount  = 0;
         $missingCheckOutCount = 0;
+        $overtimeShiftDays    = 0;
+        $overtimeHoursTotal   = 0.0;
 
         foreach ($days as $day) {
             $key     = $employee->id . '_' . $day->toDateString();
@@ -143,34 +145,36 @@ class AttendanceTimesheetBuilder
                 continue;
             }
 
-            $workdayInDay = 0.0;
+            $workdayInDay  = 0.0;
+            $dayHasOvertime = false;
 
             if ($daySchedules->isNotEmpty()) {
                 foreach ($daySchedules as $schedule) {
                     $log = $dayLogs->firstWhere('shift_schedule_id', $schedule->id);
 
+                    // Giờ tăng ca đã duyệt (nếu có) vẫn được cộng công dù thiếu chấm công vào/ra —
+                    // xem StaffRequestsController::applyOvertime().
+                    $overtimeHours = (float) ($log?->overtime_hours ?? 0);
+                    if ($overtimeHours > 0) {
+                        $overtimeHoursTotal += $overtimeHours;
+                        $dayHasOvertime = true;
+                    }
+
                     if (!$log || !$log->check_in_at) {
                         $missingCheckInCount++;
+                        $workdayInDay += $log?->overtimeCong($schedule->shift) ?? 0;
                         continue;
                     }
                     if (!$log->check_out_at) {
                         $missingCheckOutCount++;
+                        $workdayInDay += $log->overtimeCong($schedule->shift);
                         continue;
                     }
 
-                    if ($log->full_credit) {
-                        // Đi muộn/về sớm đã được duyệt "Công thường" — tính đủ công dù giờ chấm thực tế ngắn hơn.
-                        $credit = 1.0;
-                    } elseif ($schedule->shift?->isFulltimeCategory() ?? true) {
-                        // Ca văn phòng/full-time: 1 ca chấm công đủ vào-ra = 1 công, không quy đổi theo giờ.
-                        $credit = 1.0;
-                    } else {
-                        $standardHours = $schedule->shift->standardWorkHours();
-                        $workedHours   = $log->check_in_at->diffInMinutes($log->check_out_at) / 60;
-                        $credit        = round($workedHours / $standardHours, 2);
-                    }
-
-                    $workdayInDay += $credit;
+                    // Dùng chung công thức với Báo cáo chấm công (AttendanceLog::computeCong()) —
+                    // truyền sẵn $schedule->shift (đã eager-load) để tránh lazy-load quan hệ.
+                    // computeCong() đã bao gồm phần công quy đổi từ overtime_hours ở trên.
+                    $workdayInDay += $log->computeCong($schedule->shift);
 
                     if ($log->late_minutes > 0) {
                         $lateCount++;
@@ -181,10 +185,16 @@ class AttendanceTimesheetBuilder
                 }
             } else {
                 // Chấm công ngoài lịch (không có ca xếp trước) — quy đổi theo giờ chuẩn mặc định.
+                // Bao gồm cả log chỉ chứa giờ tăng ca (tăng ca vào ngày nghỉ/không có ca).
                 foreach ($dayLogs as $log) {
+                    $overtimeHours = (float) $log->overtime_hours;
+                    if ($overtimeHours > 0) {
+                        $overtimeHoursTotal += $overtimeHours;
+                        $dayHasOvertime = true;
+                    }
+
                     if ($log->check_in_at && $log->check_out_at) {
-                        $workedHours   = $log->check_in_at->diffInMinutes($log->check_out_at) / 60;
-                        $workdayInDay += $log->full_credit ? 1.0 : round($workedHours / 8.0, 2);
+                        $workdayInDay += $log->computeCong();
 
                         if ($log->late_minutes > 0) {
                             $lateCount++;
@@ -192,8 +202,14 @@ class AttendanceTimesheetBuilder
                         if ($log->early_minutes > 0) {
                             $earlyCount++;
                         }
+                    } else {
+                        $workdayInDay += $log->overtimeCong();
                     }
                 }
+            }
+
+            if ($dayHasOvertime) {
+                $overtimeShiftDays++;
             }
 
             if ($holiday && $holiday->is_paid && $workdayInDay > 0) {
@@ -225,9 +241,9 @@ class AttendanceTimesheetBuilder
                 'missing_total'         => $missingCheckInCount + $missingCheckOutCount,
                 'missing_check_in'      => $missingCheckInCount,
                 'missing_check_out'     => $missingCheckOutCount,
-                'overtime_shifts'       => 0,
-                'overtime_hours'        => 0,
-                'extra_hours'           => 0,
+                'overtime_shifts'       => $overtimeShiftDays,
+                'overtime_hours'        => round($overtimeHoursTotal, 2),
+                'extra_hours'           => round($overtimeHoursTotal, 2),
                 'holiday_bonus_amount'  => $holidayBonusAmount,
             ],
         ];

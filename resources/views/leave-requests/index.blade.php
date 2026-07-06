@@ -27,7 +27,7 @@
                 @if($isApprover)
                 <div class="min-w-[220px]">
                     <x-employee-combobox name="employee_id" :employees="$employees" :selected="request('employee_id')"
-                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." />
+                        label="Nhân viên" placeholder="Tìm theo tên, mã NV..." :compact="true" />
                 </div>
                 @endif
                 <div>
@@ -145,29 +145,39 @@
                 <i class="bi bi-x-lg text-sm"></i>
             </button>
         </div>
-        <form id="createLeaveForm" action="{{ route('leave-requests.store') }}" method="POST" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4">
+        <form id="createLeaveForm" action="{{ route('leave-requests.store') }}" method="POST" class="px-4 sm:px-6 py-4 sm:py-5 space-y-4" data-own-employee-id="{{ auth()->user()->employee?->id }}">
             @csrf
+            <input type="hidden" name="_modal" value="createLeaveModal">
+            @if($isApprover)
+            <div id="createLeaveEmployeeField">
+                <x-employee-combobox name="employee_id" :employees="$employees" :selected="old('employee_id')"
+                    label="Nhân viên" placeholder="Chọn nhân viên cần tạo đơn..." />
+                @error('employee_id') <p class="form-error">{{ $message }}</p> @enderror
+            </div>
+            @endif
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Ngày bắt đầu <span class="text-red-500">*</span></label>
-                    <input type="date" name="date_from" class="form-input" required>
+                    <input type="date" name="date_from" class="form-input" value="{{ old('date_from') }}" required>
                     @error('date_from') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="form-label">Đến ngày <span class="text-red-500">*</span></label>
-                    <input type="date" name="date_to" class="form-input" required>
+                    <input type="date" name="date_to" class="form-input" value="{{ old('date_to') }}" required>
                     @error('date_to') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div>
                 <label class="form-label">Loại nghỉ phép <span class="text-red-500">*</span></label>
                 <select name="type" class="form-input" id="createLeaveType" required>
-                    <option value="annual">Nghỉ phép năm</option>
-                    <option value="sick">Nghỉ ốm</option>
-                    <option value="unpaid">Nghỉ không lương</option>
-                    <option value="other">Khác</option>
+                    <option value="annual" @selected(old('type', 'annual') === 'annual')>Nghỉ phép năm</option>
+                    <option value="sick" @selected(old('type') === 'sick')>Nghỉ ốm</option>
+                    <option value="unpaid" @selected(old('type') === 'unpaid')>Nghỉ không lương</option>
+                    <option value="other" @selected(old('type') === 'other')>Khác</option>
                 </select>
-                <p id="createLeaveBalanceNote" class="text-xs text-slate-400 mt-1 hidden"></p>
+                <div id="createLeaveBalanceNote" class="mt-1.5 hidden">
+                    <span id="createLeaveBalanceBadge" class="badge"></span>
+                </div>
                 @error('type') <p class="form-error">{{ $message }}</p> @enderror
             </div>
             <div>
@@ -178,28 +188,28 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <x-employee-combobox name="handover_employee_id" :employees="$allEmployees"
+                    <x-employee-combobox name="handover_employee_id" :employees="$allEmployees" :selected="old('handover_employee_id')"
                         label="Người nhận bàn giao" placeholder="Tìm theo tên, mã NV..." />
                 </div>
                 <div>
                     <label class="form-label">Số điện thoại</label>
-                    <input type="text" name="handover_phone" class="form-input" placeholder="SĐT người nhận bàn giao...">
+                    <input type="text" name="handover_phone" class="form-input" value="{{ old('handover_phone') }}" placeholder="SĐT người nhận bàn giao...">
                 </div>
             </div>
             <div>
                 <label class="form-label">Nội dung trao đổi</label>
-                <textarea name="handover_note" rows="2" class="form-input" placeholder="Nội dung bàn giao, trao đổi công việc..."></textarea>
+                <textarea name="handover_note" rows="2" class="form-input" placeholder="Nội dung bàn giao, trao đổi công việc...">{{ old('handover_note') }}</textarea>
             </div>
             <div>
                 <label class="form-label">Lý do <span class="text-red-500">*</span></label>
-                <textarea name="reason" rows="3" class="form-input" placeholder="Lý do xin nghỉ..." required></textarea>
+                <textarea name="reason" rows="3" class="form-input" placeholder="Lý do xin nghỉ..." required>{{ old('reason') }}</textarea>
                 @error('reason') <p class="form-error">{{ $message }}</p> @enderror
             </div>
             <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                 <button type="button" onclick="closeModal('createLeaveModal')" class="btn-secondary">Hủy</button>
                 <button type="submit" class="btn-primary"><i class="bi bi-send"></i> Gửi đơn</button>
             </div>
-            <script type="application/json" id="createLeaveShiftData">@json($ownShiftSchedules)</script>
+            <script type="application/json" id="createLeaveShiftData">@json($shiftScheduleOptions)</script>
             <script type="application/json" id="createLeaveBalanceData">@json($annualLeaveBalances)</script>
         </form>
     </div>
@@ -242,11 +252,14 @@ function refreshCreateLeaveShifts() {
     if (!form) return;
     const select = document.getElementById('createLeaveShiftSelect');
     const data = JSON.parse(document.getElementById('createLeaveShiftData').textContent || '[]');
+    const empHidden = form.querySelector('#createLeaveEmployeeField .emp-combobox-value');
+    const employeeId = empHidden ? empHidden.value : form.dataset.ownEmployeeId;
     const dateFrom = form.querySelector('[name="date_from"]').value;
     const dateTo = form.querySelector('[name="date_to"]').value || dateFrom;
     const currentValue = select.value;
 
     const matches = data.filter(function (s) {
+        if (!employeeId || String(s.employee_id) !== String(employeeId)) return false;
         if (dateFrom && s.date < dateFrom) return false;
         if (dateTo && s.date > dateTo) return false;
         return true;
@@ -265,27 +278,69 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!form) return;
     ['date_from', 'date_to'].forEach(function (name) {
         const el = form.querySelector('[name="' + name + '"]');
-        if (el) el.addEventListener('change', refreshCreateLeaveShifts);
+        if (el) el.addEventListener('change', function () {
+            refreshCreateLeaveShifts();
+            refreshCreateLeaveBalanceNote();
+        });
+    });
+    const empHidden = form.querySelector('#createLeaveEmployeeField .emp-combobox-value');
+    if (empHidden) empHidden.addEventListener('change', function () {
+        refreshCreateLeaveShifts();
+        refreshCreateLeaveBalanceNote();
     });
 });
 
-// Hiển thị số ngày phép năm còn lại của chính nhân viên đang đăng nhập khi chọn "Nghỉ phép năm".
-const CREATE_LEAVE_OWN_EMPLOYEE_ID = {{ auth()->user()->employee?->id ?? 'null' }};
+// Hiển thị số ngày phép năm còn lại của nhân viên đang chọn (hoặc chính mình nếu không phải
+// approver) khi chọn "Nghỉ phép năm", cảnh báo trực tiếp nếu số ngày xin nghỉ vượt quá số còn lại.
 function refreshCreateLeaveBalanceNote() {
+    const form = document.getElementById('createLeaveForm');
     const typeSelect = document.getElementById('createLeaveType');
     const note = document.getElementById('createLeaveBalanceNote');
-    if (!typeSelect || !note) return;
-    const balances = JSON.parse(document.getElementById('createLeaveBalanceData').textContent || '{}');
-    const remaining = CREATE_LEAVE_OWN_EMPLOYEE_ID !== null ? balances[CREATE_LEAVE_OWN_EMPLOYEE_ID] : undefined;
+    const badge = document.getElementById('createLeaveBalanceBadge');
+    if (!form || !typeSelect || !note || !badge) return;
 
-    if (typeSelect.value === 'annual' && remaining !== undefined) {
-        note.textContent = 'Phép năm còn lại: ' + remaining + ' ngày';
-        note.classList.remove('hidden');
-    } else if (typeSelect.value === 'annual') {
-        note.textContent = 'Bạn không đủ điều kiện nghỉ phép năm (chỉ áp dụng NV chính thức, văn phòng).';
-        note.classList.remove('hidden');
-    } else {
+    if (typeSelect.value !== 'annual') {
         note.classList.add('hidden');
+        return;
+    }
+
+    const empHidden = form.querySelector('#createLeaveEmployeeField .emp-combobox-value');
+    const employeeId = (empHidden && empHidden.value) ? empHidden.value : form.dataset.ownEmployeeId;
+    const balances = JSON.parse(document.getElementById('createLeaveBalanceData').textContent || '{}');
+    const remaining = employeeId ? balances[employeeId] : undefined;
+
+    badge.classList.remove('badge-success', 'badge-warning', 'badge-danger');
+    note.classList.remove('hidden');
+
+    if (!employeeId) {
+        badge.classList.add('badge-warning');
+        badge.innerHTML = '<i class="bi bi-info-circle-fill mr-1"></i>Chọn nhân viên để xem số ngày phép năm còn lại';
+        return;
+    }
+
+    if (remaining === undefined) {
+        badge.classList.add('badge-danger');
+        badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill mr-1"></i>Không đủ điều kiện nghỉ phép năm — hãy chọn loại nghỉ khác (Nghỉ ốm / Nghỉ không lương / Khác)';
+        return;
+    }
+
+    const dateFrom = form.querySelector('[name="date_from"]').value;
+    const dateTo = form.querySelector('[name="date_to"]').value;
+    let requestedDays = null;
+    if (dateFrom && dateTo) {
+        const diffMs = new Date(dateTo) - new Date(dateFrom);
+        if (diffMs >= 0) requestedDays = Math.round(diffMs / 86400000) + 1;
+    }
+
+    if (requestedDays !== null && requestedDays > remaining) {
+        badge.classList.add('badge-danger');
+        badge.innerHTML = '<i class="bi bi-exclamation-triangle-fill mr-1"></i>Còn ' + remaining + ' ngày phép năm — không đủ cho ' + requestedDays + ' ngày đang xin. Hãy chọn loại nghỉ khác hoặc giảm số ngày.';
+    } else if (remaining <= 2) {
+        badge.classList.add('badge-warning');
+        badge.innerHTML = '<i class="bi bi-info-circle-fill mr-1"></i>Phép năm còn lại: ' + remaining + ' ngày';
+    } else {
+        badge.classList.add('badge-success');
+        badge.innerHTML = '<i class="bi bi-calendar-check-fill mr-1"></i>Phép năm còn lại: ' + remaining + ' ngày';
     }
 }
 document.addEventListener('DOMContentLoaded', function () {
@@ -295,5 +350,11 @@ document.addEventListener('DOMContentLoaded', function () {
         refreshCreateLeaveBalanceNote();
     }
 });
+
+@if($errors->any() && old('_modal') === 'createLeaveModal')
+document.addEventListener('DOMContentLoaded', function() {
+    openModal('createLeaveModal');
+});
+@endif
 </script>
 @endpush

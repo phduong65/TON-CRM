@@ -12,6 +12,7 @@ use App\Models\ShiftSchedule;
 use App\Models\ShiftSwapRequest;
 use App\Models\StaffRequest;
 use App\Models\Team;
+use App\Services\AnnualLeaveService;
 use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class StaffRequestsController extends Controller
         'late_early'            => 'Đi muộn về sớm',
         'leave'                 => 'Nghỉ phép',
         'time_change'           => 'Thay đổi giờ vào/ra',
+        'overtime'              => 'Tăng ca',
         'shift_swap'            => 'Đổi ca làm',
     ];
 
@@ -119,6 +121,14 @@ class StaffRequestsController extends Controller
         $branches = $isApprover ? Branch::where('is_active', true)->orderBy('name')->get() : collect();
         $teams    = $isApprover ? Team::where('is_active', true)->orderBy('name')->get() : collect();
 
+        // Số ngày phép năm còn lại theo từng nhân viên đủ điều kiện (chính thức + văn phòng),
+        // JS hiển thị dưới ô "Loại nghỉ phép" trong form Nghỉ phép của hub khi chọn "annual".
+        $annualLeaveService = app(AnnualLeaveService::class);
+        $balanceScope = $isApprover ? $allEmployees : Employee::where('id', $ownEmployeeId)->get();
+        $annualLeaveBalances = $balanceScope
+            ->filter(fn(Employee $e) => $e->isEligibleForAnnualLeave())
+            ->mapWithKeys(fn(Employee $e) => [$e->id => $annualLeaveService->remainingDays($e)]);
+
         // Ca đã xếp (status=scheduled) của các nhân viên liên quan, dùng làm dữ liệu cho ô chọn
         // "Ca làm" trong form xin nghỉ — JS lọc theo employee_id + ngày phía client, không cần AJAX.
         $scheduleEmployeeIds = $isApprover ? $employees->pluck('id')->all() : array_filter([$ownEmployeeId]);
@@ -135,7 +145,7 @@ class StaffRequestsController extends Controller
                 'label'       => $s->work_date->format('d/m/Y') . ' — ' . $s->shift->name,
             ]);
 
-        return view('staff-requests.index', compact('requests', 'employees', 'allEmployees', 'branches', 'teams', 'isApprover', 'canApproveStaff', 'canApproveLeave', 'canApproveSwap', 'typeCounts', 'shiftScheduleOptions'));
+        return view('staff-requests.index', compact('requests', 'employees', 'allEmployees', 'branches', 'teams', 'isApprover', 'canApproveStaff', 'canApproveLeave', 'canApproveSwap', 'typeCounts', 'shiftScheduleOptions', 'annualLeaveBalances'));
     }
 
     private function normalizeLeave(LeaveRequest $lr): array
@@ -245,6 +255,10 @@ class StaffRequestsController extends Controller
                 'new_check_in'  => $validated['new_check_in'],
                 'new_check_out' => $validated['new_check_out'],
             ],
+            'overtime' => [
+                'from_time' => $validated['ot_from_time'],
+                'to_time'   => $validated['ot_to_time'],
+            ],
         };
 
         $prefixes = [
@@ -252,6 +266,7 @@ class StaffRequestsController extends Controller
             'business_trip'         => 'BTR',
             'late_early'            => 'LE',
             'time_change'           => 'TC',
+            'overtime'              => 'OT',
         ];
 
         $count = StaffRequest::where('type', $type)
@@ -295,6 +310,10 @@ class StaffRequestsController extends Controller
 
             if ($staffRequest->type === 'late_early' && $outcome === 'normal') {
                 $this->applyLateEarlyForgiveness($staffRequest);
+            }
+
+            if ($staffRequest->type === 'overtime') {
+                $this->applyOvertime($staffRequest);
             }
 
             $staffRequest->update([
@@ -430,6 +449,41 @@ class StaffRequestsController extends Controller
         }
 
         $log->update($data);
+    }
+
+    /**
+     * Duyệt yêu cầu "Tăng ca" — cộng thêm overtime_hours vào AttendanceLog của ngày đó (theo
+     * ca đã xếp nếu có, để quy đổi công theo giờ công chuẩn của đúng ca). Nếu ngày đó nhân viên
+     * không có ca/chưa chấm công (VD tăng ca vào ngày nghỉ), tự tạo mới 1 log chỉ chứa giờ tăng
+     * ca — AttendanceLog::computeCong() vẫn tính ra công dù không có giờ vào/ra thực tế.
+     * Cộng dồn (không ghi đè) để nhiều yêu cầu tăng ca duyệt cùng ngày không mất dữ liệu nhau.
+     */
+    private function applyOvertime(StaffRequest $staffRequest): void
+    {
+        $workDate      = $staffRequest->work_date->toDateString();
+        $overtimeHours = $staffRequest->overtimeHours();
+
+        $schedule = ShiftSchedule::where('employee_id', $staffRequest->employee_id)
+            ->where('work_date', $workDate)
+            ->where('status', 'scheduled')
+            ->first();
+
+        $log = AttendanceLog::where('employee_id', $staffRequest->employee_id)
+            ->where('work_date', $workDate)
+            ->when($schedule, fn($q) => $q->where('shift_schedule_id', $schedule->id), fn($q) => $q->whereNull('shift_schedule_id'))
+            ->lockForUpdate()
+            ->first();
+
+        if ($log) {
+            $log->update(['overtime_hours' => (float) $log->overtime_hours + $overtimeHours]);
+        } else {
+            AttendanceLog::create([
+                'employee_id'       => $staffRequest->employee_id,
+                'shift_schedule_id' => $schedule?->id,
+                'work_date'         => $workDate,
+                'overtime_hours'    => $overtimeHours,
+            ]);
+        }
     }
 
     private function computeLateMinutesAt(Carbon $at, Shift $shift): int

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AttendanceLog;
 use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\Shift;
@@ -54,6 +55,61 @@ class ShiftScheduleTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_grid_shows_overtime_badge_for_day_with_no_schedule(): void
+    {
+        $workDate = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+        AttendanceLog::create([
+            'employee_id' => $this->employee->id, 'work_date' => $workDate, 'overtime_hours' => 2.5,
+        ]);
+
+        $response = $this->actingAs($this->manager)->get(route('shift-schedules.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('+2.5h TC');
+        // Manager có quyền create-shift-schedules -> vẫn thấy nút "Xếp ca" cạnh badge tăng ca.
+        $response->assertSee('Xếp ca');
+    }
+
+    public function test_grid_shows_overtime_badge_without_assign_button_for_view_only_user(): void
+    {
+        $staffRole = Role::firstOrCreate(['name' => 'staff']);
+        $staffRole->givePermissionTo(Permission::firstOrCreate(['name' => 'view-shift-schedules']));
+        $staffUser = User::factory()->create();
+        $staffUser->assignRole('staff');
+
+        $workDate = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+        AttendanceLog::create([
+            'employee_id' => $this->employee->id, 'work_date' => $workDate, 'overtime_hours' => 1.5,
+        ]);
+
+        $response = $this->actingAs($staffUser)->get(route('shift-schedules.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('+1.5h TC');
+    }
+
+    public function test_grid_shows_overtime_badge_when_underlying_schedule_was_later_cancelled(): void
+    {
+        $workDate = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->employee->id, 'shift_id' => $this->shift->id,
+            'work_date' => $workDate, 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+        AttendanceLog::create([
+            'employee_id' => $this->employee->id, 'shift_schedule_id' => $schedule->id,
+            'work_date' => $workDate, 'overtime_hours' => 3,
+        ]);
+
+        // Ca bị huỷ sau khi tăng ca đã được duyệt gắn với nó — log vẫn còn shift_schedule_id
+        // trỏ tới ca đã huỷ này, nhưng ô trên lưới không còn coi ngày đó là "có ca" nữa.
+        $schedule->update(['status' => 'cancelled']);
+
+        $response = $this->actingAs($this->manager)->get(route('shift-schedules.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('+3h TC');
+    }
+
     public function test_manager_can_assign_single_day_shift(): void
     {
         $response = $this->actingAs($this->manager)->post(route('shift-schedules.store'), [
@@ -68,6 +124,81 @@ class ShiftScheduleTest extends TestCase
             'shift_id'    => $this->shift->id,
             'work_date'   => '2026-07-06',
             'assignment_type' => 'rotation',
+        ]);
+    }
+
+    public function test_manager_can_assign_flexible_shift(): void
+    {
+        $response = $this->actingAs($this->manager)->post(route('shift-schedules.store'), [
+            'employee_id'         => $this->employee->id,
+            'work_date'           => '2026-07-06',
+            'custom_start_time'   => '12:00',
+            'custom_end_time'     => '20:00',
+            'custom_is_wfh'       => '1',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('shift_schedules', [
+            'employee_id'       => $this->employee->id,
+            'work_date'         => '2026-07-06',
+            'shift_id'          => null,
+            'custom_start_time' => '12:00:00',
+            'custom_end_time'   => '20:00:00',
+            'custom_is_wfh'     => 1,
+        ]);
+    }
+
+    public function test_assign_shift_fails_without_shift_id_or_custom_time(): void
+    {
+        $response = $this->actingAs($this->manager)->post(route('shift-schedules.store'), [
+            'employee_id' => $this->employee->id,
+            'work_date'   => '2026-07-06',
+        ]);
+
+        $response->assertSessionHasErrors(['shift_id', 'custom_start_time']);
+        $this->assertDatabaseMissing('shift_schedules', ['employee_id' => $this->employee->id]);
+    }
+
+    public function test_manager_can_convert_template_schedule_to_flexible(): void
+    {
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-06',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->manager)->put(route('shift-schedules.update', $schedule), [
+            'custom_start_time' => '12:00',
+            'custom_end_time'   => '20:00',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('shift_schedules', [
+            'id' => $schedule->id, 'shift_id' => null,
+            'custom_start_time' => '12:00:00', 'custom_end_time' => '20:00:00',
+        ]);
+    }
+
+    public function test_manager_can_convert_flexible_schedule_to_template(): void
+    {
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => null,
+            'custom_start_time' => '12:00', 'custom_end_time' => '20:00',
+            'work_date'   => '2026-07-06',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->manager)->put(route('shift-schedules.update', $schedule), [
+            'shift_id' => $this->shift->id,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('shift_schedules', [
+            'id' => $schedule->id, 'shift_id' => $this->shift->id, 'custom_start_time' => null,
         ]);
     }
 
@@ -245,6 +376,158 @@ class ShiftScheduleTest extends TestCase
         $response = $this->actingAs($staffUser)->delete(route('shift-schedules.destroy', $schedule));
 
         $response->assertStatus(403);
+    }
+
+    public function test_manager_can_bulk_delete_selected_schedules_including_a_batch(): void
+    {
+        $singleSchedule = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-06',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $this->actingAs($this->manager)->post(route('shift-schedules.bulk-store'), [
+            'employee_ids' => [$this->employee->id],
+            'shift_ids'    => [$this->shift->id],
+            'date_from'    => '2026-07-13',
+            'date_to'      => '2026-07-17',
+            'weekdays'     => [1, 2, 3, 4, 5],
+        ])->assertRedirect();
+
+        $batchId = ShiftSchedule::whereNotNull('batch_id')->first()->batch_id;
+        $this->assertEquals(5, ShiftSchedule::where('batch_id', $batchId)->count());
+
+        $oneBatchRow = ShiftSchedule::where('batch_id', $batchId)->first();
+
+        $response = $this->actingAs($this->manager)->delete(route('shift-schedules.bulk-destroy'), [
+            'schedule_ids' => [$singleSchedule->id, $oneBatchRow->id],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('shift_schedules', ['id' => $singleSchedule->id]);
+        $this->assertEquals(0, ShiftSchedule::where('batch_id', $batchId)->count());
+    }
+
+    public function test_employee_with_view_only_permission_cannot_bulk_delete_shift_schedules(): void
+    {
+        $staffRole = Role::firstOrCreate(['name' => 'staff']);
+        $staffRole->givePermissionTo(Permission::firstOrCreate(['name' => 'view-shift-schedules']));
+
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-06',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $staffUser = User::factory()->create();
+        $staffUser->assignRole('staff');
+
+        $response = $this->actingAs($staffUser)->delete(route('shift-schedules.bulk-destroy'), [
+            'schedule_ids' => [$schedule->id],
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('shift_schedules', ['id' => $schedule->id]);
+    }
+
+    public function test_manager_can_delete_all_schedules_matching_current_week_and_filters(): void
+    {
+        $otherEmployee = Employee::create([
+            'code' => 'EMP-04', 'name' => 'Phạm Văn D', 'branch_id' => $this->employee->branch_id, 'is_active' => true,
+        ]);
+
+        $inWeek = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-06', // Monday of the target week
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $otherEmployeeInWeek = ShiftSchedule::create([
+            'employee_id' => $otherEmployee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-07',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $outsideWeek = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-20',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->manager)->delete(route('shift-schedules.destroy-all'), [
+            'week' => '2026-07-06',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('shift_schedules', ['id' => $inWeek->id]);
+        $this->assertDatabaseMissing('shift_schedules', ['id' => $otherEmployeeInWeek->id]);
+        $this->assertDatabaseHas('shift_schedules', ['id' => $outsideWeek->id]);
+    }
+
+    public function test_delete_all_respects_employee_filter(): void
+    {
+        $otherEmployee = Employee::create([
+            'code' => 'EMP-05', 'name' => 'Trần Thị E', 'branch_id' => $this->employee->branch_id, 'is_active' => true,
+        ]);
+
+        $mine = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-06',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $others = ShiftSchedule::create([
+            'employee_id' => $otherEmployee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-06',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $response = $this->actingAs($this->manager)->delete(route('shift-schedules.destroy-all'), [
+            'week'        => '2026-07-06',
+            'employee_id' => $this->employee->id,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('shift_schedules', ['id' => $mine->id]);
+        $this->assertDatabaseHas('shift_schedules', ['id' => $others->id]);
+    }
+
+    public function test_employee_with_view_only_permission_cannot_delete_all_shift_schedules(): void
+    {
+        $staffRole = Role::firstOrCreate(['name' => 'staff']);
+        $staffRole->givePermissionTo(Permission::firstOrCreate(['name' => 'view-shift-schedules']));
+
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->employee->id,
+            'shift_id'    => $this->shift->id,
+            'work_date'   => '2026-07-06',
+            'assignment_type' => 'rotation',
+            'status'      => 'scheduled',
+        ]);
+
+        $staffUser = User::factory()->create();
+        $staffUser->assignRole('staff');
+
+        $response = $this->actingAs($staffUser)->delete(route('shift-schedules.destroy-all'), [
+            'week' => '2026-07-06',
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('shift_schedules', ['id' => $schedule->id]);
     }
 
     // ── Xếp ca cố định lặp lại hàng tuần (không nhập "Đến ngày") ────────────

@@ -588,4 +588,46 @@ class NotificationService
 
         $this->dispatchToMany($recipients, 'staff_request_rejected', 'Yêu cầu bị từ chối', $body, $data, auth()->id());
     }
+
+    // -------------------------------------------------------------------------
+    // Account registration notifications (thông báo trong app — song song với email SMTP,
+    // xem RegisterController::register() và UsersController::update()/reject())
+    // Recipients: người có quyền 'manage-users' (khi đăng ký) + chính người đăng ký (khi có kết quả)
+    // -------------------------------------------------------------------------
+
+    public function notifyUserRegistered(User $user): void
+    {
+        $data = ['user_id' => $user->id];
+        $body = sprintf('%s (%s) vừa đăng ký tài khoản và đang chờ duyệt', $user->name, $user->email);
+
+        $this->dispatchToMany(
+            $this->approverIds('manage-users'),
+            'account_registered',
+            'Tài khoản mới cần duyệt',
+            $body,
+            $data
+        );
+    }
+
+    public function notifyUserApproved(User $user): void
+    {
+        $this->sendToUser(
+            $user->id,
+            'account_approved',
+            'Tài khoản đã được duyệt',
+            'Tài khoản của bạn đã được duyệt và kích hoạt — bạn có thể đăng nhập ngay.',
+            ['user_id' => $user->id]
+        );
+    }
+
+    public function notifyUserRejected(User $user): void
+    {
+        $this->sendToUser(
+            $user->id,
+            'account_rejected',
+            'Yêu cầu đăng ký chưa được duyệt',
+            'Yêu cầu đăng ký tài khoản của bạn chưa được duyệt. Vui lòng liên hệ quản trị viên.',
+            ['user_id' => $user->id]
+        );
+    }
 }

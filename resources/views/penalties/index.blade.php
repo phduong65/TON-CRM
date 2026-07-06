@@ -282,15 +282,35 @@
 @endpush
 
 @if ($errors->any() && old('_modal'))
+@php
+    $reopenPenalty = (old('_modal') === 'editPenaltyModal' && old('_edit_id'))
+        ? \App\Models\Penalty::with(['members', 'attachments'])->find(old('_edit_id'))
+        : null;
+    $reopenMembers = $reopenPenalty
+        ? $reopenPenalty->members->map(fn($m) => ['employee_id' => $m->employee_id, 'points_deducted' => $m->points_deducted])->values()->toArray()
+        : [];
+    $reopenAttachments = $reopenPenalty
+        ? $reopenPenalty->attachments->map(fn($a) => ['id' => $a->id, 'filename' => $a->filename, 'type' => $a->type, 'url' => $a->url])->values()->toArray()
+        : [];
+@endphp
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    @if(old('_modal') === 'editPenaltyModal' && old('_edit_id'))
-    var editId = '{{ (int) old('_edit_id') }}';
-    document.getElementById('editPenaltyForm').action = '/penalties/' + editId;
-    document.getElementById('editPenaltyFormId').value = editId;
-    @endif
+    @if($reopenPenalty)
+    openEditPenaltyModal(
+        '{{ old('_edit_id') }}',
+        '{{ old('violation_id') }}',
+        '{{ old('_regulation_id') }}',
+        '{{ old('employee_id') }}',
+        '{{ old('points_deducted') }}',
+        '{{ old('money_deducted') }}',
+        {{ Illuminate\Support\Js::from(old('description')) }},
+        {!! json_encode(old('members', $reopenMembers)) !!},
+        {!! json_encode($reopenAttachments) !!}
+    );
+    @else
     openModal('{{ old('_modal', 'createPenaltyModal') }}');
+    @endif
 });
 </script>
 @endpush

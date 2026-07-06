@@ -126,8 +126,8 @@
                                     @endcan
                                     @can('delete-shifts')
                                     <button onclick="openDeleteShiftModal({{ $s->id }}, '{{ addslashes($s->name) }}')"
-                                            class="btn-ghost btn-sm text-red-600 dark:text-red-400" title="Vô hiệu hóa">
-                                        <i class="bi bi-slash-circle"></i>
+                                            class="btn-ghost btn-sm text-red-600 dark:text-red-400" title="Xoá ca">
+                                        <i class="bi bi-trash3"></i>
                                     </button>
                                     @endcan
                                 </div>
@@ -162,6 +162,7 @@
 @push('scripts')
 <script>
 function openEditShiftModal(data) {
+    document.getElementById('editShiftEditId').value = data.id ?? '';
     document.getElementById('editShiftCode').value = data.code ?? '';
     document.getElementById('editShiftName').value = data.name ?? '';
     document.getElementById('editShiftBranch').value = data.branch_id ?? '';
@@ -183,5 +184,30 @@ function openDeleteShiftModal(id, name) {
     document.getElementById('deleteShiftForm').action = '/shifts/' + id;
     openModal('deleteShiftModal');
 }
+
+@if($errors->any() && old('_modal'))
+document.addEventListener('DOMContentLoaded', function() {
+    @if(old('_modal') === 'editShiftModal')
+    openEditShiftModal({
+        id: '{{ old("_edit_id") }}',
+        code: '{{ old("code") }}',
+        name: '{{ old("name") }}',
+        branch_id: '{{ old("branch_id") }}',
+        start_time: '{{ old("start_time") }}',
+        end_time: '{{ old("end_time") }}',
+        is_overnight: {{ old("is_overnight") ? "true" : "false" }},
+        break_minutes: '{{ old("break_minutes") }}',
+        grace_late_minutes: '{{ old("grace_late_minutes") }}',
+        grace_early_minutes: '{{ old("grace_early_minutes") }}',
+        standard_work_hours: '{{ old("standard_work_hours") }}',
+        shift_type: '{{ old("shift_type") }}',
+        work_mode: '{{ old("work_mode") }}',
+        is_active: {{ old("is_active") ? "true" : "false" }}
+    });
+    @else
+    openModal('{{ old("_modal") }}');
+    @endif
+});
+@endif
 </script>
 @endpush

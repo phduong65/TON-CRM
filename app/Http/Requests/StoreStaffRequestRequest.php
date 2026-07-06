@@ -25,7 +25,7 @@ class StoreStaffRequestRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'type'        => 'required|in:attendance_correction,business_trip,late_early,time_change',
+            'type'        => 'required|in:attendance_correction,business_trip,late_early,time_change,overtime',
             'employee_id' => ($this->userIsApprover() ? 'required' : 'nullable') . '|exists:employees,id',
             'work_date'   => 'required|date',
             'reason'      => 'required|string|max:1000',
@@ -49,6 +49,27 @@ class StoreStaffRequestRequest extends FormRequest
                 'new_check_in'  => 'required|date_format:H:i',
                 'new_check_out' => 'required|date_format:H:i|after:new_check_in',
             ],
+            'overtime' => [
+                'ot_from_time' => 'required|date_format:H:i',
+                // Không dùng "after" — cho phép tăng ca qua đêm (VD 23:00–03:00 hôm sau).
+                // "different" chỉ chặn trường hợp giờ bắt đầu = giờ kết thúc (0 giờ, vô nghĩa).
+                'ot_to_time'   => ['required', 'date_format:H:i', 'different:ot_from_time', function ($attribute, $value, $fail) {
+                    $from = $this->input('ot_from_time');
+                    if (!$from || !preg_match('/^\d{2}:\d{2}$/', $value)) {
+                        return;
+                    }
+
+                    $fromAt = \Carbon\Carbon::parse($from);
+                    $toAt   = \Carbon\Carbon::parse($value);
+                    if ($toAt->lessThanOrEqualTo($fromAt)) {
+                        $toAt->addDay();
+                    }
+
+                    if ($fromAt->diffInMinutes($toAt) > 16 * 60) {
+                        $fail('Thời gian tăng ca không được vượt quá 16 giờ.');
+                    }
+                }],
+            ],
             default => [],
         });
     }
@@ -64,6 +85,7 @@ class StoreStaffRequestRequest extends FormRequest
             'check_out_at.required_without'   => 'Nhập giờ vào hoặc giờ ra (ít nhất 1 trong 2).',
             'to_time.after'                   => 'Giờ kết thúc phải sau giờ bắt đầu.',
             'new_check_out.after'             => 'Giờ ra mới phải sau giờ vào mới.',
+            'ot_to_time.different'            => 'Giờ kết thúc không được trùng giờ bắt đầu.',
         ];
     }
 }

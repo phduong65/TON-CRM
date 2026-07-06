@@ -59,6 +59,7 @@ class ShiftSwapRequestsController extends Controller
         $reqSchedule = ShiftSchedule::findOrFail($validated['requester_schedule_id']);
         $tgtSchedule = ShiftSchedule::findOrFail($validated['target_schedule_id']);
 
+        abort_if($reqSchedule->isFlexible() || $tgtSchedule->isFlexible(), 422, 'Không thể đề xuất đổi ca linh hoạt.');
         abort_unless($reqSchedule->employee_id === $employee->id, 403, 'Bạn chỉ có thể đề xuất đổi ca của chính mình.');
 
         $this->assertSwappable($reqSchedule, $tgtSchedule, $employee->id, $tgtSchedule->employee_id);
@@ -189,6 +190,7 @@ class ShiftSwapRequestsController extends Controller
         int $requesterEmployeeId,
         int $targetEmployeeId
     ): void {
+        abort_if($reqSchedule->isFlexible() || $tgtSchedule->isFlexible(), 422, 'Không thể đổi ca linh hoạt.');
         abort_if($reqSchedule->id === $tgtSchedule->id, 422, 'Không thể đổi ca với chính ca đó.');
         abort_if($requesterEmployeeId === $targetEmployeeId, 422, 'Không thể đổi ca với chính mình.');
         abort_if($reqSchedule->employee_id !== $requesterEmployeeId, 422, 'Ca này không còn thuộc về người yêu cầu.');

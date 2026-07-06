@@ -71,11 +71,15 @@
             const perms = window.SCHED_PERMS || {};
             const badges = [];
             if (s.is_wfh) badges.push('<span class="badge badge-info">WFH</span>');
-            badges.push(s.assignment_type === 'fixed'
-                ? '<span class="badge badge-neutral">Cố định</span>'
-                : '<span class="badge badge-neutral">Đa ca</span>');
+            if (s.is_flexible) {
+                badges.push('<span class="badge badge-neutral">Linh hoạt</span>');
+            } else {
+                badges.push(s.assignment_type === 'fixed'
+                    ? '<span class="badge badge-neutral">Cố định</span>'
+                    : '<span class="badge badge-neutral">Đa ca</span>');
+            }
 
-            const canSwap = !ctx.isOwnEmployee && ctx.dayIsFutureOrToday && perms.canSwap && perms.hasUpcoming
+            const canSwap = !s.is_flexible && !ctx.isOwnEmployee && ctx.dayIsFutureOrToday && perms.canSwap && perms.hasUpcoming
                 && typeof window.openSwapModal === 'function';
 
             let actions = '';
@@ -125,6 +129,14 @@
 
             const late  = a.late_minutes > 0 ? '<span class="text-amber-600 dark:text-amber-400 text-xs">(trễ ' + a.late_minutes + 'p)</span>' : '';
             const early = a.early_minutes > 0 ? '<span class="text-amber-600 dark:text-amber-400 text-xs">(sớm ' + a.early_minutes + 'p)</span>' : '';
+            const deviceWarning = a.device_changed
+                ? '<p class="text-amber-600 dark:text-amber-400 text-xs flex items-center gap-1 mt-1" title="Thiết bị check-out khác với lúc check-in">' +
+                    '<i class="bi bi-exclamation-triangle-fill"></i> Khác thiết bị</p>'
+                : '';
+            const overtimeNote = a.overtime_hours > 0
+                ? '<p class="text-rose-600 dark:text-rose-400 text-xs flex items-center gap-1 mt-1">' +
+                    '<i class="bi bi-clock-history"></i> Tăng ca đã duyệt: +' + a.overtime_hours + ' giờ (đã cộng vào công)</p>'
+                : '';
 
             return '' +
                 '<div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">' +
@@ -150,6 +162,8 @@
                             (a.check_out_method ? '<p class="text-xs text-slate-400">' + escapeHtml(methodBadge(a.check_out_method)) + '</p>' : '') +
                         '</div>' +
                     '</div>' +
+                    deviceWarning +
+                    overtimeNote +
                 '</div>';
         }
 
@@ -176,7 +190,9 @@
                 if (editBtn) {
                     editBtn.addEventListener('click', function () {
                         closeModal('dayDetailModal');
-                        window.openAssignModal(employeeId, employeeName, workDate, s.id, s.shift_id, s.note);
+                        window.openAssignModal(employeeId, employeeName, workDate, s.id, s.shift_id, s.note,
+                            s.is_flexible, s.custom_start_time, s.custom_end_time, s.custom_break_minutes,
+                            s.custom_is_overnight, s.custom_is_wfh);
                     });
                 }
 
@@ -211,7 +227,7 @@
                 footer.classList.add('flex');
                 document.getElementById('dayDetailAddShiftBtn').onclick = function () {
                     closeModal('dayDetailModal');
-                    window.openAssignModal(employeeId, employeeName, workDate, null, null, null);
+                    window.openAssignModal(employeeId, employeeName, workDate, null, null, null, false, null, null, null, false, false);
                 };
             } else {
                 footer.classList.add('hidden');

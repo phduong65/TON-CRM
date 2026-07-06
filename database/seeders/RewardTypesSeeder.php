@@ -84,20 +84,20 @@ class RewardTypesSeeder extends Seeder
             $types = $catData['types'];
             unset($catData['types']);
 
-            $category = RewardCategory::create([
-                'name'        => $catData['name'],
-                'description' => $catData['description'],
-                'is_active'   => true,
-            ]);
+            $category = RewardCategory::firstOrCreate(
+                ['name' => $catData['name']],
+                ['description' => $catData['description'], 'is_active' => true]
+            );
 
             foreach ($types as $typeData) {
-                RewardType::create([
-                    'reward_category_id' => $category->id,
-                    'name'               => $typeData['name'],
-                    'description'        => $typeData['description'],
-                    'default_points'     => $typeData['default_points'],
-                    'is_active'          => true,
-                ]);
+                RewardType::firstOrCreate(
+                    ['reward_category_id' => $category->id, 'name' => $typeData['name']],
+                    [
+                        'description'    => $typeData['description'],
+                        'default_points' => $typeData['default_points'],
+                        'is_active'      => true,
+                    ]
+                );
             }
         }
     }

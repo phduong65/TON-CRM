@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Setting;
+use App\Services\AnnualLeaveService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -113,12 +114,24 @@ class EmployeesController extends Controller
             || $user->employee?->id === $employee->id;
 
         $employee->load(['branch', 'team']);
+        $annualLeave = null;
         if ($canViewSensitive) {
             $employee->load(['scores', 'penalties' => function ($q) {
                 $q->with('violation')->latest();
             }]);
+
+            if ($employee->isEligibleForAnnualLeave()) {
+                $annualLeaveService = app(AnnualLeaveService::class);
+                $year = (int) now()->year;
+                $annualLeave = [
+                    'year'      => $year,
+                    'entitled'  => $annualLeaveService->entitledDays($employee, $year),
+                    'used'      => $annualLeaveService->usedDays($employee, $year),
+                    'remaining' => $annualLeaveService->remainingDays($employee, $year),
+                ];
+            }
         }
-        return view('employees.show', compact('employee', 'canViewSensitive'));
+        return view('employees.show', compact('employee', 'canViewSensitive', 'annualLeave'));
     }
 
     public function edit(Employee $employee)

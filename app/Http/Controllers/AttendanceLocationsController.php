@@ -24,6 +24,16 @@ class AttendanceLocationsController extends Controller
         return view('attendance-locations.index', compact('locations', 'branches'));
     }
 
+    /**
+     * Trả về public IP mà server nhìn thấy từ request hiện tại — dùng để
+     * điền nhanh IP văn phòng khi tạo/sửa điểm chấm công, đảm bảo đồng nhất
+     * với IP mà AttendanceController sẽ đối chiếu lúc check-in/out thực tế.
+     */
+    public function detectIp(Request $request)
+    {
+        return response()->json(['ip' => $request->ip()]);
+    }
+
     public function store(StoreAttendanceLocationRequest $request)
     {
         $data = $request->validated();

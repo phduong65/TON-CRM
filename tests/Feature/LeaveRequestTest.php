@@ -130,7 +130,7 @@ class LeaveRequestTest extends TestCase
             'reason'    => 'Không đủ điều kiện',
         ]);
 
-        $response->assertStatus(422);
+        $response->assertSessionHasErrors('type');
         $this->assertDatabaseMissing('leave_requests', ['employee_id' => $this->staffEmployee->id]);
     }
 
@@ -146,7 +146,7 @@ class LeaveRequestTest extends TestCase
             'reason'    => 'Vượt quá số ngày phép còn lại',
         ]);
 
-        $response->assertStatus(422);
+        $response->assertSessionHasErrors('type');
         $this->assertDatabaseMissing('leave_requests', ['employee_id' => $this->staffEmployee->id]);
     }
 

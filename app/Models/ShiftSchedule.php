@@ -18,12 +18,19 @@ class ShiftSchedule extends Model
         'status',
         'note',
         'assigned_by',
+        'custom_start_time',
+        'custom_end_time',
+        'custom_break_minutes',
+        'custom_is_overnight',
+        'custom_is_wfh',
     ];
 
     protected function casts(): array
     {
         return [
-            'work_date' => 'date:Y-m-d',
+            'work_date'            => 'date:Y-m-d',
+            'custom_is_overnight'  => 'boolean',
+            'custom_is_wfh'        => 'boolean',
         ];
     }
 
@@ -50,5 +57,14 @@ class ShiftSchedule extends Model
     public function attendanceLog(): HasOne
     {
         return $this->hasOne(AttendanceLog::class);
+    }
+
+    /**
+     * Ca linh hoạt: xếp giờ tuỳ chỉnh cho đúng 1 ngày, không dùng mẫu Shift có sẵn
+     * (shift_id null, giờ/nghỉ giữa ca/qua đêm/WFH lấy từ các cột custom_*).
+     */
+    public function isFlexible(): bool
+    {
+        return $this->shift_id === null;
     }
 }

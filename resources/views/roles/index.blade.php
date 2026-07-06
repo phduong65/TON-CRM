@@ -257,7 +257,15 @@ updateCreateRolePermCount();
 
 @if($errors->any() && old('_modal'))
 document.addEventListener('DOMContentLoaded', function() {
+    @if(old('_modal') === 'editRoleModal')
+    openEditRoleModal({
+        id: '{{ old("_edit_id") }}',
+        name: {{ Illuminate\Support\Js::from(old('name')) }},
+        permissions: {!! json_encode(old('permissions', [])) !!}
+    });
+    @else
     openModal('{{ old("_modal") }}');
+    @endif
 });
 @endif
 </script>

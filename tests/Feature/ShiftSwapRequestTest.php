@@ -89,6 +89,20 @@ class ShiftSwapRequestTest extends TestCase
         ]);
     }
 
+    public function test_cannot_offer_a_flexible_schedule_for_swap(): void
+    {
+        $flexibleSchedule = ShiftSchedule::create([
+            'employee_id' => $this->employeeA->id, 'shift_id' => null,
+            'custom_start_time' => '12:00', 'custom_end_time' => '20:00',
+            'work_date' => now()->addDays(2)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+
+        $response = $this->storeSwap($this->userA, ['requester_schedule_id' => $flexibleSchedule->id]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('shift_swap_requests', ['requester_schedule_id' => $flexibleSchedule->id]);
+    }
+
     public function test_cannot_offer_a_schedule_that_is_not_own(): void
     {
         // userB tries to offer schedule A (not theirs) while targeting schedule B (their own) — invalid combo

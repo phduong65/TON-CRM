@@ -15,7 +15,12 @@ class LeaveRequestsController extends Controller
 {
     public function index(Request $request)
     {
-        $isApprover = auth()->user()->can('approve-leave-requests');
+        // "Approver" ở đây là bất kỳ ai có quyền duyệt một trong các loại yêu cầu thuộc hub
+        // Yêu cầu & Phê duyệt (nghỉ phép / yêu cầu khác / đổi ca) — đồng bộ với store() bên dưới,
+        // để admin/HR/manager luôn thấy được ô chọn nhân viên và tạo đơn hộ người khác.
+        $isApprover = auth()->user()->can('approve-leave-requests')
+            || auth()->user()->can('approve-staff-requests')
+            || auth()->user()->can('approve-shift-swaps');
 
         $query = LeaveRequest::with(['employee.branch', 'reviewer'])
             ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END")
@@ -36,10 +41,11 @@ class LeaveRequestsController extends Controller
         $allEmployees  = Employee::where('is_active', true)->orderBy('name')->get();
         $employees     = $isApprover ? $allEmployees : collect();
 
-        // Trang này chỉ tạo đơn cho chính mình — nạp sẵn các ca đã xếp (gần đây/sắp tới) của
-        // nhân viên hiện tại để JS lọc theo ngày, hiển thị trong ô "Ca làm" của form tạo đơn.
-        $ownEmployeeId  = auth()->user()->employee?->id;
-        $ownShiftSchedules = $ownEmployeeId ? $this->shiftScheduleOptions([$ownEmployeeId]) : collect();
+        // Approver có thể tạo đơn hộ bất kỳ nhân viên nào nên cần nạp sẵn ca đã xếp của toàn bộ
+        // nhân viên; nhân viên thường chỉ tạo cho chính mình nên chỉ cần ca của bản thân.
+        $ownEmployeeId = auth()->user()->employee?->id;
+        $scheduleEmployeeIds = $isApprover ? $employees->pluck('id')->all() : array_filter([$ownEmployeeId]);
+        $shiftScheduleOptions = $this->shiftScheduleOptions($scheduleEmployeeIds);
 
         // Số ngày phép năm còn lại theo từng nhân viên đủ điều kiện (chính thức + văn phòng),
         // JS hiển thị dưới ô "Loại nghỉ phép" khi chọn "Nghỉ phép năm" — khỏi cần gọi AJAX.
@@ -49,7 +55,7 @@ class LeaveRequestsController extends Controller
             ->filter(fn(Employee $e) => $e->isEligibleForAnnualLeave())
             ->mapWithKeys(fn(Employee $e) => [$e->id => $annualLeaveService->remainingDays($e)]);
 
-        return view('leave-requests.index', compact('leaveRequests', 'employees', 'allEmployees', 'isApprover', 'ownShiftSchedules', 'annualLeaveBalances'));
+        return view('leave-requests.index', compact('leaveRequests', 'employees', 'allEmployees', 'isApprover', 'shiftScheduleOptions', 'annualLeaveBalances'));
     }
 
     /**
@@ -102,12 +108,22 @@ class LeaveRequestsController extends Controller
         }
 
         if ($validated['type'] === 'annual') {
-            abort_unless($employee->isEligibleForAnnualLeave(), 422,
-                'Nhân viên không đủ điều kiện nghỉ phép năm (chỉ áp dụng NV chính thức, văn phòng).');
+            if (!$employee->isEligibleForAnnualLeave()) {
+                return back()->withInput()->withErrors([
+                    'type' => 'Nhân viên không đủ điều kiện nghỉ phép năm (chỉ áp dụng NV chính thức, văn phòng). '
+                        . 'Vui lòng chọn loại nghỉ khác: Nghỉ ốm, Nghỉ không lương hoặc Khác.',
+                ]);
+            }
 
             $requestedDays = Carbon::parse($validated['date_from'])->diffInDays($validated['date_to']) + 1;
             $remaining     = app(AnnualLeaveService::class)->remainingDays($employee);
-            abort_if($requestedDays > $remaining, 422, "Không đủ số ngày phép năm còn lại (còn {$remaining} ngày).");
+
+            if ($requestedDays > $remaining) {
+                return back()->withInput()->withErrors([
+                    'type' => "Không đủ số ngày phép năm còn lại (còn {$remaining} ngày, đang xin {$requestedDays} ngày). "
+                        . 'Vui lòng chọn loại nghỉ khác (VD: Nghỉ không lương) hoặc giảm số ngày xin nghỉ.',
+                ]);
+            }
         }
 
         if (!empty($validated['shift_schedule_id'])) {

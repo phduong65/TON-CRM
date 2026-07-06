@@ -54,6 +54,18 @@ class ShiftSchedulesController extends Controller
             ->get()
             ->groupBy(fn($s) => $s->employee_id . '_' . $s->work_date->toDateString());
 
+        // Tăng ca đã duyệt cho những ngày KHÔNG có ca đang "scheduled" — không chỉ ngày chưa từng
+        // xếp ca (shift_schedule_id null), mà cả ngày đã xếp ca nhưng sau đó bị huỷ (status !=
+        // scheduled) trong khi log tăng ca vẫn còn shift_schedule_id trỏ tới ca đã huỷ đó. Cố ý
+        // KHÔNG lọc theo shift_schedule_id ở đây — Blade view chỉ tra map này khi ô đó rỗng
+        // ($cellSchedules->isEmpty()), nên dù log có shift_schedule_id hay không cũng không bao
+        // giờ hiển thị trùng với ô đã có ca hợp lệ. Xem StaffRequestsController::applyOvertime().
+        $overtimeOnlyLogs = AttendanceLog::whereIn('employee_id', $employees->pluck('id'))
+            ->whereBetween('work_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->where('overtime_hours', '>', 0)
+            ->get()
+            ->groupBy(fn($l) => $l->employee_id . '_' . $l->work_date->toDateString());
+
         $shifts        = Shift::where('is_active', true)->orderBy('name')->get();
         $branches      = Branch::where('is_active', true)->orderBy('name')->get();
         $teams         = Team::where('is_active', true)->orderBy('name')->get();
@@ -64,16 +76,27 @@ class ShiftSchedulesController extends Controller
         $myEmployee = auth()->user()->employee;
         $myUpcomingSchedules = $myEmployee
             ? ShiftSchedule::with('shift')
-                ->where('employee_id', $myEmployee->id)
-                ->where('status', 'scheduled')
-                ->where('work_date', '>=', now()->toDateString())
-                ->orderBy('work_date')
-                ->get()
+            ->where('employee_id', $myEmployee->id)
+            ->where('status', 'scheduled')
+            ->where('work_date', '>=', now()->toDateString())
+            ->whereNotNull('shift_id') // ca linh hoạt không được đề xuất đổi ca
+            ->orderBy('work_date')
+            ->get()
             : collect();
 
         return view('shift-schedules.index', compact(
-            'employees', 'schedules', 'days', 'weekStart', 'weekEnd',
-            'shifts', 'branches', 'teams', 'allEmployees', 'myEmployee', 'myUpcomingSchedules'
+            'employees',
+            'schedules',
+            'overtimeOnlyLogs',
+            'days',
+            'weekStart',
+            'weekEnd',
+            'shifts',
+            'branches',
+            'teams',
+            'allEmployees',
+            'myEmployee',
+            'myUpcomingSchedules'
         ));
     }
 
@@ -106,13 +129,18 @@ class ShiftSchedulesController extends Controller
             ->values();
 
         $employees = $logs->map(function (AttendanceLog $log) use ($now) {
-            $shift         = $log->shiftSchedule?->shift;
+            $schedule      = $log->shiftSchedule;
+            $shift         = $schedule?->shift;
+            $shiftName     = $shift?->name ?? ($schedule?->isFlexible() ? 'Ca linh hoạt' : null);
+            $startTime     = $shift?->start_time ?? $schedule?->custom_start_time;
+            $endTime       = $shift?->end_time ?? $schedule?->custom_end_time;
+            $isOvernight   = $shift ? $shift->is_overnight : (bool) $schedule?->custom_is_overnight;
             $inShiftWindow = null;
 
-            if ($shift) {
-                $start = Carbon::parse($log->work_date->toDateString() . ' ' . $shift->start_time);
-                $end   = Carbon::parse($log->work_date->toDateString() . ' ' . $shift->end_time);
-                if ($shift->is_overnight && $end->lessThanOrEqualTo($start)) {
+            if ($startTime && $endTime) {
+                $start = Carbon::parse($log->work_date->toDateString() . ' ' . $startTime);
+                $end   = Carbon::parse($log->work_date->toDateString() . ' ' . $endTime);
+                if ($isOvernight && $end->lessThanOrEqualTo($start)) {
                     $end->addDay();
                 }
                 $inShiftWindow = $now->between($start, $end);
@@ -124,8 +152,8 @@ class ShiftSchedulesController extends Controller
                 'employee_code'   => $log->employee->code,
                 'branch'          => $log->employee->branch?->name,
                 'team'            => $log->employee->team?->name,
-                'shift_name'      => $shift?->name,
-                'shift_time'      => $shift ? substr($shift->start_time, 0, 5) . '–' . substr($shift->end_time, 0, 5) : null,
+                'shift_name'      => $shiftName,
+                'shift_time'      => $startTime && $endTime ? substr($startTime, 0, 5) . '–' . substr($endTime, 0, 5) : null,
                 'check_in_at'     => $log->check_in_at->format('H:i'),
                 'worked_minutes'  => $log->check_in_at->diffInMinutes($now),
                 'in_shift_window' => $inShiftWindow,
@@ -141,60 +169,101 @@ class ShiftSchedulesController extends Controller
 
     /**
      * Thêm 1 ca mới cho 1 nhân viên trong 1 ngày (đa ca — không ghi đè ca đã có).
+     * Hỗ trợ "ca linh hoạt": không gửi shift_id, thay vào đó gửi custom_start_time/
+     * custom_end_time (giờ tuỳ chỉnh, chỉ áp dụng đúng ngày này, không dùng mẫu Shift có sẵn).
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $this->validateSchedulePayload($request, [
             'employee_id' => 'required|exists:employees,id',
-            'shift_id'    => 'required|exists:shifts,id',
             'work_date'   => 'required|date',
-            'note'        => 'nullable|string|max:500',
         ]);
 
-        $employee = Employee::findOrFail($validated['employee_id']);
+        $employee   = Employee::findOrFail($validated['employee_id']);
+        $isFlexible = empty($validated['shift_id']);
 
         $schedule = ShiftSchedule::create([
             'employee_id'     => $validated['employee_id'],
-            'shift_id'        => $validated['shift_id'],
             'branch_id'       => $employee->branch_id,
             'work_date'       => $validated['work_date'],
             'assignment_type' => 'rotation',
             'status'          => 'scheduled',
             'note'            => $validated['note'] ?? null,
             'assigned_by'     => auth()->id(),
-        ]);
+        ] + $this->flexibleFields($validated, $isFlexible));
 
         activity()->causedBy(auth()->user())
             ->performedOn($schedule)
             ->inLog('shift_schedule')
-            ->withProperties(['employee_code' => $employee->code, 'work_date' => $validated['work_date'], 'shift_id' => $validated['shift_id']])
+            ->withProperties(['employee_code' => $employee->code, 'work_date' => $validated['work_date'], 'shift_id' => $validated['shift_id'] ?? null, 'flexible' => $isFlexible])
             ->log("Xếp ca — {$employee->name}");
 
         return back()->with('success', 'Đã xếp ca cho nhân viên!');
     }
 
     /**
-     * Sửa 1 ca cụ thể đã xếp (đổi ca/ghi chú), dùng trong modal chi tiết ngày.
+     * Sửa 1 ca cụ thể đã xếp (đổi ca/ghi chú, hoặc chuyển đổi giữa ca mẫu và ca linh hoạt),
+     * dùng trong modal chi tiết ngày.
      */
     public function update(Request $request, ShiftSchedule $shiftSchedule)
     {
-        $validated = $request->validate([
-            'shift_id' => 'required|exists:shifts,id',
-            'note'     => 'nullable|string|max:500',
-        ]);
+        $validated  = $this->validateSchedulePayload($request);
+        $isFlexible = empty($validated['shift_id']);
 
         $shiftSchedule->update([
-            'shift_id' => $validated['shift_id'],
-            'note'     => $validated['note'] ?? null,
-        ]);
+            'note' => $validated['note'] ?? null,
+        ] + $this->flexibleFields($validated, $isFlexible));
 
         activity()->causedBy(auth()->user())
             ->performedOn($shiftSchedule)
             ->inLog('shift_schedule')
-            ->withProperties(['employee_code' => $shiftSchedule->employee?->code, 'work_date' => $shiftSchedule->work_date, 'shift_id' => $validated['shift_id']])
+            ->withProperties(['employee_code' => $shiftSchedule->employee?->code, 'work_date' => $shiftSchedule->work_date, 'shift_id' => $validated['shift_id'] ?? null, 'flexible' => $isFlexible])
             ->log("Sửa ca — {$shiftSchedule->employee?->name}");
 
         return back()->with('success', 'Đã cập nhật ca làm việc!');
+    }
+
+    /**
+     * Validate payload xếp/sửa ca đơn lẻ: hoặc chọn shift_id (ca mẫu có sẵn), hoặc gửi
+     * custom_start_time/custom_end_time (ca linh hoạt) — bắt buộc đúng 1 trong 2.
+     */
+    private function validateSchedulePayload(Request $request, array $extraRules = []): array
+    {
+        return $request->validate($extraRules + [
+            'note'                  => 'nullable|string|max:500',
+            'shift_id'              => 'nullable|required_without:custom_start_time|exists:shifts,id',
+            'custom_start_time'     => 'nullable|required_without:shift_id|date_format:H:i',
+            'custom_end_time'       => 'nullable|required_with:custom_start_time|date_format:H:i',
+            'custom_break_minutes'  => 'nullable|integer|min:0|max:600',
+            'custom_is_overnight'   => 'nullable|boolean',
+            'custom_is_wfh'         => 'nullable|boolean',
+        ]);
+    }
+
+    /**
+     * Trả về mảng field shift_id/custom_* phù hợp cho create()/update(), tuỳ theo ca mẫu hay linh hoạt.
+     */
+    private function flexibleFields(array $validated, bool $isFlexible): array
+    {
+        if ($isFlexible) {
+            return [
+                'shift_id'             => null,
+                'custom_start_time'    => $validated['custom_start_time'],
+                'custom_end_time'      => $validated['custom_end_time'],
+                'custom_break_minutes' => $validated['custom_break_minutes'] ?? 0,
+                'custom_is_overnight'  => (bool) ($validated['custom_is_overnight'] ?? false),
+                'custom_is_wfh'        => (bool) ($validated['custom_is_wfh'] ?? false),
+            ];
+        }
+
+        return [
+            'shift_id'             => $validated['shift_id'],
+            'custom_start_time'    => null,
+            'custom_end_time'      => null,
+            'custom_break_minutes' => null,
+            'custom_is_overnight'  => null,
+            'custom_is_wfh'        => null,
+        ];
     }
 
     /**
@@ -283,18 +352,15 @@ class ShiftSchedulesController extends Controller
         $employee = $shiftSchedule->employee;
         $batchId  = $shiftSchedule->batch_id;
 
-        if ($batchId) {
-            $deletedCount = DB::transaction(function () use ($batchId) {
-                ShiftScheduleRecurrence::where('batch_id', $batchId)->delete();
-                return ShiftSchedule::where('batch_id', $batchId)->delete();
-            });
+        $result = $this->deleteSchedules(collect([$shiftSchedule]));
 
+        if ($batchId) {
             activity()->causedBy(auth()->user())
                 ->inLog('shift_schedule')
-                ->withProperties(['batch_id' => $batchId, 'deleted_count' => $deletedCount, 'shift_id' => $shiftSchedule->shift_id])
+                ->withProperties(['batch_id' => $batchId, 'deleted_count' => $result['batch_deleted'], 'shift_id' => $shiftSchedule->shift_id])
                 ->log('Huỷ đợt xếp ca cố định');
 
-            return back()->with('success', "Đã huỷ đợt xếp ca cố định ({$deletedCount} ca của tất cả nhân viên liên quan)!");
+            return back()->with('success', "Đã huỷ đợt xếp ca cố định ({$result['batch_deleted']} ca của tất cả nhân viên liên quan)!");
         }
 
         activity()->causedBy(auth()->user())
@@ -302,9 +368,117 @@ class ShiftSchedulesController extends Controller
             ->withProperties(['employee_code' => $employee?->code, 'work_date' => $shiftSchedule->work_date, 'shift_id' => $shiftSchedule->shift_id])
             ->log("Huỷ ca — {$employee?->name}");
 
-        $shiftSchedule->delete();
-
         return back()->with('success', 'Đã huỷ ca làm việc!');
+    }
+
+    /**
+     * Xoá nhiều ca cùng lúc (chọn nhiều ô trên lưới xếp ca). Ca nào thuộc một đợt
+     * xếp ca cố định (batch_id) thì cả đợt đó bị huỷ luôn (giống hành vi xoá lẻ),
+     * kể cả khi chỉ có 1 ca trong đợt nằm trong danh sách được chọn.
+     */
+    public function destroyBulk(Request $request)
+    {
+        $validated = $request->validate([
+            'schedule_ids'   => 'required|array|min:1',
+            'schedule_ids.*' => 'exists:shift_schedules,id',
+        ]);
+
+        $schedules = ShiftSchedule::whereIn('id', $validated['schedule_ids'])->get();
+
+        $result = $this->deleteSchedules($schedules);
+
+        activity()->causedBy(auth()->user())
+            ->inLog('shift_schedule')
+            ->withProperties($result)
+            ->log('Xoá nhiều ca (chọn từ lưới xếp ca)');
+
+        return back()->with('success', $this->buildBulkDeleteMessage($result));
+    }
+
+    /**
+     * Xoá toàn bộ ca đang hiển thị trên lưới, theo đúng bộ lọc (chi nhánh/đội/nhân
+     * viên) và tuần đang xem — cùng phạm vi dữ liệu với index(). Ca thuộc đợt cố
+     * định vẫn cascade xoá cả đợt như xoá lẻ/xoá nhiều.
+     */
+    public function destroyAll(Request $request)
+    {
+        $weekStart = $request->filled('week')
+            ? Carbon::parse($request->week)->startOfWeek(Carbon::MONDAY)
+            : now()->startOfWeek(Carbon::MONDAY);
+        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+
+        $employeeQuery = Employee::query()->where('is_active', true);
+        if ($request->filled('branch_id')) {
+            $employeeQuery->where('branch_id', $request->branch_id);
+        }
+        if ($request->filled('team_id')) {
+            $employeeQuery->where('team_id', $request->team_id);
+        }
+        if ($request->filled('employee_id')) {
+            $employeeQuery->where('id', $request->employee_id);
+        }
+        $employeeIds = $employeeQuery->pluck('id');
+
+        $schedules = ShiftSchedule::whereIn('employee_id', $employeeIds)
+            ->whereBetween('work_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->where('status', 'scheduled')
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            return back()->with('error', 'Không có ca nào để xoá theo bộ lọc hiện tại.');
+        }
+
+        $result = $this->deleteSchedules($schedules);
+
+        activity()->causedBy(auth()->user())
+            ->inLog('shift_schedule')
+            ->withProperties($result + ['week' => $weekStart->toDateString(), 'branch_id' => $request->branch_id, 'team_id' => $request->team_id, 'employee_id' => $request->employee_id])
+            ->log('Xoá tất cả ca theo bộ lọc/tuần');
+
+        return back()->with('success', $this->buildBulkDeleteMessage($result));
+    }
+
+    /**
+     * Xoá 1 tập hợp ShiftSchedule: ca thuộc đợt cố định (có batch_id) được gom lại
+     * xoá cả đợt (kèm huỷ recurrence để không sinh thêm ca mới); ca lẻ xoá trực tiếp.
+     */
+    private function deleteSchedules($schedules): array
+    {
+        $schedules = $schedules instanceof \Illuminate\Support\Collection ? $schedules : collect($schedules);
+        $batchIds  = $schedules->pluck('batch_id')->filter()->unique()->values();
+        $singleIds = $schedules->whereNull('batch_id')->pluck('id')->values();
+
+        return DB::transaction(function () use ($batchIds, $singleIds) {
+            $batchDeleted = 0;
+            if ($batchIds->isNotEmpty()) {
+                ShiftScheduleRecurrence::whereIn('batch_id', $batchIds)->delete();
+                $batchDeleted = ShiftSchedule::whereIn('batch_id', $batchIds)->delete();
+            }
+
+            $singleDeleted = 0;
+            if ($singleIds->isNotEmpty()) {
+                $singleDeleted = ShiftSchedule::whereIn('id', $singleIds)->delete();
+            }
+
+            return [
+                'batch_count'    => $batchIds->count(),
+                'batch_deleted'  => $batchDeleted,
+                'single_deleted' => $singleDeleted,
+            ];
+        });
+    }
+
+    private function buildBulkDeleteMessage(array $result): string
+    {
+        $parts = [];
+        if ($result['single_deleted'] > 0) {
+            $parts[] = "{$result['single_deleted']} ca lẻ";
+        }
+        if ($result['batch_count'] > 0) {
+            $parts[] = "{$result['batch_count']} đợt cố định ({$result['batch_deleted']} ca liên quan)";
+        }
+
+        return 'Đã xoá: ' . implode(', ', $parts) . '.';
     }
 
     /**

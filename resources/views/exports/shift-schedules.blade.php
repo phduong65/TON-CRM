@@ -23,10 +23,11 @@
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $s->employee?->team?->name }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $s->work_date->format('d/m/Y') }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $weekdayLabels[$s->work_date->dayOfWeek] }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $s->shift?->name }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ substr($s->shift?->start_time,0,5) }}–{{ substr($s->shift?->end_time,0,5) }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:{{ $s->shift?->isWfh() ? '#0369a1' : '#94a3b8' }};">{{ $s->shift?->isWfh() ? 'WFH' : '—' }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $s->assignment_type === 'fixed' ? 'Cố định' : 'Đa ca' }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $s->shift?->name ?? 'Ca linh hoạt' }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ substr($s->shift?->start_time ?? $s->custom_start_time ?? '',0,5) }}–{{ substr($s->shift?->end_time ?? $s->custom_end_time ?? '',0,5) }}</td>
+            @php $sIsWfh = $s->shift ? $s->shift->isWfh() : (bool) $s->custom_is_wfh; @endphp
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:{{ $sIsWfh ? '#0369a1' : '#94a3b8' }};">{{ $sIsWfh ? 'WFH' : '—' }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $s->isFlexible() ? 'Linh hoạt' : ($s->assignment_type === 'fixed' ? 'Cố định' : 'Đa ca') }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $s->note }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $s->assignedBy?->name ?? 'Tự động' }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:{{ $s->attendanceLog?->late_minutes > 0 ? '#b45309' : '#15803d' }};">

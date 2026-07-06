@@ -99,6 +99,44 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Annual Leave -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h4 class="font-semibold text-slate-900 dark:text-white">Phép năm {{ $annualLeave['year'] ?? now()->year }}</h4>
+                </div>
+                <div class="card-body space-y-3">
+                    @if($annualLeave)
+                        @php
+                            $percent = $annualLeave['entitled'] > 0
+                                ? min(100, round($annualLeave['used'] / $annualLeave['entitled'] * 100))
+                                : 0;
+                        @endphp
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-500">Còn lại</span>
+                            <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                {{ rtrim(rtrim(number_format($annualLeave['remaining'], 1), '0'), '.') }} ngày
+                            </span>
+                        </div>
+                        <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                            <div class="h-full bg-pcrm-500" style="width: {{ $percent }}%"></div>
+                        </div>
+                        <p class="text-xs text-slate-400">
+                            Đã dùng {{ rtrim(rtrim(number_format($annualLeave['used'], 1), '0'), '.') }}/{{ rtrim(rtrim(number_format($annualLeave['entitled'], 1), '0'), '.') }} ngày được hưởng
+                        </p>
+                        @can('view-leave-requests')
+                        <a href="{{ route('leave-requests.index', ['employee_id' => $employee->id]) }}"
+                           class="block text-center text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline pt-1">
+                            Xem đơn xin nghỉ <i class="ph-arrow-right text-xs"></i>
+                        </a>
+                        @endcan
+                    @else
+                        <p class="text-sm text-slate-400 text-center py-2">
+                            Không đủ điều kiện nghỉ phép năm (chỉ áp dụng NV chính thức, khối văn phòng)
+                        </p>
+                    @endif
+                </div>
+            </div>
             @endif
         </div>
 

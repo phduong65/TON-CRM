@@ -6,11 +6,17 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class NotificationsController extends Controller
 {
     public function index(Request $request)
     {
+        $categories = Notification::categories();
+        $activeCategory = $request->filled('category') && isset($categories[$request->category])
+            ? $request->category
+            : null;
+
         $query = Notification::where('user_id', auth()->id())
             ->orderBy('created_at', 'desc');
 
@@ -22,15 +28,29 @@ class NotificationsController extends Controller
             };
         }
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
+        if ($activeCategory) {
+            $query->whereIn('type', $categories[$activeCategory]['types']);
         }
 
         $notifications = $query->paginate(20)->withQueryString();
         $unreadCount   = Notification::where('user_id', auth()->id())->whereNull('read_at')->count();
         $users         = User::orderBy('name')->get();
 
-        return view('notifications.index', compact('notifications', 'unreadCount', 'users'));
+        // Số chưa đọc theo từng type, gộp lại theo tab để hiển thị badge — 1 query duy nhất
+        // thay vì lặp count() cho từng danh mục.
+        $unreadByType = Notification::where('user_id', auth()->id())
+            ->whereNull('read_at')
+            ->select('type', DB::raw('count(*) as total'))
+            ->groupBy('type')
+            ->pluck('total', 'type');
+
+        $categoryUnreadCounts = collect($categories)->map(
+            fn($cat) => collect($cat['types'])->sum(fn($type) => $unreadByType[$type] ?? 0)
+        );
+
+        return view('notifications.index', compact(
+            'notifications', 'unreadCount', 'users', 'categories', 'activeCategory', 'categoryUnreadCounts'
+        ));
     }
 
     public function store(Request $request, NotificationService $service)

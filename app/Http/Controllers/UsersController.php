@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AccountApprovedMail;
+use App\Mail\AccountRejectedMail;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Spatie\Permission\Models\Role;
 
 class UsersController extends Controller
@@ -110,10 +115,19 @@ class UsersController extends Controller
 
         $request->validate($rules);
 
+        // Tài khoản tự đăng ký ở trạng thái 'pending' (xem RegisterController) chưa có vai trò gì
+        // — hành động Sửa (gán vai trò + lưu) của Admin ở đây ĐỒNG THỜI là hành động Duyệt: tự
+        // động chuyển sang 'active' để tài khoản có thể đăng nhập.
+        $wasPending = $user->isPending();
+
         $updateData = [
             'name'  => $request->name,
             'email' => $request->email,
         ];
+
+        if ($wasPending) {
+            $updateData['status'] = 'active';
+        }
 
         if ($request->filled('password')) {
             $updateData['password'] = Hash::make($request->password);
@@ -132,17 +146,68 @@ class UsersController extends Controller
                 'email'            => $user->email,
                 'role'             => $request->role,
                 'password_changed' => $request->filled('password') ? 'Có' : 'Không',
+                'approved'         => $wasPending ? 'Có' : 'Không',
             ])
-            ->log('Cập nhật người dùng ' . $user->name . ' — Vai trò: ' . $request->role);
+            ->log(($wasPending ? 'Duyệt' : 'Cập nhật') . ' người dùng ' . $user->name . ' — Vai trò: ' . $request->role);
+
+        if ($wasPending) {
+            app(NotificationService::class)->notifyUserApproved($user);
+
+            try {
+                Mail::to($user->email)->send(new AccountApprovedMail($user));
+            } catch (\Throwable $e) {
+                Log::error('Failed to send account-approved email: ' . $e->getMessage());
+            }
+
+            return redirect()->route('users.index')
+                ->with('success', 'Đã duyệt và kích hoạt tài khoản "' . $user->name . '".');
+        }
 
         return redirect()->route('users.index')
             ->with('success', 'Cập nhật người dùng "' . $user->name . '" thành công.');
+    }
+
+    /**
+     * Từ chối tài khoản tự đăng ký đang chờ duyệt — chuyển sang 'inactive' (không gán vai trò,
+     * không thể đăng nhập). Khác với toggleStatus() (chỉ dành cho tài khoản đã active/inactive).
+     */
+    public function reject(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'Không thể thay đổi trạng thái tài khoản đang đăng nhập.');
+        }
+
+        if (!$user->isPending()) {
+            return back()->with('error', 'Chỉ có thể từ chối tài khoản đang chờ duyệt.');
+        }
+
+        $user->update(['status' => 'inactive']);
+
+        activity()->causedBy(auth()->user())
+            ->performedOn($user)
+            ->inLog('user')
+            ->withProperties(['name' => $user->name, 'email' => $user->email])
+            ->log('Từ chối đăng ký tài khoản ' . $user->name . ' (' . $user->email . ')');
+
+        app(NotificationService::class)->notifyUserRejected($user);
+
+        try {
+            Mail::to($user->email)->send(new AccountRejectedMail($user));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send account-rejected email: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Đã từ chối đăng ký của "' . $user->name . '".');
     }
 
     public function toggleStatus(User $user)
     {
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Không thể thay đổi trạng thái tài khoản đang đăng nhập.');
+        }
+
+        if ($user->isPending()) {
+            return back()->with('error', 'Tài khoản đang chờ duyệt — dùng "Duyệt" để gán vai trò và kích hoạt, hoặc "Từ chối" để từ chối đăng ký.');
         }
 
         $newStatus = $user->status === 'active' ? 'inactive' : 'active';

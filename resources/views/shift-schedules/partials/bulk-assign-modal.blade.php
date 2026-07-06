@@ -14,6 +14,7 @@
         <form action="{{ route('shift-schedules.bulk-store') }}" method="POST"
             class="px-4 sm:px-6 py-4 sm:py-5 space-y-4">
             @csrf
+            <input type="hidden" name="_modal" value="bulkAssignModal">
             <div>
                 <label class="form-label">Nhân viên áp dụng <span class="text-red-500">*</span></label>
 
@@ -51,7 +52,8 @@
                 <select id="bulkAssignEmployeeSelect" name="employee_ids[]" multiple required>
                     @foreach ($allEmployees as $emp)
                         <option value="{{ $emp->id }}" data-branch="{{ $emp->branch_id ?? '' }}"
-                            data-team="{{ $emp->team_id ?? '' }}">{{ $emp->name }} — {{ $emp->code }}
+                            data-team="{{ $emp->team_id ?? '' }}"
+                            @selected(in_array($emp->id, old('employee_ids', [])))>{{ $emp->name }} — {{ $emp->code }}
                             ({{ $emp->team?->name ?? '—' }})</option>
                     @endforeach
                 </select>
@@ -65,7 +67,8 @@
                 <label class="form-label">Ca làm việc <span class="text-red-500">*</span></label>
                 <select id="bulkAssignShiftSelect" name="shift_ids[]" multiple required>
                     @foreach ($shifts as $s)
-                        <option value="{{ $s->id }}">{{ $s->name }}
+                        <option value="{{ $s->id }}"
+                            @selected(in_array($s->id, old('shift_ids', [])))>{{ $s->name }}
                             ({{ substr($s->start_time, 0, 5) }}–{{ substr($s->end_time, 0, 5) }})</option>
                     @endforeach
                 </select>
@@ -78,14 +81,14 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Từ ngày <span class="text-red-500">*</span></label>
-                    <input type="date" name="date_from" class="form-input" required>
+                    <input type="date" name="date_from" class="form-input" value="{{ old('date_from') }}" required>
                     @error('date_from')
                         <p class="form-error">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label class="form-label">Đến ngày</label>
-                    <input type="date" name="date_to" class="form-input">
+                    <input type="date" name="date_to" class="form-input" value="{{ old('date_to') }}">
                     <p class="text-xs text-slate-400 mt-1">Để trống để ca lặp lại hàng tuần không giới hạn.</p>
                     @error('date_to')
                         <p class="form-error">{{ $message }}</p>
@@ -99,7 +102,7 @@
                         <label
                             class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-sm cursor-pointer has-[:checked]:bg-pcrm-50 has-[:checked]:border-pcrm-400 dark:has-[:checked]:bg-pcrm-900/20">
                             <input type="checkbox" name="weekdays[]" value="{{ $val }}"
-                                {{ in_array($val, ['1', '2', '3', '4', '5']) ? 'checked' : '' }}
+                                {{ in_array($val, old('weekdays', ['1', '2', '3', '4', '5'])) ? 'checked' : '' }}
                                 class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
                             {{ $label }}
                         </label>
