@@ -196,6 +196,7 @@ Route::middleware('auth')->group(function () {
     // Leave Requests — nhân viên xin nghỉ phép
     Route::prefix('leave-requests')->name('leave-requests.')->group(function () {
         Route::get('/', [LeaveRequestsController::class, 'index'])->name('index')->middleware('can:view-leave-requests');
+        Route::get('/shifts-for-range', [LeaveRequestsController::class, 'shiftsForRange'])->name('shifts-for-range')->middleware('can:create-leave-requests');
         Route::post('/', [LeaveRequestsController::class, 'store'])->name('store')->middleware('can:create-leave-requests');
         Route::post('/{leaveRequest}/approve', [LeaveRequestsController::class, 'approve'])->name('approve')->middleware('can:approve-leave-requests');
         Route::post('/{leaveRequest}/reject', [LeaveRequestsController::class, 'reject'])->name('reject')->middleware('can:approve-leave-requests');
