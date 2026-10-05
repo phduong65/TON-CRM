@@ -15,11 +15,11 @@ class UpdateEmployeeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:50', Rule::unique('employees', 'code')->ignore($this->route('employee'))],
+            'code' => ['required', 'string', 'max:50', Rule::unique('employees', 'code')->ignore($this->route('employee'))->whereNull('deleted_at')],
             'name' => 'required|string|max:255',
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($this->route('employee'))],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($this->route('employee'))->whereNull('deleted_at')],
             'phone' => 'nullable|string|max:20',
-            'position' => 'nullable|string|max:255',
+            'position_id' => 'nullable|exists:positions,id',
             'branch_id' => 'required|exists:branches,id',
             'team_id' => 'required|exists:teams,id',
             'is_active' => 'boolean',

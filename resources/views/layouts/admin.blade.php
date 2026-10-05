@@ -5,46 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script>
+        window.FIREBASE_CONFIG = {!! json_encode(array_merge(
+            config('services.firebase.web', []),
+            ['vapidKey' => config('services.firebase.vapid_key')]
+        )) !!};
+    </script>
+    <script>
         if (localStorage.getItem('sidebarCollapsed') === '1') {
             document.documentElement.classList.add('sidebar-collapsed');
         }
+        if (sessionStorage.getItem('tonhrm_splash_shown') === '1' && window.location.search.indexOf('splash=1') === -1) {
+            document.documentElement.classList.add('splash-dismissed');
+        }
     </script>
     <title>@yield('title', config('app.name', 'TON-HR'))</title>
-    <link rel="icon" type="image/x-icon" href="{{ asset('assets/images/TON CAPITAL_LOGO-06.png')}}">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=be-vietnam-pro:300,400,500,600,700,800&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/images/logos/tonhrm-submark-opt' . \App\Models\Setting::getValue('tonhrm_logo_option', '2-a') . '.svg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/phosphor-icons/1.4.2/css/phosphor.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @stack('styles')
+    <style>
+        :root {
+            --theme-accent: {{ $activeTheme['colors']['accent'] ?? '#2F55E7' }};
+            --theme-accent-contrast: {{ $activeTheme['colors']['accentContrast'] ?? '#FFFFFF' }};
+            --theme-bg-tint: {{ $activeTheme['colors']['bgTint'] ?? 'transparent' }};
+        }
+    </style>
 </head>
-<body class="bg-[#F7F8FC] dark:bg-slate-900 min-h-screen">
+<body class="bg-[#F5F7FB] dark:bg-slate-900 min-h-screen" style="@if(!empty($activeTheme['colors']['bgTint']) && $activeTheme['colors']['bgTint'] !== 'transparent') background-color: color-mix(in srgb, {{ $activeTheme['colors']['bgTint'] }} 35%, #F5F7FB); @endif">
+
+    @include('components.splash-loader')
+    @include('components.page-loader')
+
+    <a href="#main-content" class="skip-link">Bỏ qua điều hướng</a>
+
+    @if(session('impersonator_id'))
+    <div class="bg-amber-500 text-white text-sm px-4 py-2 flex items-center justify-center gap-3 flex-wrap">
+        <span><i class="bi bi-person-badge"></i> Đang đăng nhập hộ <strong>{{ auth()->user()->name }}</strong></span>
+        <form action="{{ route('impersonate.leave') }}" method="POST" class="inline">
+            @csrf @method('DELETE')
+            <button type="submit" class="underline font-semibold hover:no-underline">Thoát chế độ đăng nhập hộ</button>
+        </form>
+    </div>
+    @endif
 
     <!-- Top Navigation Bar -->
     @include('components.topbar')
 
     <!-- Body layout: left panel + main content -->
-    <div class="flex" style="height: calc(100vh - 70px);">
+    <div class="flex h-screen lg:h-[calc(100vh-70px)]">
 
         <!-- Left Profile Panel -->
         @include('components.sidebar')
 
         <!-- Main content scroll area -->
         <div class="flex-1 overflow-y-auto flex flex-col">
-            <main class="flex-1 p-6 md:p-8 pcrm-animate-in">
+            <main id="main-content" tabindex="-1" class="flex-1 px-4 py-5 md:px-6 2xl:px-8 lg:py-6 2xl:py-7 pcrm-animate-in">
+                <div class="mx-auto w-full">
                 @hasSection('page-title')
-                <div class="mb-5">
-                    @hasSection('breadcrumb')
-                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-0.5">@yield('breadcrumb')</p>
+                <div class="pcrm-page-head mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="min-w-0">
+                            @hasSection('breadcrumb')
+                            <div class="flex items-center gap-1 text-xs font-medium text-slate-400 dark:text-slate-500 mb-1.5">
+                                <span>TON-HR</span>
+                                <i class="bi bi-chevron-right text-[8px] text-slate-300 dark:text-slate-600"></i>
+                                <span class="text-pcrm-550 dark:text-pcrm-400">@yield('breadcrumb')</span>
+                            </div>
+                            @endif
+                            <h1 class="@yield('page-title-class', 'text-2xl sm:text-[28px] font-bold') text-slate-950 dark:text-white tracking-[-0.025em] leading-tight">@yield('page-title')</h1>
+                            @hasSection('page-subtitle')
+                            <p class="text-sm sm:text-[15px] text-slate-500 dark:text-slate-400 mt-1.5">@yield('page-subtitle')</p>
+                            @endif
+                        </div>
+                    </div>
+                    @hasSection('page-actions')
+                    <div class="pcrm-page-actions flex flex-wrap items-center gap-2.5 lg:justify-end lg:shrink-0 lg:max-w-[60%]">
+                        @yield('page-actions')
+                    </div>
                     @endif
-                    <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">@yield('page-title')</h1>
                 </div>
                 @endif
-                @yield('content')
+                <div class="pcrm-page-content" data-page="{{ str_replace('.', '-', request()->route()?->getName() ?? 'page') }}">
+                    <x-attendance-alert-banner />
+                    @yield('content')
+                </div>
+                </div>
             </main>
         </div>
     </div>
@@ -52,6 +104,7 @@
     <!-- ── TON-HR Alert Modal ── -->
     <div id="pcrm-alert-overlay"
          class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4"
+         role="dialog" aria-modal="true" aria-labelledby="pcrm-alert-title" aria-describedby="pcrm-alert-message"
          style="background:rgba(0,0,0,0.55); backdrop-filter:blur(2px);">
         <div id="pcrm-alert-box"
              class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
@@ -98,37 +151,87 @@
     @stack('modals')
     @stack('scripts')
 
-    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-    <script>
-    (function () {
-        // Auto-stagger: cards inside .aos-stagger containers get incremental delays
-        document.querySelectorAll('.aos-stagger').forEach(function (container) {
-            container.querySelectorAll('[data-aos]').forEach(function (el, i) {
-                if (!el.hasAttribute('data-aos-delay')) {
-                    el.setAttribute('data-aos-delay', String(i * 70));
-                }
-            });
-        });
-        AOS.init({ duration: 260, once: true, offset: 30, easing: 'ease-out-quart' });
-    })();
-    </script>
 
     <script>
     // ── Modal helpers ──────────────────────────────────────────────────────
+    // Gắn ngữ nghĩa accessibility (role/aria) + quản lý focus tập trung tại đây
+    // để mọi modal dùng openModal()/closeModal() đều đạt chuẩn mà không phải sửa
+    // từng partial — xem ui-professionalization-spec §5.2.
+    let _modalLastFocus = null;
+    function _ensureDialogSemantics(el) {
+        if (el.getAttribute('role') !== 'dialog') el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
+        if (!el.hasAttribute('aria-labelledby')) {
+            const heading = el.querySelector('h1, h2, h3, h4, [data-modal-title]');
+            if (heading) {
+                if (!heading.id) heading.id = el.id + '-title';
+                el.setAttribute('aria-labelledby', heading.id);
+            } else {
+                el.setAttribute('aria-label', 'Hộp thoại');
+            }
+        }
+    }
     function openModal(id) {
         const el = document.getElementById(id);
-        if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+        if (!el) return;
+        _ensureDialogSemantics(el);
+        _modalLastFocus = document.activeElement;
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+        // Đưa focus vào phần tử tương tác đầu tiên (hoặc chính dialog) để bàn phím
+        // và screen reader đi thẳng vào nội dung modal.
+        const focusable = el.querySelector(
+            'input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable) {
+            focusable.focus({ preventScroll: true });
+        } else {
+            if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+            el.focus({ preventScroll: true });
+        }
     }
     function closeModal(id) {
         const el = document.getElementById(id);
-        if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+        if (!el) return;
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+        // Trả focus về phần tử đã mở modal (thường là nút Thêm/Sửa/Xoá).
+        if (_modalLastFocus && typeof _modalLastFocus.focus === 'function' && document.contains(_modalLastFocus)) {
+            _modalLastFocus.focus({ preventScroll: true });
+        }
+        _modalLastFocus = null;
     }
     // ── Filter panel toggle (mobile collapsible filter bar) ────────────
     function toggleEl(id) {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('is-open');
     }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') return;
+        const alertOverlay = document.getElementById('pcrm-alert-overlay');
+        if (alertOverlay && !alertOverlay.classList.contains('hidden')) pcrmAlertClose();
+        if (typeof closeMobilePanel === 'function') closeMobilePanel();
+        document.querySelectorAll('[role="dialog"]:not(#pcrm-alert-overlay)').forEach(function (dialog) {
+            if (dialog.id && !dialog.classList.contains('hidden')) closeModal(dialog.id);
+        });
+    });
+
+    // ── Chặn double-submit: disable nút bấm ngay khi form được gửi hợp lệ, để
+    // double-click / bấm dồn dập không tạo 2 request giống nhau (VD: tạo trùng
+    // phiếu phạt, đơn nghỉ phép...). Dùng capture-phase submit listener chung cho
+    // toàn bộ form trong trang — nếu trình duyệt chặn submit (validation lỗi) thì
+    // sự kiện này không bao giờ fire nên nút không bị disable oan.
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        const btn = (e.submitter && e.submitter.tagName === 'BUTTON') ? e.submitter : form.querySelector('button[type="submit"]');
+        if (btn && !btn.disabled) {
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'cursor-not-allowed');
+        }
+    }, true);
 
     // ── TON-HR Alert System ────────────────────────────────────────────────
     (function () {

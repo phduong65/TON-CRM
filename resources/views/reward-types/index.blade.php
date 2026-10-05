@@ -4,19 +4,20 @@
 @section('page-title', 'Loại thưởng')
 @section('breadcrumb', 'Thưởng phạt / Loại thưởng')
 
-@section('content')
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Danh mục các loại khen thưởng điểm cho nhân viên</p>
-        </div>
-        @can('create-reward-types')
-        <button onclick="openModal('createRewardTypeModal')" class="btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm loại thưởng</span>
-        </button>
-        @endcan
-    </div>
+@section('page-subtitle')
+    Danh mục các loại khen thưởng điểm cho nhân viên
+@endsection
 
+@section('page-actions')
+    @can('create-reward-types')
+    <button onclick="openModal('createRewardTypeModal')" class="btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        <span>Thêm loại thưởng</span>
+    </button>
+    @endcan
+@endsection
+
+@section('content')
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
@@ -50,7 +51,7 @@
                     </div>
                 </div>
                 <div class="flex gap-2 items-center">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 sm:flex-none gap-1.5">
+                    <button type="submit" class="btn-secondary h-9 px-4 text-sm flex-1 sm:flex-none gap-1.5">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
                     @if($rtFilterActive)
@@ -69,7 +70,7 @@
                     <thead>
                         <tr>
                             <th class="table-th w-12">#</th>
-                            <th class="table-th">Tên loại thưởng</th>
+                            <th class="table-th" data-mcard-title>Tên loại thưởng</th>
                             <th class="table-th">Danh mục</th>
                             <th class="table-th">Mô tả</th>
                             <th class="table-th text-center">Điểm mặc định</th>

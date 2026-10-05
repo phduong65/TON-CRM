@@ -482,4 +482,42 @@ class NotificationServiceTest extends TestCase
         // Reported person must NOT be notified on rejection
         $this->assertEquals(0, $this->countFor($reportedUser));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Push notification hook (Firebase) — sendToUser()/dispatchToMany() phải gọi
+    // PushNotificationService cho mỗi Notification tạo ra, ngoài việc ghi vào DB.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function test_send_to_user_triggers_push_notification(): void
+    {
+        $this->mock(\App\Services\PushNotificationService::class, function ($mock) {
+            $mock->shouldReceive('sendToUser')
+                ->once()
+                ->with($this->creator->id, 'Tiêu đề', 'Nội dung', ['type' => 'general'], null);
+        });
+
+        $service = app(NotificationService::class);
+        $service->sendToUser($this->creator->id, 'general', 'Tiêu đề', 'Nội dung');
+
+        $this->assertEquals(1, $this->countFor($this->creator, 'general'));
+    }
+
+    public function test_penalty_created_triggers_push_for_each_approver(): void
+    {
+        $this->mock(\App\Services\PushNotificationService::class, function ($mock) {
+            $mock->shouldReceive('sendToUser')->twice(); // 2 approvers
+        });
+
+        $service = app(NotificationService::class);
+
+        $penalty = Penalty::create([
+            'code' => 'PEN-PUSH', 'employee_id' => $this->victimEmployee->id,
+            'violation_id' => $this->violation->id, 'status' => 'pending',
+            'total_points_deducted' => 10, 'total_money_deducted' => 0,
+            'created_by' => $this->approver->id, // approver is creator -> no separate confirmation push
+        ]);
+
+        $this->actingAs($this->approver);
+        $service->notifyPenaltyCreated($penalty);
+    }
 }

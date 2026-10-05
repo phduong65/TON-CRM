@@ -4,195 +4,167 @@
 @section('page-title', 'Thông báo')
 @section('breadcrumb', 'Thông báo')
 
-@section('content')
-    {{-- Page header --}}
-    <div class="page-header">
-        <div class="flex items-center gap-2">
-            @if($unreadCount > 0)
-                <span class="badge badge-danger">{{ $unreadCount }} chưa đọc</span>
-            @else
-                <p class="page-subtitle">Tất cả đã được đọc</p>
-            @endif
-        </div>
-        <div class="flex items-center gap-2">
-            @if($unreadCount > 0)
-                <form action="{{ route('notifications.read-all') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn-secondary">
-                        <i class="bi bi-check2-all"></i>
-                        <span class="hidden sm:inline">Đọc tất cả</span>
-                    </button>
-                </form>
-            @endif
-            @can('create-notifications')
-                <button onclick="openModal('createNotificationModal')" class="btn-primary">
-                    <i class="bi bi-send-plus"></i>
-                    <span class="hidden sm:inline">Tạo thông báo</span>
-                </button>
-            @endcan
-        </div>
-    </div>
-
-    <div class="card">
-        {{-- Quick-action tabs — chia thông báo theo loại, mỗi tab lọc theo cả nhóm type con --}}
-        @php
-            $notifTabActive   = 'bg-pcrm-600 text-white border-pcrm-600 shadow-sm';
-            $notifTabInactive = 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700';
-        @endphp
-        <div class="px-4 pt-3 pb-3 border-b border-slate-100 dark:border-slate-700 overflow-x-auto">
-            <div class="flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap">
-                <a href="{{ route('notifications.index', array_filter(['status' => request('status')])) }}"
-                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors {{ !$activeCategory ? $notifTabActive : $notifTabInactive }}">
-                    <i class="bi bi-grid-fill text-[11px]"></i> Tất cả
-                </a>
-                @foreach($categories as $key => $cat)
-                    @php $catUnread = $categoryUnreadCounts[$key] ?? 0; @endphp
-                    <a href="{{ route('notifications.index', array_filter(['status' => request('status'), 'category' => $key])) }}"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors {{ $activeCategory === $key ? $notifTabActive : $notifTabInactive }}">
-                        <i class="bi {{ $cat['icon'] }} text-[11px]"></i>
-                        {{ $cat['label'] }}
-                        @if($catUnread > 0)
-                            <span class="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-full text-[10px] font-bold
-                                {{ $activeCategory === $key ? 'bg-white/25 text-white' : 'bg-red-500 text-white' }}">
-                                {{ $catUnread }}
-                            </span>
-                        @endif
-                    </a>
-                @endforeach
-            </div>
-        </div>
-
-        {{-- Filter bar --}}
-        {{-- @php $notifFilterActive = request()->anyFilled(['status', 'category']); @endphp
-        <form action="{{ route('notifications.index') }}" method="GET"
-              class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-            <input type="hidden" name="category" value="{{ $activeCategory }}">
-            <div class="flex items-center gap-2 flex-wrap">
-                <select name="status" class="form-input h-9 text-sm w-auto min-w-[140px]" onchange="this.form.submit()">
-                    <option value="">Tất cả TT</option>
-                    <option value="unread" @selected(request('status') === 'unread')>Chưa đọc</option>
-                    <option value="read"   @selected(request('status') === 'read')>Đã đọc</option>
-                </select>
-                @if($notifFilterActive)
-                    <a href="{{ route('notifications.index') }}"
-                       class="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-200 dark:border-slate-600">
-                        <i class="bi bi-x text-sm"></i> Xóa lọc
-                    </a>
-                @endif
-                <span class="text-xs text-slate-400 dark:text-slate-500 ml-auto">{{ $notifications->total() }} thông báo</span>
-            </div>
-        </form> --}}
-
-        {{-- Notification list --}}
-        <div class="divide-y divide-slate-100 dark:divide-slate-700/60">
-            @forelse($notifications as $notif)
-                @php $isUnread = $notif->isUnread(); @endphp
-
-                <div class="relative group flex items-center gap-3 px-4 py-3
-                    {{ $isUnread
-                        ? 'bg-white dark:bg-slate-800 hover:bg-pcrm-50/40 dark:hover:bg-slate-700/40'
-                        : 'bg-slate-50/40 dark:bg-slate-800/30 hover:bg-slate-100/60 dark:hover:bg-slate-700/30' }}
-                    transition-colors">
-
-                    {{-- Unread dot --}}
-                    <div class="w-1.5 shrink-0">
-                        @if($isUnread)
-                            <span class="block w-1.5 h-1.5 rounded-full bg-pcrm-500"></span>
-                        @endif
-                    </div>
-
-                    {{-- Type icon --}}
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {{ $notif->typeColor() }}">
-                        <i class="bi {{ $notif->typeIcon() }} text-sm"></i>
-                    </div>
-
-                    {{-- Content — main clickable --}}
-                    <a href="{{ route('notifications.show', $notif) }}"
-                       class="flex-1 min-w-0 flex items-center gap-3 group/link">
-
-                        <div class="flex-1 min-w-0">
-                            {{-- Title row: text + badge --}}
-                            <div class="flex items-center gap-2 min-w-0">
-                                <p class="text-sm truncate leading-snug
-                                    {{ $isUnread
-                                        ? 'font-semibold text-slate-900 dark:text-white'
-                                        : 'font-medium text-slate-500 dark:text-slate-400' }}">
-                                    {{ $notif->title }}
-                                </p>
-                                <span class="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md {{ $notif->typeBadgeClass() }}">
-                                    {{ $notif->typeLabel() }}
-                                </span>
-                            </div>
-                            {{-- Body snippet --}}
-                            @if($notif->body)
-                                <p class="text-xs text-slate-400 dark:text-slate-500 truncate mt-2">{{ $notif->body }}</p>
-                            @endif
-                        </div>
-
-                        {{-- Time --}}
-                        <span class="shrink-0 text-xs whitespace-nowrap
-                            {{ $isUnread ? 'font-medium text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500' }}">
-                            {{ $notif->created_at->diffForHumans(null, true, true) }}
-                        </span>
-                    </a>
-
-                    {{-- Actions (hover) --}}
-                    <div class="shrink-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        @if($isUnread)
-                            <form action="{{ route('notifications.read', $notif) }}" method="POST">
-                                @csrf
-                                <button type="submit"
-                                        class="w-7 h-7 flex items-center justify-center rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                                        title="Đánh dấu đã đọc">
-                                    <i class="bi bi-check2 text-sm"></i>
-                                </button>
-                            </form>
-                        @endif
-                        <form action="{{ route('notifications.destroy', $notif) }}" method="POST">
-                            @csrf @method('DELETE')
-                            <button type="submit"
-                                    class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                    title="Xóa"
-                                    onclick="return confirm('Xóa thông báo này?')">
-                                <i class="bi bi-trash3 text-xs"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @empty
-                <div class="py-16 text-center">
-                    <div class="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700/60 flex items-center justify-center mx-auto mb-3">
-                        <i class="bi bi-bell-slash text-xl text-slate-400 dark:text-slate-500"></i>
-                    </div>
-                    <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">Không có thông báo nào</p>
-                    @if(request()->anyFilled(['status', 'type']))
-                        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Thử xóa bộ lọc để xem tất cả</p>
-                    @endif
-                </div>
-            @endforelse
-        </div>
-
-        @if($notifications->hasPages())
-            <div class="card-footer">
-                {{ $notifications->links() }}
-            </div>
-        @endif
-    </div>
-
+@section('page-subtitle')
+    @if ($unreadCount > 0)
+        Bạn có <span class="font-semibold text-[#C94758]">{{ $unreadCount }} thông báo chưa đọc</span>
+    @else
+        Tất cả thông báo đã được đọc
+    @endif
 @endsection
 
 @can('create-notifications')
+@section('page-actions')
+    <button type="button" onclick="openModal('createNotificationModal')" class="btn-primary">
+        <i class="bi bi-send"></i>
+        <span>Gửi thông báo</span>
+    </button>
+@endsection
+@endcan
+
+@section('content')
+    @php
+        $currentStatus = in_array(request('status'), ['unread', 'read'], true) ? request('status') : null;
+        $statusTabs = ['unread' => 'Chưa đọc', 'read' => 'Đã đọc'];
+        $q = fn(array $set = [], array $drop = []) => array_filter(
+            array_merge(request()->except(array_merge(['page'], $drop, array_keys($set))), $set),
+            fn($v) => $v !== null && $v !== ''
+        );
+        $isFiltered = $currentStatus || $activeCategory;
+    @endphp
+
+    <div class="card overflow-hidden">
+        <div class="notif-head">
+            <nav class="status-tabs" aria-label="Lọc theo trạng thái đọc">
+                <a href="{{ route('notifications.index', $q([], ['status'])) }}"
+                   class="status-tab {{ !$currentStatus ? 'is-active' : '' }}" @if (!$currentStatus) aria-current="page" @endif>
+                    Tất cả <span class="status-tab-count">{{ number_format($statusCounts['all']) }}</span>
+                </a>
+                @foreach ($statusTabs as $key => $label)
+                    <a href="{{ route('notifications.index', $q(['status' => $key])) }}"
+                       class="status-tab {{ $currentStatus === $key ? 'is-active' : '' }} {{ $key === 'unread' && $statusCounts['unread'] > 0 ? 'has-attention' : '' }}"
+                       @if ($currentStatus === $key) aria-current="page" @endif>
+                        {{ $label }} <span class="status-tab-count">{{ number_format($statusCounts[$key]) }}</span>
+                    </a>
+                @endforeach
+            </nav>
+            @if ($unreadCount > 0)
+                <form action="{{ route('notifications.read-all') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="notif-head-action" title="Đánh dấu tất cả đã đọc">
+                        <i class="bi bi-check2-all" aria-hidden="true"></i>
+                        <span class="hidden sm:inline">Đánh dấu tất cả đã đọc</span>
+                        <span class="sm:hidden">Đọc hết</span>
+                    </button>
+                </form>
+            @endif
+        </div>
+
+        {{-- Nhóm thông báo — số trên chip là số CHƯA ĐỌC của nhóm --}}
+        <div class="type-chips notif-chips" role="group" aria-label="Lọc theo nhóm thông báo">
+            <a href="{{ route('notifications.index', $q([], ['category'])) }}"
+               class="type-chip {{ !$activeCategory ? 'is-active' : '' }}" @if (!$activeCategory) aria-current="true" @endif>
+                <i class="bi bi-grid" aria-hidden="true"></i> Mọi nhóm
+            </a>
+            @foreach ($categories as $key => $cat)
+                @php $catUnread = $categoryUnreadCounts[$key] ?? 0; @endphp
+                <a href="{{ route('notifications.index', $q(['category' => $key])) }}"
+                   class="type-chip {{ $activeCategory === $key ? 'is-active' : '' }}" @if ($activeCategory === $key) aria-current="true" @endif
+                   @if ($catUnread > 0) aria-label="{{ $cat['label'] }}, {{ $catUnread }} chưa đọc" @endif>
+                    <i class="bi {{ $cat['icon'] }}" aria-hidden="true"></i> {{ $cat['label'] }}
+                    @if ($catUnread > 0)<span class="notif-unread-count" aria-hidden="true">{{ $catUnread }}</span>@endif
+                </a>
+            @endforeach
+        </div>
+
+        @if ($notifications->isEmpty())
+            <div class="px-6 py-16 text-center text-slate-400 dark:text-slate-500">
+                <i class="bi {{ $currentStatus === 'unread' ? 'bi-check2-all text-[#168A63]' : 'bi-bell-slash' }} mb-3 block text-4xl" aria-hidden="true"></i>
+                <p class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {{ $currentStatus === 'unread' ? 'Không còn thông báo chưa đọc' : ($isFiltered ? 'Không có thông báo nào khớp bộ lọc' : 'Bạn chưa có thông báo nào') }}
+                </p>
+                @if ($isFiltered)
+                    <a href="{{ route('notifications.index') }}" class="mt-3 inline-flex items-center gap-1.5 text-sm text-pcrm-600 dark:text-pcrm-400 hover:underline">
+                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Xem tất cả thông báo
+                    </a>
+                @endif
+            </div>
+        @else
+            @php
+                // Nhóm theo mốc thời gian để hộp thư dễ quét — chỉ trên trang hiện tại của phân trang
+                $groupOf = function ($date) {
+                    if ($date->isToday()) return 'Hôm nay';
+                    if ($date->isYesterday()) return 'Hôm qua';
+                    if ($date->greaterThanOrEqualTo(now()->subDays(6)->startOfDay())) return '7 ngày qua';
+                    return 'Tháng ' . $date->format('m/Y');
+                };
+                $groups = $notifications->getCollection()->groupBy(fn($n) => $groupOf($n->created_at));
+            @endphp
+            <ul class="notif-list" aria-label="Danh sách thông báo">
+                @foreach ($groups as $groupLabel => $items)
+                    <li class="notif-group-head" role="presentation">{{ $groupLabel }}</li>
+                @foreach ($items as $notif)
+                    @php
+                        $isUnread = $notif->isUnread();
+                        $at = $notif->created_at;
+                        $timeLabel = $at->isToday() || $at->isYesterday() ? $at->format('H:i') : $at->format('d/m');
+                    @endphp
+                    <li class="notif-item {{ $isUnread ? 'is-unread' : '' }}">
+                        <span class="notif-dot" aria-hidden="true"></span>
+                        <span class="notif-icon {{ $notif->typeColor() }}" title="{{ $notif->typeLabel() }}" aria-hidden="true">
+                            <i class="bi {{ $notif->typeIcon() }}"></i>
+                        </span>
+                        <a href="{{ route('notifications.show', $notif) }}" class="min-w-0 flex-1 group">
+                            <span class="notif-line">
+                                <span class="notif-title group-hover:text-pcrm-600 dark:group-hover:text-pcrm-400">{{ $notif->title }}</span>
+                                <span class="sr-only">— {{ $notif->typeLabel() }}{{ $isUnread ? ', chưa đọc' : '' }}</span>
+                                <time class="notif-time" datetime="{{ $at->toIso8601String() }}" title="{{ $at->format('H:i d/m/Y') }} · {{ $at->diffForHumans() }}">{{ $timeLabel }}</time>
+                            </span>
+                            @if ($notif->body)
+                                <span class="notif-body">{{ $notif->body }}</span>
+                            @endif
+                        </a>
+                        <div class="notif-actions">
+                            <a href="{{ route('notifications.show', ['notification' => $notif, 'stay' => 1]) }}" class="row-action" title="Xem chi tiết thông báo" aria-label="Xem chi tiết thông báo: {{ $notif->title }}">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            @if ($isUnread)
+                                <form action="{{ route('notifications.read', $notif) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="row-action row-action-success" title="Đánh dấu đã đọc" aria-label="Đánh dấu đã đọc: {{ $notif->title }}">
+                                        <i class="bi bi-check2"></i>
+                                    </button>
+                                </form>
+                            @endif
+                            <button type="button" class="row-action row-action-danger" title="Xoá" aria-label="Xoá thông báo: {{ $notif->title }}"
+                                    onclick="openDeleteNotificationModal({{ Illuminate\Support\Js::from(route('notifications.destroy', $notif)) }}, {{ Illuminate\Support\Js::from($notif->title) }})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </li>
+                @endforeach
+                @endforeach
+            </ul>
+        @endif
+
+        @if ($notifications->hasPages())
+            <div class="card-footer">{{ $notifications->links() }}</div>
+        @endif
+    </div>
+@endsection
+
 @push('modals')
-    @include('notifications.partials.create-modal')
+    @include('notifications.partials.delete-modal')
+    @can('create-notifications')
+        @include('notifications.partials.create-modal')
+    @endcan
 @endpush
 
-@if($errors->any() && old('_modal') === 'createNotificationModal')
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    openModal('createNotificationModal');
-});
-</script>
-@endpush
-@endif
+@can('create-notifications')
+    @if ($errors->any() && old('_modal') === 'createNotificationModal')
+        @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () { openModal('createNotificationModal'); });
+        </script>
+        @endpush
+    @endif
 @endcan

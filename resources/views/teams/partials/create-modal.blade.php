@@ -41,11 +41,19 @@
                 <textarea name="description" rows="2" class="form-input" placeholder="Mô tả đội nhóm...">{{ old('description') }}</textarea>
                 @error('description') <p class="form-error">{{ $message }}</p> @enderror
             </div>
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
-                       class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
-                <span class="text-sm text-slate-700 dark:text-slate-300">Đang hoạt động</span>
-            </label>
+            <div class="flex flex-wrap items-center gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_office" value="1" {{ old('is_office') ? 'checked' : '' }}
+                           class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
+                    <span class="text-sm text-slate-700 dark:text-slate-300">Khối văn phòng</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
+                           class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
+                    <span class="text-sm text-slate-700 dark:text-slate-300">Đang hoạt động</span>
+                </label>
+            </div>
+            <p class="text-[11px] text-slate-400">"Khối văn phòng" dùng để mặc định tick sẵn khi tạo ngày nghỉ lễ (khối văn phòng được nghỉ lễ).</p>
             <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                 <button type="button" onclick="closeModal('createTeamModal')" class="btn-secondary">Hủy</button>
                 <button type="submit" class="btn-primary"><i class="bi bi-floppy"></i> Lưu</button>

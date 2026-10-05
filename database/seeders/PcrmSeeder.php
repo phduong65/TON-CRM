@@ -21,7 +21,7 @@ class PcrmSeeder extends Seeder
         Setting::firstOrCreate(['key' => 'yellowzone_min'],             ['value' => '80',  'description' => 'Ngưỡng tối thiểu để xếp vào Yellowzone (80–89đ)']);
         Setting::firstOrCreate(['key' => 'orangezone_min'],             ['value' => '70',  'description' => 'Ngưỡng tối thiểu để xếp vào Orangezone (70–79đ)']);
         Setting::firstOrCreate(['key' => 'consecutive_redzone_months'], ['value' => '2',   'description' => 'Số tháng Redzone liên tiếp để kích hoạt cảnh báo xử phạt đặc biệt']);
-        Setting::firstOrCreate(['key' => 'company_name'],               ['value' => 'Công ty TNHH F&B', 'description' => 'Tên công ty']);
+        Setting::firstOrCreate(['key' => 'company_name'],               ['value' => 'CÔNG TY TNHH TON CAPITAL', 'description' => 'Tên công ty']);
         Setting::firstOrCreate(['key' => 'rows_per_page'],              ['value' => '15',  'description' => 'Số dòng mỗi trang']);
         Setting::firstOrCreate(['key' => 'report_reward_points'],       ['value' => '5',   'description' => 'Điểm thưởng cho nhân viên khi báo cáo chéo được duyệt']);
 

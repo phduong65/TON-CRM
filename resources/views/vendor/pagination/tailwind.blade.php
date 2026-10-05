@@ -17,7 +17,7 @@
     </p>
 
     {{-- Page links --}}
-    <div class="inline-flex items-center gap-1">
+    <div class="pagination-pages">
 
         {{-- Prev --}}
         @if ($paginator->onFirstPage())

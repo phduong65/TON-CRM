@@ -2,6 +2,7 @@
 
 @section('title', 'Hồ sơ của tôi')
 @section('page-title', 'Hồ sơ của tôi')
+@section('page-subtitle', 'Thông tin cá nhân, ảnh đại diện và mật khẩu đăng nhập')
 @section('breadcrumb', 'Tài khoản')
 
 @section('content')
@@ -15,11 +16,27 @@
     <div class="lg:col-span-1 space-y-4">
         <div class="card text-center">
             <div class="card-body">
-                <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-pcrm-100 dark:bg-pcrm-900/50 flex items-center justify-center">
-                    <span class="text-2xl font-bold text-pcrm-700 dark:text-pcrm-400">
-                        {{ strtoupper(mb_substr($user->name, 0, 2)) }}
-                    </span>
+                <div class="relative w-24 h-24 mx-auto mb-4 group cursor-pointer" onclick="document.getElementById('avatarFileInput').click()">
+                    <!-- Avatar Image or Initials -->
+                    <div class="w-full h-full rounded-full overflow-hidden bg-pcrm-100 dark:bg-pcrm-900/50 flex items-center justify-center border-2 border-slate-100 dark:border-slate-700 shadow-inner">
+                        @if($user->avatar)
+                            <img src="{{ asset($user->avatar) }}" alt="{{ $user->name }}" class="w-full h-full object-cover">
+                        @else
+                            <span class="text-3xl font-black text-pcrm-750 dark:text-pcrm-400">
+                                {{ strtoupper(mb_substr($user->name, 0, 2)) }}
+                            </span>
+                        @endif
+                    </div>
+                    <!-- Hover overlay like Facebook -->
+                    <div class="absolute inset-0 bg-black/45 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <i class="bi bi-camera text-xl"></i>
+                        <span class="text-[9px] font-black uppercase mt-1">Cập nhật</span>
+                    </div>
                 </div>
+                <form id="avatarUploadForm" action="{{ route('profile.avatar') }}" method="POST" enctype="multipart/form-data" class="hidden">
+                    @csrf
+                    <input type="file" name="avatar" id="avatarFileInput" accept="image/*" onchange="this.form.submit()">
+                </form>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $user->name }}</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                     @if($user->hasRole('admin')) Quản trị viên
@@ -38,7 +55,7 @@
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">Chức vụ</span>
-                        <span class="font-medium">{{ $employee->position ?? '—' }}</span>
+                        <span class="font-medium">{{ $employee->position?->name ?? '—' }}</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-slate-500">Chi nhánh</span>
@@ -71,6 +88,18 @@
             </div>
         </div>
         @endif
+
+        <div class="card mt-4 border border-red-100 dark:border-red-950 bg-red-50/20 dark:bg-red-950/10">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit"
+                        class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-sm shadow-sm transition">
+                        <i class="bi bi-box-arrow-right text-base"></i> Đăng xuất tài khoản
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 
     {{-- ── Cột phải: form chỉnh sửa ── --}}
@@ -121,8 +150,15 @@
                         </div>
                         <div>
                             <label class="form-label">Chức vụ</label>
-                            <input type="text" name="position" class="form-input" value="{{ old('position', $employee->position) }}" placeholder="VD: Pha chế">
-                            @error('position') <p class="form-error">{{ $message }}</p> @enderror
+                            <select name="position_id" class="form-input">
+                                <option value="">-- Chọn chức danh --</option>
+                                @foreach($positions as $position)
+                                    <option value="{{ $position->id }}" {{ old('position_id', $employee->position_id) == $position->id ? 'selected' : '' }}>
+                                        {{ $position->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('position_id') <p class="form-error">{{ $message }}</p> @enderror
                         </div>
                     </div>
                     @endif

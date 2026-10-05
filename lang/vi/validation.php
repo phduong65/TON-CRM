@@ -267,6 +267,7 @@ return [
         'phone' => 'số điện thoại',
         'points_deducted' => 'số điểm trừ',
         'position' => 'chức danh',
+        'position_id' => 'chức danh',
         'radius_meters' => 'bán kính cho phép',
         'reason' => 'lý do',
         'regulation_id' => 'quy chế',

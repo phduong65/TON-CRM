@@ -82,22 +82,21 @@
                     <label class="form-label">Mức độ vi phạm <span class="text-red-500">*</span></label>
                     <div class="grid grid-cols-5 gap-1.5" id="cp_severity_btns">
                         @foreach([
-                            ['value' => 'low',      'label' => 'Nhẹ',              'pts' => 1,  'color' => 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'],
-                            ['value' => 'medium',   'label' => 'Trung bình',       'pts' => 3,  'color' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'],
-                            ['value' => 'high',     'label' => 'Nặng',             'pts' => 5,  'color' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
-                            ['value' => 'critical', 'label' => 'Nghiêm trọng',     'pts' => 10, 'color' => 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800'],
-                            ['value' => 'extreme',  'label' => 'Đặc biệt NT',      'pts' => 20, 'color' => 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'],
+                            ['value' => 'low',      'label' => 'Nhẹ',              'color' => 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600'],
+                            ['value' => 'medium',   'label' => 'Trung bình',       'color' => 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'],
+                            ['value' => 'high',     'label' => 'Nặng',             'color' => 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'],
+                            ['value' => 'critical', 'label' => 'Nghiêm trọng',     'color' => 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800'],
+                            ['value' => 'extreme',  'label' => 'Đặc biệt NT',      'color' => 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'],
                         ] as $s)
                         <button type="button"
                                 data-severity="{{ $s['value'] }}"
-                                data-pts="{{ $s['pts'] }}"
                                 onclick="cpSetSeverity('{{ $s['value'] }}')"
                                 class="cp-severity-btn flex flex-col items-center gap-0.5 rounded-lg border px-2 py-2 text-center transition-all cursor-pointer {{ $s['color'] }}">
                             <span class="text-xs font-semibold leading-none">{{ $s['label'] }}</span>
-                            <span class="text-[11px] font-mono leading-none opacity-75">-{{ $s['pts'] }}đ</span>
                         </button>
                         @endforeach
                     </div>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Chỉ mang tính tham khảo — không thay đổi điểm trừ. Sửa điểm trực tiếp ở ô bên dưới.</p>
                     <input type="hidden" id="cp_severity_value" name="severity">
                 </div>
 
@@ -232,13 +231,13 @@
                         </div>
                         <div class="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                             <div class="overflow-x-auto">
-                            <table class="w-full min-w-[480px] text-sm">
+                            <table class="w-full min-w-[480px] text-sm" data-no-cards>
                                 <thead class="bg-slate-50 dark:bg-slate-700/50">
                                     <tr>
-                                        <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-8">TN</th>
-                                        <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-8">☑</th>
-                                        <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Nhân viên</th>
-                                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 w-24">Điểm trừ</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-8 whitespace-nowrap">TN</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 w-8 whitespace-nowrap">☑</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">Nhân viên</th>
+                                        <th class="px-3 py-2 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 w-24 whitespace-nowrap">Điểm trừ</th>
                                     </tr>
                                 </thead>
                                 <tbody id="cp_team_member_rows" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
@@ -368,9 +367,6 @@
     var REG_VIOLATIONS = @json($regulationViolationsMap);   // { reg_id: [{id,name,points,money,type,severity},...] }
     var TEAM_EMPLOYEES  = @json($teamEmployeesMap);          // { team_id: [{id,code,name},...] }
 
-    /* Mức độ → điểm trừ (khớp với POINTS_MAP trong ViolationsSeeder) */
-    var SEVERITY_POINTS = { low: 1, medium: 3, high: 5, critical: 10, extreme: 20 };
-
     var _type      = 'individual'; // 'individual' | 'team'
     var _memberIdx = {{ old('members') ? count(old('members')) : 0 }};
 
@@ -414,9 +410,15 @@
         var moneyDisplay = document.getElementById('cp_money_display');
 
         if (vio) {
-            // Show severity panel and auto-select from violation
+            // Show severity panel and auto-select from violation (tag only — does not touch points)
             severityWrap.classList.remove('hidden');
             cpSetSeverity(vio.severity || 'medium');
+
+            // Points always come from the violation's own configured points_deducted,
+            // never from the generic severity tier scale (a violation's points can be
+            // customized independently of its severity in Quản lý vi phạm).
+            document.getElementById('cp_points').value = vio.points;
+            cpSyncTeamPoints(vio.points);
 
             var hasMoney = vio.type === 'money' || vio.type === 'both';
             moneyHidden.value = vio.money;
@@ -435,17 +437,15 @@
     };
 
     /* ──────────────────────────────────────────────────
-       ②b Severity button → update points
+       ②b Severity button → tag only (does NOT change points)
+       Severity is a fixed attribute of the Violation itself (configured in
+       Quản lý vi phạm) and is never saved per-penalty — this picker is purely
+       an informational tag, so it must not silently override the points
+       you've set (either the violation's default or your own manual edit).
     ────────────────────────────────────────────────── */
     window.cpSetSeverity = function (severity) {
-        var pts = SEVERITY_POINTS[severity] || 0;
-
         // Store value
         document.getElementById('cp_severity_value').value = severity;
-
-        // Update points field + sync team rows
-        document.getElementById('cp_points').value = pts;
-        cpSyncTeamPoints(pts);
 
         // Update button active states
         document.querySelectorAll('.cp-severity-btn').forEach(function (btn) {
@@ -599,22 +599,22 @@
             var isFirst = idx === 0;
             return '<tr id="cp_team_row_' + e.id + '" data-id="' + e.id + '"'
                 + '    class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30">'
-                + '  <td class="px-3 py-2.5">'
+                + '  <td class="px-3 py-2.5 whitespace-nowrap">'
                 + '    <input type="radio" name="cp_team_primary_radio" value="' + e.id + '"'
                 + '           class="accent-pcrm-600 cursor-pointer"'
                 + '           onchange="cpUpdateTeamMemberCount()"'
                 + (isFirst ? ' checked' : '') + '>'
                 + '  </td>'
-                + '  <td class="px-3 py-2.5">'
+                + '  <td class="px-3 py-2.5 whitespace-nowrap">'
                 + '    <input type="checkbox" class="cp-team-cb accent-pcrm-600 cursor-pointer"'
                 + '           data-id="' + e.id + '" checked'
                 + '           onchange="cpUpdateTeamMemberCount()">'
                 + '  </td>'
-                + '  <td class="px-3 py-2.5">'
+                + '  <td class="px-3 py-2.5 whitespace-nowrap">'
                 + '    <p class="font-medium text-slate-800 dark:text-slate-200 text-sm leading-none">' + e.name + '</p>'
                 + '    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">' + e.code + '</p>'
                 + '  </td>'
-                + '  <td class="px-3 py-2.5 text-right">'
+                + '  <td class="px-3 py-2.5 text-right whitespace-nowrap">'
                 + '    <input type="number" class="cp-team-points form-input text-sm text-right py-1 px-2 w-20"'
                 + '           data-id="' + e.id + '" min="0" max="100" value="' + points + '">'
                 + '  </td>'

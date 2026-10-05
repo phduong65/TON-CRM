@@ -14,6 +14,7 @@ use App\Models\Setting;
 use App\Models\Team;
 use App\Models\Violation;
 use App\Services\NotificationService;
+use App\Support\Concerns\PreventsDuplicateSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,8 @@ use Illuminate\Support\Str;
 
 class EmployeeReportsController extends Controller
 {
+    use PreventsDuplicateSubmission;
+
     public function index(Request $request)
     {
         $canApprove = auth()->user()->can('approve-reports');
@@ -39,10 +42,6 @@ class EmployeeReportsController extends Controller
             $query->where('created_by', auth()->id());
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -50,6 +49,16 @@ class EmployeeReportsController extends Controller
                   ->orWhereHas('reporter', fn($eq) => $eq->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"))
                   ->orWhereHas('reported', fn($eq) => $eq->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
             });
+        }
+
+        // Số báo cáo theo trạng thái cho tab lọc — cùng phạm vi + tìm kiếm, chưa lọc trạng thái
+        $statusCounts = (clone $query)->reorder()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         $reports = $query->paginate(15)->withQueryString();
@@ -69,7 +78,7 @@ class EmployeeReportsController extends Controller
         $currentEmployee = auth()->user()->employee;
 
         return view('reports.index', compact(
-            'reports', 'violations', 'employees', 'currentEmployee',
+            'reports', 'statusCounts', 'violations', 'employees', 'currentEmployee',
             'canApprove', 'branches', 'teams', 'regulations'
         ));
     }
@@ -115,6 +124,20 @@ class EmployeeReportsController extends Controller
             return back()
                 ->withErrors(['reported_employee_id' => 'Không thể tự báo cáo chính mình.'])
                 ->withInput();
+        }
+
+        // Chặn double-submit (double-click / gửi lại khi mạng chậm) tạo trùng 2 báo cáo giống hệt.
+        // reported_employee_id là null khi type=team nên không đưa vào điều kiện lúc đó (so sánh
+        // "= NULL" trong SQL không bao giờ khớp) — dùng team_id để khớp thay thế.
+        $dupConditions = ['reporter_employee_id' => $reporterEmployee->id, 'type' => $type, 'description' => $request->description];
+        if ($type === 'team') {
+            $dupConditions['team_id'] = $request->team_id;
+        } else {
+            $dupConditions['reported_employee_id'] = $primaryEmployeeId;
+        }
+        $duplicate = $this->findJustSubmitted(EmployeeReport::class, $dupConditions);
+        if ($duplicate) {
+            return redirect()->route('reports.show', $duplicate)->with('success', 'Tạo báo cáo thành công!');
         }
 
         $count = EmployeeReport::whereYear('created_at', now()->year)
@@ -190,8 +213,18 @@ class EmployeeReportsController extends Controller
             abort(403);
         }
 
-        $report->load(['reporter.branch', 'reported.branch', 'team', 'members.employee.branch', 'violation', 'creator', 'reviewer']);
-        return view('reports.show', compact('report'));
+        $report->load(['reporter.branch', 'reported.branch', 'reported.team', 'team', 'members.employee.branch', 'violation.regulation', 'creator', 'reviewer']);
+
+        // Lịch sử xử lý: các hành động đã ghi audit log trên chính báo cáo này
+        $history = \Spatie\Activitylog\Models\Activity::query()
+            ->where('subject_type', $report->getMorphClass())
+            ->where('subject_id', $report->id)
+            ->with('causer')
+            ->latest()
+            ->limit(30)
+            ->get();
+
+        return view('reports.show', compact('report', 'history'));
     }
 
     public function approve(EmployeeReport $report)
@@ -310,6 +343,27 @@ class EmployeeReportsController extends Controller
         app(NotificationService::class)->notifyReportRejected($report, $request->rejection_reason);
 
         return back()->with('success', 'Đã từ chối báo cáo!');
+    }
+
+    public function destroy(EmployeeReport $report)
+    {
+        abort_unless($report->created_by === auth()->id(), 403, 'Bạn chỉ có thể huỷ báo cáo do chính mình tạo.');
+        abort_if($report->status !== 'pending', 403, 'Chỉ có thể huỷ báo cáo đang chờ duyệt.');
+
+        $report->loadMissing(['reporter', 'reported']);
+        activity()->causedBy(auth()->user())
+            ->performedOn($report)
+            ->inLog('report')
+            ->withProperties([
+                'code'     => $report->code,
+                'reporter' => $report->reporter?->name,
+                'reported' => $report->reported?->name,
+            ])
+            ->log('Huỷ báo cáo ' . $report->code . ' — ' . ($report->reporter?->name ?? '—'));
+
+        $report->delete();
+
+        return back()->with('success', 'Đã huỷ báo cáo.');
     }
 
     // ── File handling ────────────────────────────────────────────────────────

@@ -84,4 +84,23 @@ class Penalty extends Model
     {
         return $this->hasMany(Appeal::class);
     }
+
+    /**
+     * Sinh mã "PNL-YYYYMM-XXXX" tiếp theo trong tháng. Penalty KHÔNG dùng SoftDeletes —
+     * destroy() xoá cứng thật (xem PenaltiesController::destroy()) — nên không thể/không cần
+     * withTrashed(). Dùng MAX số thứ tự đã tồn tại (không phải COUNT số dòng còn lại): nếu
+     * COUNT() lại được dùng, xoá 1 phiếu ở giữa tháng sẽ làm số đếm lùi lại, sinh trùng "code"
+     * (unique constraint) với phiếu chưa xoá và gây crash 500 khi insert.
+     */
+    public static function nextCode(): string
+    {
+        $prefix = 'PNL-' . now()->format('Ym') . '-';
+
+        $maxSeq = static::where('code', 'like', $prefix . '%')
+            ->get(['code'])
+            ->map(fn ($p) => (int) substr($p->code, strlen($prefix)))
+            ->max();
+
+        return $prefix . str_pad((string) (($maxSeq ?? 0) + 1), 4, '0', STR_PAD_LEFT);
+    }
 }

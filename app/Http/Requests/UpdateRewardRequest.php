@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateRewardRequest extends FormRequest
 {
@@ -15,7 +16,12 @@ class UpdateRewardRequest extends FormRequest
     {
         return [
             'reward_type_id'       => 'required|exists:reward_types,id',
-            'employee_id'          => 'required|exists:employees,id',
+            // Chỉ phiếu cá nhân mới có employee_id; phiếu tập thể (chi nhánh/đội/tất cả) dùng reward_members
+            'employee_id'          => [
+                Rule::requiredIf(fn () => ($this->route('reward')?->target_type ?? 'individual') === 'individual'),
+                'nullable',
+                'exists:employees,id',
+            ],
             'description'          => 'nullable|string|max:2000',
             'total_points_awarded' => 'required|integer|min:1|max:9999',
             'members'              => 'nullable|array',

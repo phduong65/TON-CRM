@@ -4,19 +4,20 @@
 @section('page-title', 'Đội nhóm')
 @section('breadcrumb', 'Nhân sự')
 
-@section('content')
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Danh sách tất cả đội nhóm trong hệ thống</p>
-        </div>
-        @can('create-teams')
-        <button onclick="openModal('createTeamModal')" class="btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm đội nhóm</span>
-        </button>
-        @endcan
-    </div>
+@section('page-subtitle')
+    Danh sách tất cả đội nhóm trong hệ thống
+@endsection
 
+@section('page-actions')
+    @can('create-teams')
+    <button onclick="openModal('createTeamModal')" class="btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        <span>Thêm đội nhóm</span>
+    </button>
+    @endcan
+@endsection
+
+@section('content')
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
@@ -50,7 +51,7 @@
                     </div>
                 </div>
                 <div class="flex gap-2 items-center">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 sm:flex-none gap-1.5">
+                    <button type="submit" class="btn-secondary h-9 px-4 text-sm flex-1 sm:flex-none gap-1.5">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
                     @if($teamFilterActive)
@@ -69,7 +70,7 @@
                     <thead>
                         <tr>
                             <th class="table-th">Mã</th>
-                            <th class="table-th">Tên đội nhóm</th>
+                            <th class="table-th" data-mcard-title>Tên đội nhóm</th>
                             <th class="table-th">Chi nhánh</th>
                             <th class="table-th text-center">Số nhân viên</th>
                             <th class="table-th text-right">Điểm TB</th>
@@ -95,15 +96,15 @@
                             <td class="table-td text-center">
                                 <div class="flex items-center justify-center gap-1">
                                     @can('edit-teams')
-                                    <button onclick='openEditTeamModal({{ json_encode(["id"=>$t->id,"code"=>$t->code,"name"=>$t->name,"branch_id"=>$t->branch_id,"description"=>$t->description,"is_active"=>$t->is_active]) }})'
+                                    <button onclick='openEditTeamModal({{ json_encode(["id"=>$t->id,"code"=>$t->code,"name"=>$t->name,"branch_id"=>$t->branch_id,"description"=>$t->description,"is_office"=>(bool)$t->is_office,"is_active"=>$t->is_active]) }})'
                                             class="btn-ghost btn-sm text-amber-600 dark:text-amber-400" title="Sửa">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     @endcan
                                     @can('delete-teams')
                                     <button onclick="openDeleteTeamModal({{ $t->id }}, '{{ addslashes($t->name) }}')"
-                                            class="btn-ghost btn-sm text-red-600 dark:text-red-400" title="Vô hiệu hóa">
-                                        <i class="bi bi-slash-circle"></i>
+                                            class="btn-ghost btn-sm text-red-600 dark:text-red-400" title="Vô hiệu hóa / Xóa">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                     @endcan
                                 </div>
@@ -144,13 +145,16 @@ function openEditTeamModal(data) {
     document.getElementById('editTeamName').value    = data.name        ?? '';
     document.getElementById('editTeamDesc').value    = data.description ?? '';
     document.getElementById('editTeamBranch').value  = data.branch_id   ?? '';
+    document.getElementById('editTeamOffice').checked = !!data.is_office;
     document.getElementById('editTeamActive').checked = !!data.is_active;
     document.getElementById('editTeamForm').action   = '/teams/' + data.id;
     openModal('editTeamModal');
 }
 function openDeleteTeamModal(id, name) {
     document.getElementById('deleteTeamName').textContent = name;
-    document.getElementById('deleteTeamForm').action = '/teams/' + id;
+    const url = '/teams/' + id;
+    document.getElementById('deactivateTeamForm').action = url;
+    document.getElementById('deleteTeamForm').action = url;
     openModal('deleteTeamModal');
 }
 

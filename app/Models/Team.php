@@ -5,13 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Team extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'code',
         'name',
         'branch_id',
+        'is_office',
         'description',
         'is_active',
     ];
@@ -19,6 +23,7 @@ class Team extends Model
     protected function casts(): array
     {
         return [
+            'is_office' => 'boolean',
             'is_active' => 'boolean',
         ];
     }
@@ -31,6 +36,11 @@ class Team extends Model
     public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function coverageRequirements(): HasMany
+    {
+        return $this->hasMany(ShiftCoverageRequirement::class);
     }
 
 }

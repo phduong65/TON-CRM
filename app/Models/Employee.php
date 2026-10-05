@@ -18,7 +18,7 @@ class Employee extends Model
         'name',
         'email',
         'phone',
-        'position',
+        'position_id',
         'branch_id',
         'team_id',
         'is_active',
@@ -51,6 +51,11 @@ class Employee extends Model
         return $this->belongsTo(Team::class);
     }
 
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
+    }
+
     public function scores(): HasMany
     {
         return $this->hasMany(EmployeeScore::class);
@@ -76,9 +81,19 @@ class Employee extends Model
         return $this->hasMany(AttendanceLog::class);
     }
 
+    public function attendanceAlerts(): HasMany
+    {
+        return $this->hasMany(AttendanceAlert::class);
+    }
+
     public function leaveRequests(): HasMany
     {
         return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function timesheetConfirmations(): HasMany
+    {
+        return $this->hasMany(TimesheetConfirmation::class);
     }
 
     public function shiftSwapRequestsSent(): HasMany

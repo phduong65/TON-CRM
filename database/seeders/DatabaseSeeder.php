@@ -20,5 +20,15 @@ class DatabaseSeeder extends Seeder
         $this->call(LogViewerSeeder::class);
         $this->call(ExportPermissionsSeeder::class);
         $this->call(HolidaysPermissionsSeeder::class);
+        $this->call(AttendanceLogEditPermissionSeeder::class);
+        $this->call(ImpersonateUsersPermissionSeeder::class);
+        $this->call(AnnualLeavePermissionSeeder::class);
+        $this->call(TimesheetConfirmationPermissionsSeeder::class);
+        $this->call(PositionsPermissionsSeeder::class);
+        $this->call(DeleteApprovedRequestsPermissionSeeder::class);
+        $this->call(ThemePermissionsSeeder::class);
+        $this->call(ThemeSeeder::class);
+        $this->call(ShiftCoverageRequirementsSeeder::class);
+        $this->call(RedzonePermissionSeeder::class);
     }
 }

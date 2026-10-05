@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Position;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -12,9 +13,10 @@ class ProfileController extends Controller
 {
     public function show()
     {
-        $user     = auth()->user();
-        $employee = $user->employee?->load(['branch', 'team']);
-        return view('profile.show', compact('user', 'employee'));
+        $user      = auth()->user();
+        $employee  = $user->employee?->load(['branch', 'team', 'position']);
+        $positions = Position::where('is_active', true)->orderBy('name')->get();
+        return view('profile.show', compact('user', 'employee', 'positions'));
     }
 
     public function update(Request $request)
@@ -23,9 +25,9 @@ class ProfileController extends Controller
         $canEditEmail = $user->can('edit-employees') || $user->hasRole(['admin', 'director']);
 
         $rules = [
-            'name'     => 'required|string|max:255',
-            'phone'    => 'nullable|string|max:20',
-            'position' => 'nullable|string|max:255',
+            'name'        => 'required|string|max:255',
+            'phone'       => 'nullable|string|max:20',
+            'position_id' => 'nullable|exists:positions,id',
         ];
 
         if ($canEditEmail) {
@@ -53,8 +55,8 @@ class ProfileController extends Controller
                 'name'  => $validated['name'],
                 'phone' => $validated['phone'] ?? null,
             ];
-            if (array_key_exists('position', $validated)) {
-                $empUpdate['position'] = $validated['position'];
+            if (array_key_exists('position_id', $validated)) {
+                $empUpdate['position_id'] = $validated['position_id'];
             }
             if ($canEditEmail && isset($validated['email'])) {
                 $empUpdate['email'] = $validated['email'];
@@ -106,5 +108,49 @@ class ProfileController extends Controller
             ->log('Đổi mật khẩu: ' . $user->name);
 
         return back()->with('success', 'Mật khẩu đã được thay đổi thành công!');
+    }
+
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ], [
+            'avatar.required' => 'Vui lòng chọn ảnh đại diện.',
+            'avatar.image' => 'File phải là hình ảnh.',
+            'avatar.mimes' => 'Ảnh đại diện chỉ chấp nhận định dạng jpeg, png, jpg, gif.',
+            'avatar.max' => 'Dung lượng ảnh tối đa là 2MB.',
+        ]);
+
+        $user = auth()->user();
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            
+            // Ensure directory exists
+            if (!file_exists(public_path('uploads/avatars'))) {
+                mkdir(public_path('uploads/avatars'), 0755, true);
+            }
+            
+            $file->move(public_path('uploads/avatars'), $filename);
+
+            // Delete old avatar if exists
+            if ($user->avatar && file_exists(public_path($user->avatar))) {
+                @unlink(public_path($user->avatar));
+            }
+
+            $user->update([
+                'avatar' => 'uploads/avatars/' . $filename
+            ]);
+
+            activity()->causedBy($user)
+                ->performedOn($user)
+                ->inLog('profile')
+                ->log('Cập nhật ảnh đại diện: ' . $user->name);
+
+            return back()->with('success', 'Ảnh đại diện đã được cập nhật thành công!');
+        }
+
+        return back()->with('error', 'Không thể tải lên ảnh đại diện.');
     }
 }

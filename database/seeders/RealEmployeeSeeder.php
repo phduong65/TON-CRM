@@ -3,9 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Branch;
-use App\Models\Team;
 use App\Models\Employee;
 use App\Models\EmployeeScore;
+use App\Models\Position;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -39,11 +40,11 @@ class RealEmployeeSeeder extends Seeder
         $teamMap = [];
         $teamDefs = [
             'Văn Phòng|CN Phường An Khánh' => ['code' => 'TEAM-VP-AK', 'name' => 'Văn Phòng', 'branch' => 'CN Phường An Khánh'],
-            'Nhà hàng|CN Phường Sài Gòn'   => ['code' => 'TEAM-NH-SG', 'name' => 'Nhà hàng', 'branch' => 'CN Phường Sài Gòn'],
-            'Bếp|CN Phường Sài Gòn'         => ['code' => 'TEAM-BP-SG', 'name' => 'Bếp', 'branch' => 'CN Phường Sài Gòn'],
-            'Bar|CN Phường Sài Gòn'          => ['code' => 'TEAM-BR-SG', 'name' => 'Bar', 'branch' => 'CN Phường Sài Gòn'],
-            'Quản lý|CN Phường Sài Gòn'      => ['code' => 'TEAM-QL-SG', 'name' => 'Quản lý', 'branch' => 'CN Phường Sài Gòn'],
-            'SPA|CN_44_Nguyen_hue'           => ['code' => 'TEAM-SPA-NH', 'name' => 'SPA', 'branch' => 'CN_44_Nguyen_hue'],
+            'Nhà hàng|CN Phường Sài Gòn' => ['code' => 'TEAM-NH-SG', 'name' => 'Nhà hàng', 'branch' => 'CN Phường Sài Gòn'],
+            'Bếp|CN Phường Sài Gòn' => ['code' => 'TEAM-BP-SG', 'name' => 'Bếp', 'branch' => 'CN Phường Sài Gòn'],
+            'Bar|CN Phường Sài Gòn' => ['code' => 'TEAM-BR-SG', 'name' => 'Bar', 'branch' => 'CN Phường Sài Gòn'],
+            'Quản lý|CN Phường Sài Gòn' => ['code' => 'TEAM-QL-SG', 'name' => 'Quản lý', 'branch' => 'CN Phường Sài Gòn'],
+            'SPA|CN_44_Nguyen_hue' => ['code' => 'TEAM-SPA-NH', 'name' => 'SPA', 'branch' => 'CN_44_Nguyen_hue'],
         ];
 
         foreach ($teamDefs as $key => $def) {
@@ -55,31 +56,31 @@ class RealEmployeeSeeder extends Seeder
 
         // 3. Danh sách nhân viên từ Excel
         $employees = [
-            ['code' => 'GD-TVTON',     'name' => 'Trần Văn Tôn',           'phone' => '+84775070993', 'gender' => 'Nam',            'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => 'Giám đốc',            'access' => 'Quản lý'],
-            ['code' => 'NV-NDMHIEN',   'name' => 'Nguyễn Đình Minh Hiển',  'phone' => '+84338318541', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Nhà hàng',   'position' => 'Run Food',            'access' => 'Nhân viên'],
-            ['code' => 'NV-THPHUONG',  'name' => 'Trần Hữu Phương',        'phone' => '+84909761175', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bếp',        'position' => 'Đầu bếp',             'access' => 'Nhân viên'],
-            ['code' => 'NV_TTLE',      'name' => 'Trần Trung Lễ',          'phone' => '+84337888385', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bếp',        'position' => 'Bếp trưởng',          'access' => 'Nhân viên'],
-            ['code' => 'NV_TDTRI',     'name' => 'Từ Duy Trí',             'phone' => '+84989834340', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bếp',        'position' => 'Đầu bếp',             'access' => 'Nhân viên'],
-            ['code' => 'NV_DVQUANG',   'name' => 'Đỗ Vinh Quang',          'phone' => '+84934620528', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bar',        'position' => 'Bartender',           'access' => 'Nhân viên'],
-            ['code' => 'NV_QTNHAT',    'name' => 'Quách Tiểu Nhật',        'phone' => '+84908167104', 'gender' => 'Nam',            'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bar',        'position' => 'Bartender',           'access' => 'Nhân viên'],
-            ['code' => 'NV_TTCLE',     'name' => 'Trần Thị Cẩm Lệ',       'phone' => '+84792191648', 'gender' => 'Nữ',             'branch' => 'CN Phường Sài Gòn',  'dept' => 'Quản lý',    'position' => 'Quản lý nhà hàng',    'access' => 'Quản Lý Chi Nhánh'],
-            ['code' => 'NV-NTVY',      'name' => 'Nguyễn Tường Vy',        'phone' => '+84836202608', 'gender' => 'Nữ',             'branch' => 'CN Phường Sài Gòn',  'dept' => 'Nhà hàng',   'position' => 'Barista',             'access' => 'Nhân viên'],
-            ['code' => 'NV-NTPDUNG',   'name' => 'Nguyễn Thị Phương Dung', 'phone' => '+84966253445', 'gender' => 'Nữ',             'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => 'Kế toán',             'access' => 'Quản lý'],
-            ['code' => 'NV_NPHUY',     'name' => 'Nguyễn Phúc Huy',        'phone' => '+84862639931', 'gender' => 'Nam',            'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => 'Thu mua',             'access' => 'Nhân viên'],
-            ['code' => 'NV_DQBINH',    'name' => 'Đặng Quốc Bình',         'phone' => '+84387956644', 'gender' => 'Nam',            'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => 'IT',                  'access' => 'Nhân viên'],
-            ['code' => 'NV-NTHHANH',   'name' => 'Nguyễn Thị Hồng Hạnh',   'phone' => '+84565942206', 'gender' => 'Nữ',             'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => 'Marketing',           'access' => 'Nhân viên'],
-            ['code' => '0002',         'name' => 'Trần Thị Thúy',          'phone' => '+84938182990', 'gender' => 'Nữ',             'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bếp',        'position' => 'Phụ Bếp Chiều',       'access' => 'Nhân viên'],
-            ['code' => 'NV_LVVang',    'name' => 'Lê Văn Vàng',            'phone' => '+84346466917', 'gender' => 'Không xác định', 'branch' => 'CN Phường Sài Gòn',  'dept' => 'Nhà hàng',   'position' => 'Phục vụ',             'access' => 'Nhân viên'],
-            ['code' => 'NV_NHATU',     'name' => 'Nguyễn Hoàng Anh Tú',    'phone' => '+84901857200', 'gender' => 'Không xác định', 'branch' => 'CN Phường Sài Gòn',  'dept' => 'Bếp',        'position' => 'Đầu bếp',             'access' => 'Nhân viên'],
-            ['code' => 'NV_NHNMAI',    'name' => 'Nguyễn Huỳnh Ngọc Mai',  'phone' => '+84857238682', 'gender' => 'Nữ',             'branch' => 'CN_44_Nguyen_hue',   'dept' => 'SPA',        'position' => 'NV SPA',              'access' => 'Nhân viên'],
-            ['code' => 'PDUONG',       'name' => 'Phạm Dương',             'phone' => '+84336719208', 'gender' => 'Không xác định', 'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng',  'position' => 'IT',                  'access' => 'Nhân viên'],
+            ['code' => 'GD-TVTON', 'name' => 'Trần Văn Tôn', 'phone' => '+84775070993', 'gender' => 'Nam', 'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng', 'position' => 'Giám đốc', 'access' => 'Quản lý'],
+            ['code' => 'NV-NDMHIEN', 'name' => 'Nguyễn Đình Minh Hiển', 'phone' => '+84338318541', 'gender' => 'Nam', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Nhà hàng', 'position' => 'Run Food', 'access' => 'Nhân viên'],
+            ['code' => 'NV-THPHUONG', 'name' => 'Trần Hữu Phương', 'phone' => '+84909761175', 'gender' => 'Nam', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Bếp', 'position' => 'Đầu bếp', 'access' => 'Nhân viên'],
+            ['code' => 'NV_TTLE', 'name' => 'Trần Trung Lễ', 'phone' => '+84337888385', 'gender' => 'Nam', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Bếp', 'position' => 'Bếp trưởng', 'access' => 'Nhân viên'],
+            ['code' => 'NV_TDTRI', 'name' => 'Từ Duy Trí', 'phone' => '+84989834340', 'gender' => 'Nam', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Bếp', 'position' => 'Đầu bếp', 'access' => 'Nhân viên'],
+            ['code' => 'NV_DVQUANG', 'name' => 'Đỗ Vinh Quang', 'phone' => '+84934620528', 'gender' => 'Nam', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Bar', 'position' => 'Bartender', 'access' => 'Nhân viên'],
+            ['code' => 'NV_QTNHAT', 'name' => 'Quách Tiểu Nhật', 'phone' => '+84908167104', 'gender' => 'Nam', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Bar', 'position' => 'Bartender', 'access' => 'Nhân viên'],
+            ['code' => 'NV_TTCLE', 'name' => 'Trần Thị Cẩm Lệ', 'phone' => '+84792191648', 'gender' => 'Nữ', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Quản lý', 'position' => 'Quản lý nhà hàng', 'access' => 'Quản Lý Chi Nhánh'],
+            ['code' => 'NV-NTVY', 'name' => 'Nguyễn Tường Vy', 'phone' => '+84836202608', 'gender' => 'Nữ', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Nhà hàng', 'position' => 'Barista', 'access' => 'Nhân viên'],
+            ['code' => 'NV-NTPDUNG', 'name' => 'Nguyễn Thị Phương Dung', 'phone' => '+84966253445', 'gender' => 'Nữ', 'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng', 'position' => 'Kế toán', 'access' => 'Quản lý'],
+            ['code' => 'NV_NPHUY', 'name' => 'Nguyễn Phúc Huy', 'phone' => '+84862639931', 'gender' => 'Nam', 'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng', 'position' => 'Thu mua', 'access' => 'Nhân viên'],
+            ['code' => 'NV_DQBINH', 'name' => 'Đặng Quốc Bình', 'phone' => '+84387956644', 'gender' => 'Nam', 'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng', 'position' => 'IT', 'access' => 'Nhân viên'],
+            ['code' => 'NV-NTHHANH', 'name' => 'Nguyễn Thị Hồng Hạnh', 'phone' => '+84565942206', 'gender' => 'Nữ', 'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng', 'position' => 'Marketing', 'access' => 'Nhân viên'],
+            ['code' => '0002', 'name' => 'Trần Thị Thúy', 'phone' => '+84938182990', 'gender' => 'Nữ', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Bếp', 'position' => 'Phụ Bếp Chiều', 'access' => 'Nhân viên'],
+            ['code' => 'NV_LVVang', 'name' => 'Lê Văn Vàng', 'phone' => '+84346466917', 'gender' => 'Không xác định', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Nhà hàng', 'position' => 'Phục vụ', 'access' => 'Nhân viên'],
+            ['code' => 'NV_NHATU', 'name' => 'Nguyễn Hoàng Anh Tú', 'phone' => '+84901857200', 'gender' => 'Không xác định', 'branch' => 'CN Phường Sài Gòn', 'dept' => 'Bếp', 'position' => 'Đầu bếp', 'access' => 'Nhân viên'],
+            ['code' => 'NV_NHNMAI', 'name' => 'Nguyễn Huỳnh Ngọc Mai', 'phone' => '+84857238682', 'gender' => 'Nữ', 'branch' => 'CN_44_Nguyen_hue', 'dept' => 'SPA', 'position' => 'NV SPA', 'access' => 'Nhân viên'],
+            ['code' => 'PDUONG', 'name' => 'Phạm Dương', 'phone' => '+84336719208', 'gender' => 'Không xác định', 'branch' => 'CN Phường An Khánh', 'dept' => 'Văn Phòng', 'position' => 'IT', 'access' => 'Nhân viên'],
         ];
 
         // Map nhóm truy cập → role
         $roleMap = [
-            'Nhân viên'          => 'staff',
-            'Quản lý'            => 'manager',
-            'Quản Lý Chi Nhánh'  => 'manager',
+            'Nhân viên' => 'staff',
+            'Quản lý' => 'manager',
+            'Quản Lý Chi Nhánh' => 'manager',
         ];
 
         $defaultPassword = Hash::make('nhanvien@123');
@@ -91,8 +92,8 @@ class RealEmployeeSeeder extends Seeder
 
             // Email: viết tắt họ + tên đệm, đầy đủ tên cuối — vd: Nguyễn Đình Minh Hiển → ndm_hien
             $nameParts = explode(' ', trim($emp['name']));
-            $lastName  = array_pop($nameParts);
-            $initials  = implode('', array_map(fn($p) => mb_substr($p, 0, 1), $nameParts));
+            $lastName = array_pop($nameParts);
+            $initials = implode('', array_map(fn($p) => mb_substr($p, 0, 1), $nameParts));
             $email = Str::slug(($initials ? $initials . ' ' : '') . $lastName, '_') . '@hr.vn';
 
             // Tạo User account
@@ -110,6 +111,11 @@ class RealEmployeeSeeder extends Seeder
                 $user->assignRole($role);
             }
 
+            $position = Position::firstOrCreate(
+                ['name' => $emp['position']],
+                ['is_active' => true]
+            );
+
             // Tạo Employee record
             $employee = Employee::firstOrCreate(
                 ['code' => $emp['code']],
@@ -118,7 +124,7 @@ class RealEmployeeSeeder extends Seeder
                     'name' => $emp['name'],
                     'email' => $email,
                     'phone' => $emp['phone'],
-                    'position' => $emp['position'],
+                    'position_id' => $position->id,
                     'branch_id' => $branch?->id,
                     'team_id' => $team?->id,
                     'is_active' => true,

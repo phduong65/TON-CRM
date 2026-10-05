@@ -1,7 +1,8 @@
 @extends('layouts.admin')
 
 @section('title', 'Google Sheets Sync')
-@section('page-title', 'Google Sheets Sync')
+@section('page-title', 'Đồng bộ Google Sheets')
+@section('page-subtitle', 'Trạng thái kết nối và đồng bộ dữ liệu với Google Sheets')
 @section('breadcrumb', 'Hệ thống / Google Sheets')
 
 @section('content')

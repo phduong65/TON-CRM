@@ -2,6 +2,7 @@
 
 @section('title', 'Lịch sử xử phạt — ' . $employee->name)
 @section('page-title', 'Xử phạt: ' . $employee->name)
+@section('page-subtitle', 'Lịch sử vi phạm và xử phạt của nhân viên')
 @section('breadcrumb', 'Nhân viên / Lịch sử xử phạt')
 
 @section('content')
@@ -12,7 +13,7 @@
                     <thead>
                         <tr>
                             <th class="table-th">Mã</th>
-                            <th class="table-th">Lỗi vi phạm</th>
+                            <th class="table-th" data-mcard-title>Lỗi vi phạm</th>
                             <th class="table-th">Mô tả</th>
                             <th class="table-th text-right">Điểm trừ</th>
                             <th class="table-th">Trạng thái</th>
@@ -31,10 +32,15 @@
                             </td>
                             <td class="table-td">
                                 @php
-                                    $m = ['pending' => ['badge-warning', 'Chờ duyệt'], 'approved' => ['badge-success', 'Đã duyệt'], 'rejected' => ['badge-danger', 'Từ chối']];
-                                    [$cls, $lbl] = $m[$penalty->status] ?? ['badge-neutral', $penalty->status];
+                                    $m = [
+                                        'pending'  => ['badge badge-warning', 'Chờ duyệt'],
+                                        'approved' => ['badge badge-success', 'Đã duyệt'],
+                                        'rejected' => ['badge badge-danger', 'Từ chối'],
+                                        'revoked'  => ['badge badge-neutral', 'Đã thu hồi'],
+                                    ];
+                                    [$cls, $lbl] = $m[$penalty->status] ?? ['badge badge-neutral', $penalty->status];
                                 @endphp
-                                <span class="{{ $cls }}">{{ $lbl }}</span>
+                                <span class="{{ $cls }} text-xs">{{ $lbl }}</span>
                             </td>
                             <td class="table-td text-sm text-slate-500">{{ $penalty->created_at->format('d/m/Y') }}</td>
                             <td class="table-td text-center">

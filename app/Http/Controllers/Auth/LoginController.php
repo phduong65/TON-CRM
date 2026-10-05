@@ -16,15 +16,21 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
         ]);
 
-        $remember = $request->boolean('remember');
+        $credentials = $request->only('email', 'password');
 
-        if (Auth::attempt($credentials, $remember)) {
-            $status = Auth::user()->status;
+        // Luôn ghi nhớ đăng nhập (remember_token) — nhân viên dùng thiết bị dùng chung tại
+        // chi nhánh, không nên bắt họ tự chọn "Ghi nhớ đăng nhập"; tương tự cách Facebook/Google
+        // giữ đăng nhập lâu dài bằng cookie riêng, tách biệt với session hết hạn theo hoạt động.
+        if (Auth::attempt($credentials, true)) {
+            $user = Auth::user();
+            $status = $user->status;
 
             if ($status !== 'active') {
                 Auth::logout();
@@ -39,6 +45,22 @@ class LoginController extends Controller
             }
 
             $request->session()->regenerate();
+
+            if ($user->hasRole('admin')) {
+                $lat = $request->input('lat');
+                $lng = $request->input('lng');
+
+                activity()->causedBy($user)
+                    ->performedOn($user)
+                    ->inLog('login')
+                    ->withProperties([
+                        'ip'       => $request->ip(),
+                        'device'   => $request->userAgent(),
+                        'location' => ($lat !== null && $lng !== null) ? "$lat, $lng" : 'Không xác định',
+                    ])
+                    ->log('Đăng nhập tài khoản quản trị viên: ' . $user->name);
+            }
+
             return redirect()->intended('/dashboard');
         }
 

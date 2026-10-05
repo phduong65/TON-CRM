@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Branch extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'code',
         'name',
@@ -40,5 +43,10 @@ class Branch extends Model
     public function attendanceLocations(): HasMany
     {
         return $this->hasMany(AttendanceLocation::class);
+    }
+
+    public function coverageRequirements(): HasMany
+    {
+        return $this->hasMany(ShiftCoverageRequirement::class);
     }
 }

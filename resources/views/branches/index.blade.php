@@ -4,19 +4,20 @@
 @section('page-title', 'Chi nhánh')
 @section('breadcrumb', 'Nhân sự')
 
-@section('content')
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Danh sách tất cả chi nhánh trong hệ thống</p>
-        </div>
-        @can('create-branches')
-        <button onclick="openModal('createBranchModal')" class="btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm chi nhánh</span>
-        </button>
-        @endcan
-    </div>
+@section('page-subtitle')
+    Danh sách tất cả chi nhánh trong hệ thống
+@endsection
 
+@section('page-actions')
+    @can('create-branches')
+    <button onclick="openModal('createBranchModal')" class="btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        <span>Thêm chi nhánh</span>
+    </button>
+    @endcan
+@endsection
+
+@section('content')
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
@@ -38,7 +39,7 @@
                         </select>
                     </div>
                     <div class="flex gap-2 items-end sm:hidden">
-                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                        <button type="submit" class="btn-secondary h-9 px-4 text-sm flex-1 gap-1">
                             <i class="bi bi-funnel text-xs"></i> Lọc
                         </button>
                         @if($branchFilterActive)
@@ -49,7 +50,7 @@
                     </div>
                 </div>
                 <div class="hidden sm:flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm gap-1.5">
+                    <button type="submit" class="btn-secondary h-9 px-4 text-sm gap-1.5">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
                     @if($branchFilterActive)
@@ -68,7 +69,7 @@
                     <thead>
                         <tr>
                             <th class="table-th">Mã CN</th>
-                            <th class="table-th">Tên chi nhánh</th>
+                            <th class="table-th" data-mcard-title>Tên chi nhánh</th>
                             <th class="table-th">Địa chỉ</th>
                             <th class="table-th text-center">Đội nhóm</th>
                             <th class="table-th text-center">Nhân viên</th>
@@ -81,7 +82,7 @@
                         <tr class="table-tr-hover">
                             <td class="table-td font-mono text-xs">{{ $b->code ?? '—' }}</td>
                             <td class="table-td font-medium">{{ $b->name }}</td>
-                            <td class="table-td text-slate-500 text-sm">{{ $b->address ?? '—' }}</td>
+                            <td class="table-td whitespace-normal min-w-[180px] text-slate-500 text-sm">{{ $b->address ?? '—' }}</td>
                             <td class="table-td text-center">{{ $b->teams_count ?? 0 }}</td>
                             <td class="table-td text-center">{{ $b->employees_count ?? 0 }}</td>
                             <td class="table-td text-center">
@@ -101,8 +102,8 @@
                                     @endcan
                                     @can('delete-branches')
                                     <button onclick="openDeleteBranchModal({{ $b->id }}, '{{ addslashes($b->name) }}')"
-                                            class="btn-ghost btn-sm text-red-600 dark:text-red-400" title="Vô hiệu hóa">
-                                        <i class="bi bi-slash-circle"></i>
+                                            class="btn-ghost btn-sm text-red-600 dark:text-red-400" title="Vô hiệu hóa / Xóa">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                     @endcan
                                 </div>
@@ -148,7 +149,9 @@ function openEditBranchModal(data) {
 }
 function openDeleteBranchModal(id, name) {
     document.getElementById('deleteBranchName').textContent = name;
-    document.getElementById('deleteBranchForm').action = '/branches/' + id;
+    const url = '/branches/' + id;
+    document.getElementById('deactivateBranchForm').action = url;
+    document.getElementById('deleteBranchForm').action = url;
     openModal('deleteBranchModal');
 }
 

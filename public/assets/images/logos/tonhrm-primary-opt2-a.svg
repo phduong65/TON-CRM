@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;800&amp;display=swap');
+      .brand-title {
+        font-family: 'Bricolage Grotesque', 'Be Vietnam Pro', -apple-system, sans-serif;
+      }
+      .brand-sub {
+        font-family: 'Be Vietnam Pro', 'Inter', -apple-system, sans-serif;
+      }
+    </style>
+    <linearGradient id="opt2a-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="opt2a-cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#0891B2" />
+    </linearGradient>
+    <filter id="opt2a-shadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0284C7" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Icon Section: Cobalt & Electric Cyan -->
+  <g transform="translate(6, 6)" filter="url(#opt2a-shadow)">
+    <!-- Base Rounded Container with subtle cyan-blue tint -->
+    <rect x="2" y="2" width="48" height="48" rx="14" fill="#F0F9FF" />
+    
+    <!-- Left Wing (Cobalt Blue) -->
+    <path d="M12 18 C12 14.5 16 14 26 14 L26 21 C20 21 18 22 18 27 L18 38 C18 41 15 41 13 39 C12 38 12 30 12 18 Z" fill="url(#opt2a-blue)" />
+    
+    <!-- Right Wing (Electric Cyan) -->
+    <path d="M40 18 C40 14.5 36 14 26 14 L26 21 C32 21 34 22 34 27 L34 38 C34 41 37 41 39 39 C40 38 40 30 40 18 Z" fill="url(#opt2a-cyan)" />
+    
+    <!-- Central Stem (The 'T' trunk) -->
+    <rect x="23" y="21" width="6" height="21" rx="3" fill="#0F172A" />
+
+    <!-- Human Head Dot -->
+    <circle cx="26" cy="11" r="3.5" fill="#0891B2" />
+  </g>
+
+  <!-- Typography Section using Bricolage Grotesque -->
+  <text x="68" y="38" class="brand-title" font-size="27" font-weight="800" letter-spacing="-0.8" fill="currentColor">
+    Ton
+  </text>
+  <text x="119" y="38" class="brand-title" font-size="27" font-weight="800" letter-spacing="-0.5" fill="#0891B2">
+    HRM
+  </text>
+  <!-- Tagline -->
+  <text x="69" y="50" class="brand-sub" font-size="8.5" font-weight="600" letter-spacing="1.6" fill="#64748B" opacity="0.9">
+    HUMAN RESOURCE HUB
+  </text>
+</svg>

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" fill="none" width="100%" height="100%">
+  <defs>
+    <linearGradient id="opt3-grad-shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <linearGradient id="opt3-grad-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="opt3-grad-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <filter id="opt3-shadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- Icon Section: T-H Interlocking Monogram on Executive Shield -->
+  <g transform="translate(6, 6)" filter="url(#opt3-shadow)">
+    <!-- Sleek Rounded Shield Frame -->
+    <path d="M26 2 L48 9 C48 30 38 45 26 50 C14 45 4 30 4 9 L26 2 Z" fill="url(#opt3-grad-shield)" />
+    <!-- Fine Gold Border Rim -->
+    <path d="M26 4 L46 10.5 C46 29 36.5 43.5 26 48 C15.5 43.5 6 29 6 10.5 L26 4 Z" stroke="url(#opt3-grad-gold)" stroke-width="1.2" fill="none" opacity="0.8" />
+    
+    <!-- Stylized Monogram 'T' (Upper horizontal bar and central pillar) -->
+    <path d="M14 16 L38 16 L38 21 L28.5 21 L28.5 39 L23.5 39 L23.5 21 L14 21 Z" fill="url(#opt3-grad-blue)" />
+    
+    <!-- Stylized Interlocking 'H' elements (Left and Right pillars with bridge) -->
+    <path d="M16 23 L20 23 L20 37 L16 37 Z" fill="#FFFFFF" opacity="0.95" />
+    <path d="M32 23 L36 23 L36 37 L32 37 Z" fill="#FFFFFF" opacity="0.95" />
+    <path d="M20 28 L32 28 L32 31 L20 31 Z" fill="url(#opt3-grad-gold)" />
+  </g>
+
+  <!-- Typography Section -->
+  <text x="68" y="34" font-family="'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="800" letter-spacing="2" fill="currentColor">
+    TON
+  </text>
+  <circle cx="127" cy="27" r="2.5" fill="#D97706" />
+  <text x="136" y="34" font-family="'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="700" letter-spacing="1.5" fill="#2563EB">
+    HRM
+  </text>
+  <!-- Tagline -->
+  <text x="69" y="47" font-family="'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="8.5" font-weight="600" letter-spacing="2.2" fill="#64748B" opacity="0.9">
+    CAPITAL MANAGEMENT
+  </text>
+</svg>

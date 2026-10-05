@@ -1,81 +1,77 @@
+@php $isCreateUserErr = old('_modal') === 'createUserModal'; @endphp
 <div id="createUserModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('createUserModal')">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col">
-        <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
-            <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <i class="bi bi-person-plus text-pcrm-600"></i> Thêm người dùng
-            </h3>
-            <button onclick="closeModal('createUserModal')" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
-                <i class="bi bi-x-lg text-sm"></i>
+    <div class="pcrm-dialog max-w-3xl" role="dialog" aria-modal="true" aria-labelledby="createUserTitle">
+        <div class="pcrm-dialog-head">
+            <span class="pcrm-dialog-icon bg-[#E9EEFF] text-[#2F55E7] dark:bg-[#2F55E7]/20 dark:text-[#809ff9]" aria-hidden="true">
+                <i class="bi bi-person-plus"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <h3 id="createUserTitle" class="pcrm-dialog-title">Thêm người dùng</h3>
+                <p class="pcrm-dialog-sub">Tạo tài khoản đăng nhập và gán vai trò — tài khoản được kích hoạt ngay</p>
+            </div>
+            <button type="button" onclick="closeModal('createUserModal')" class="pcrm-dialog-close" aria-label="Đóng">
+                <i class="bi bi-x-lg"></i>
             </button>
         </div>
-        <form action="{{ route('users.store') }}" method="POST" class="px-4 sm:px-6 py-4 sm:py-5 space-y-5 overflow-y-auto">
+
+        <form action="{{ route('users.store') }}" method="POST" class="pcrm-dialog-form" data-user-form>
             @csrf
             <input type="hidden" name="_modal" value="createUserModal">
 
-            {{-- Basic info --}}
-            <div class="space-y-3">
-                <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Thông tin cơ bản</h4>
-                <div>
-                    <label class="form-label">Họ và tên <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" class="form-input" value="{{ old('name') }}" placeholder="VD: Nguyễn Văn A" required>
-                    @error('name') <p class="form-error">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="form-label">Email <span class="text-red-500">*</span></label>
-                    <input type="email" name="email" class="form-input" value="{{ old('email') }}" placeholder="email@congty.vn" required>
-                    @error('email') <p class="form-error">{{ $message }}</p> @enderror
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="form-label">Mật khẩu <span class="text-red-500">*</span></label>
-                        <input type="password" name="password" class="form-input" placeholder="Tối thiểu 8 ký tự" required>
-                        @error('password') <p class="form-error">{{ $message }}</p> @enderror
+            <div class="pcrm-dialog-body">
+                <section class="pcrm-form-section">
+                    <h4 class="pcrm-form-section-title"><span class="pcrm-step">1</span> Thông tin tài khoản</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="createUserName" class="form-label">Họ và tên <span class="text-red-500">*</span></label>
+                            <input type="text" id="createUserName" name="name" class="form-input" autocomplete="off"
+                                   value="{{ $isCreateUserErr ? old('name') : '' }}" placeholder="VD: Nguyễn Văn A" required>
+                            @if ($isCreateUserErr) @error('name') <p class="form-error">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label for="createUserEmail" class="form-label">Email đăng nhập <span class="text-red-500">*</span></label>
+                            <input type="email" id="createUserEmail" name="email" class="form-input" autocomplete="off"
+                                   value="{{ $isCreateUserErr ? old('email') : '' }}" placeholder="email@congty.vn" required>
+                            @if ($isCreateUserErr) @error('email') <p class="form-error">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label for="createUserPassword" class="form-label">Mật khẩu <span class="text-red-500">*</span></label>
+                            <input type="password" id="createUserPassword" name="password" class="form-input" autocomplete="new-password"
+                                   placeholder="Tối thiểu 8 ký tự" minlength="8" required>
+                            @if ($isCreateUserErr) @error('password') <p class="form-error">{{ $message }}</p> @enderror @endif
+                        </div>
+                        <div>
+                            <label for="createUserPasswordConfirm" class="form-label">Xác nhận mật khẩu <span class="text-red-500">*</span></label>
+                            <input type="password" id="createUserPasswordConfirm" name="password_confirmation" class="form-input"
+                                   autocomplete="new-password" placeholder="Nhập lại mật khẩu" required>
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label">Xác nhận mật khẩu</label>
-                        <input type="password" name="password_confirmation" class="form-input" placeholder="Nhập lại mật khẩu">
-                    </div>
-                </div>
+                </section>
+
+                <section class="pcrm-form-section">
+                    <h4 class="pcrm-form-section-title"><span class="pcrm-step">2</span> Vai trò <span class="text-red-500">*</span></h4>
+                    <p class="pcrm-help mt-0">Vai trò quyết định tập quyền mặc định của người dùng.</p>
+                    @if ($isCreateUserErr) @error('role') <p class="form-error">{{ $message }}</p> @enderror @endif
+                    @include('users.partials.role-options', ['selectedRole' => $isCreateUserErr ? old('role') : null])
+                </section>
+
+                <details class="pcrm-form-section pcrm-disclosure" @if ($isCreateUserErr && old('permissions')) open @endif>
+                    <summary>
+                        <span class="pcrm-form-section-title"><span class="pcrm-step">3</span> Quyền riêng <span class="font-normal text-slate-400">(tuỳ chọn)</span></span>
+                        <span class="pcrm-help mt-0">Cấp thêm quyền ngoài vai trò — quyền đã có qua vai trò được đánh dấu và khoá.</span>
+                    </summary>
+                    <x-permission-picker id="createUserPerms" class="mt-3" :groups="$permissionGroups"
+                                         :checked="$isCreateUserErr ? old('permissions', []) : []" />
+                </details>
             </div>
 
-            {{-- Role selection --}}
-            <div class="space-y-2">
-                <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Vai trò <span class="text-red-500">*</span></h4>
-                @error('role') <p class="form-error">{{ $message }}</p> @enderror
-                <div class="grid grid-cols-2 gap-2">
-                    @php
-                        $roleLabels = [
-                            'admin'       => ['Quản trị viên', 'Toàn quyền hệ thống', 'bi-shield-fill', 'text-red-600 dark:text-red-400', 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'],
-                            'manager'     => ['Quản lý', 'Duyệt phiếu, quản lý nhân sự', 'bi-person-badge-fill', 'text-blue-600 dark:text-blue-400', 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'],
-                            'team_leader' => ['Trưởng nhóm', 'Tạo phiếu phạt, xem nhân viên', 'bi-people-fill', 'text-yellow-600 dark:text-yellow-400', 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'],
-                            'staff'       => ['Nhân viên', 'Xem cơ bản', 'bi-person-fill', 'text-slate-600 dark:text-slate-400', 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'],
-                        ];
-                    @endphp
-                    @foreach($roles as $role)
-                        @php
-                            $meta = $roleLabels[$role->name] ?? [$role->name, '', 'bi-shield', 'text-slate-500', 'bg-slate-50 dark:bg-slate-800 border-slate-200'];
-                            $selected = old('role') === $role->name;
-                        @endphp
-                        <label class="create-role-card flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all
-                                      {{ $selected ? $meta[4] : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600' }}"
-                               data-colors="{{ $meta[4] }}">
-                            <input type="radio" name="role" value="{{ $role->name }}" class="sr-only" {{ $selected ? 'checked' : '' }}>
-                            <span class="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
-                                <i class="{{ $meta[2] }} {{ $meta[3] }} text-xs"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="font-semibold text-xs text-slate-800 dark:text-slate-200">{{ $meta[0] }}</p>
-                                <p class="text-[10px] text-slate-400 leading-tight">{{ $meta[1] }}</p>
-                            </div>
-                        </label>
-                    @endforeach
+            <div class="pcrm-dialog-foot">
+                <p class="text-sm text-slate-500 dark:text-slate-400"><strong data-perm-total class="text-[#2F55E7] dark:text-[#809ff9] tabular-nums">0</strong> quyền riêng</p>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeModal('createUserModal')" class="btn-secondary">Hủy</button>
+                    <button type="submit" class="btn-primary"><i class="bi bi-check2"></i> Tạo người dùng</button>
                 </div>
-            </div>
-
-            <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                <button type="button" onclick="closeModal('createUserModal')" class="btn-secondary">Hủy</button>
-                <button type="submit" class="btn-primary"><i class="bi bi-floppy"></i> Tạo người dùng</button>
             </div>
         </form>
     </div>

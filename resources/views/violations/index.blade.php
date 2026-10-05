@@ -4,55 +4,35 @@
 @section('page-title', 'Vi phạm')
 @section('breadcrumb', 'Kỷ luật / Vi phạm')
 
-@section('content')
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Danh sách lỗi vi phạm theo từng quy chế</p>
-        </div>
-        @can('create-violations')
-        <button onclick="openModal('createViolationModal')" class="btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm vi phạm</span>
-        </button>
-        @endcan
-    </div>
+@section('page-subtitle')
+    Danh sách lỗi vi phạm theo từng quy chế
+@endsection
 
+@section('page-actions')
+    @can('create-violations')
+    <button onclick="openModal('createViolationModal')" class="btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        <span>Thêm vi phạm</span>
+    </button>
+    @endcan
+@endsection
+
+@section('content')
     {{-- Filter bar --}}
     <div class="card mb-4">
         <div class="px-4 py-3">
             @php
-                $vExtraKeys    = ['regulation_id', 'penalty_type', 'severity', 'status'];
-                $vFilterActive = request()->anyFilled(array_merge(['search'], $vExtraKeys));
-                $vExtraCount   = collect($vExtraKeys)->filter(fn($k) => request($k))->count();
+                $vFilterActive = request()->anyFilled(['search', 'regulation_id', 'penalty_type', 'severity', 'status']);
             @endphp
             <form action="{{ route('violations.index') }}" method="GET">
-                <div class="flex gap-2 items-center">
-                    <div class="relative flex-1 min-w-0">
+                <div class="flex flex-wrap gap-2 items-end">
+                    <div class="relative flex-1 basis-full sm:basis-0 min-w-[180px]">
                         <i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
                         <input type="text" name="search" value="{{ request('search') }}"
                                class="form-input pl-7 h-9 text-sm w-full" placeholder="Tên vi phạm...">
                     </div>
-                    <button type="button" onclick="toggleEl('filterPanelViolations')"
-                            class="sm:hidden relative h-9 w-9 flex items-center justify-center rounded-lg border shrink-0 transition-colors
-                                   {{ $vExtraCount > 0 ? 'border-pcrm-400 bg-pcrm-50 text-pcrm-700 dark:border-pcrm-600 dark:bg-pcrm-900/30 dark:text-pcrm-400' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400' }}">
-                        <i class="bi bi-funnel text-sm"></i>
-                        @if($vExtraCount > 0)
-                            <span class="absolute -top-1.5 -right-1.5 w-4 h-4 flex items-center justify-center rounded-full bg-pcrm-600 text-white text-[9px] font-bold">{{ $vExtraCount }}</span>
-                        @endif
-                    </button>
-                    <button type="submit" class="hidden sm:inline-flex btn-primary h-9 px-4 text-sm gap-1.5 shrink-0">
-                        <i class="bi bi-funnel text-xs"></i> Lọc
-                    </button>
-                    @if($vFilterActive)
-                    <a href="{{ route('violations.index') }}" class="hidden sm:inline-flex btn-secondary h-9 px-3 text-sm items-center gap-1 shrink-0">
-                        <i class="bi bi-x text-sm"></i>
-                    </a>
-                    @endif
-                    <span class="hidden sm:block text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">{{ $violations->total() }} kết quả</span>
-                </div>
-                <div id="filterPanelViolations" class="filter-panel {{ $vExtraCount > 0 ? 'is-active' : '' }}">
-                    <div class="grid grid-cols-2 gap-2 sm:contents">
-                        <div>
+                    <div class="flex flex-wrap gap-2 items-end flex-1 sm:flex-none">
+                        <div class="w-[calc(50%-0.25rem)] sm:w-40">
                             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Quy chế</label>
                             <select name="regulation_id" class="form-input h-9 text-sm w-full">
                                 <option value="">Tất cả</option>
@@ -61,7 +41,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div>
+                        <div class="w-[calc(50%-0.25rem)] sm:w-36">
                             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Hình thức</label>
                             <select name="penalty_type" class="form-input h-9 text-sm w-full">
                                 <option value="">Tất cả</option>
@@ -70,7 +50,7 @@
                                 <option value="both"   @selected(request('penalty_type') === 'both')>Cả hai</option>
                             </select>
                         </div>
-                        <div>
+                        <div class="w-[calc(50%-0.25rem)] sm:w-36">
                             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Mức độ</label>
                             <select name="severity" class="form-input h-9 text-sm w-full">
                                 <option value="">Tất cả</option>
@@ -81,7 +61,7 @@
                                 <option value="extreme"  @selected(request('severity') === 'extreme')>Đặc biệt NT</option>
                             </select>
                         </div>
-                        <div>
+                        <div class="w-[calc(50%-0.25rem)] sm:w-32">
                             <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Trạng thái</label>
                             <select name="status" class="form-input h-9 text-sm w-full">
                                 <option value="">Tất cả</option>
@@ -89,17 +69,15 @@
                                 <option value="0" @selected(request('status') === '0')>Ngừng HĐ</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="filter-mobile-actions">
-                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
-                            <i class="bi bi-funnel text-xs"></i> Áp dụng
+                        <button type="submit" class="btn-secondary h-9 px-4 text-sm gap-1.5 shrink-0">
+                            <i class="bi bi-funnel text-xs"></i> Lọc
                         </button>
                         @if($vFilterActive)
-                        <a href="{{ route('violations.index') }}" class="btn-secondary h-9 px-3 inline-flex items-center gap-1 text-sm shrink-0">
-                            <i class="bi bi-x text-sm"></i> Xóa
+                        <a href="{{ route('violations.index') }}" class="btn-secondary h-9 px-3 text-sm inline-flex items-center gap-1 shrink-0">
+                            <i class="bi bi-x text-sm"></i>
                         </a>
                         @endif
-                        <span class="ml-auto text-xs text-slate-400 dark:text-slate-500 shrink-0">{{ $violations->total() }}</span>
+                        <span class="text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0 pb-2">{{ $violations->total() }} kết quả</span>
                     </div>
                 </div>
             </form>

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreEmployeeRequest extends FormRequest
 {
@@ -14,11 +15,11 @@ class StoreEmployeeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => 'required|string|max:50|unique:employees,code',
+            'code' => ['required', 'string', 'max:50', Rule::unique('employees', 'code')->whereNull('deleted_at')],
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:employees,email|unique:users,email',
+            'email' => ['required', 'email', 'max:255', Rule::unique('employees', 'email')->whereNull('deleted_at'), 'unique:users,email'],
             'phone' => 'nullable|string|max:20',
-            'position' => 'nullable|string|max:255',
+            'position_id' => 'nullable|exists:positions,id',
             'branch_id' => 'required|exists:branches,id',
             'team_id' => 'required|exists:teams,id',
             'is_active' => 'boolean',

@@ -16,6 +16,10 @@ use Illuminate\Support\Str;
 
 class NotificationService
 {
+    public function __construct(private readonly PushNotificationService $push)
+    {
+    }
+
     public function sendToUser(
         int $userId,
         string $type,
@@ -24,7 +28,7 @@ class NotificationService
         array $data = [],
         ?int $createdBy = null
     ): Notification {
-        return Notification::create([
+        $notification = Notification::create([
             'user_id'    => $userId,
             'type'       => $type,
             'title'      => $title,
@@ -32,6 +36,13 @@ class NotificationService
             'data'       => $data ?: null,
             'created_by' => $createdBy,
         ]);
+
+        // 'type' được gộp vào data payload gửi tới FCM (không chỉ lưu trong DB) để app mobile
+        // tự xác định đích điều hướng khi người dùng bấm vào push notification lúc app đang ở
+        // nền/đã đóng — lúc đó app chỉ nhận được RemoteMessage.data, không truy vấn lại DB kịp.
+        $this->push->sendToUser($userId, $title, $body, [...$data, 'type' => $type], $notification->actionUrl());
+
+        return $notification;
     }
 
     public function sendToAll(
@@ -44,14 +55,7 @@ class NotificationService
         $userIds = User::pluck('id');
 
         foreach ($userIds as $userId) {
-            Notification::create([
-                'user_id'    => $userId,
-                'type'       => $type,
-                'title'      => $title,
-                'body'       => $body ?: null,
-                'data'       => $data ?: null,
-                'created_by' => $createdBy,
-            ]);
+            $this->sendToUser($userId, $type, $title, $body, $data, $createdBy);
         }
 
         return $userIds->count();
@@ -67,13 +71,7 @@ class NotificationService
         $userIds = User::permission($permission)->pluck('id');
 
         foreach ($userIds as $userId) {
-            Notification::create([
-                'user_id' => $userId,
-                'type'    => $type,
-                'title'   => $title,
-                'body'    => $body ?: null,
-                'data'    => $data ?: null,
-            ]);
+            $this->sendToUser($userId, $type, $title, $body, $data);
         }
     }
 
@@ -108,13 +106,7 @@ class NotificationService
             if ($excludeId !== null && (int) $userId === (int) $excludeId) {
                 continue;
             }
-            Notification::create([
-                'user_id' => $userId,
-                'type'    => $type,
-                'title'   => $title,
-                'body'    => $body ?: null,
-                'data'    => $data ?: null,
-            ]);
+            $this->sendToUser($userId, $type, $title, $body, $data);
         }
     }
 
@@ -465,6 +457,22 @@ class NotificationService
     }
 
     // -------------------------------------------------------------------------
+    // Timesheet confirmation notifications
+    // -------------------------------------------------------------------------
+
+    public function notifyTimesheetConfirmedProxy(Employee $employee, int $month, int $year, User $admin): void
+    {
+        if (!$employee->user_id) {
+            return;
+        }
+
+        $data = ['employee_id' => $employee->id, 'month' => $month, 'year' => $year];
+        $body = sprintf('Công tháng %d/%d của bạn đã được xác nhận hộ bởi %s', $month, $year, $admin->name);
+
+        $this->sendToUser($employee->user_id, 'timesheet_confirmed_proxy', 'Xác nhận công tháng', $body, $data, $admin->id);
+    }
+
+    // -------------------------------------------------------------------------
     // Shift swap notifications
     // Recipients: người có quyền duyệt + người tạo (lúc gửi); + cả 2 bên khi đã duyệt/từ chối
     // -------------------------------------------------------------------------
@@ -628,6 +636,75 @@ class NotificationService
             'Yêu cầu đăng ký chưa được duyệt',
             'Yêu cầu đăng ký tài khoản của bạn chưa được duyệt. Vui lòng liên hệ quản trị viên.',
             ['user_id' => $user->id]
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Shift check-in/check-out reminders (SendShiftAttendanceReminders command)
+    // Recipient: chính nhân viên có ca đó — không gửi cho quản lý/HR.
+    // -------------------------------------------------------------------------
+
+    public function notifyShiftCheckinReminder(\App\Models\ShiftSchedule $schedule): void
+    {
+        $userId = $schedule->employee?->user_id;
+        if (!$userId) {
+            return;
+        }
+
+        $this->sendToUser(
+            $userId,
+            'shift_checkin_reminder',
+            'Sắp đến giờ check-in',
+            sprintf('Bạn có ca check-in lúc %s. Đừng quên chấm công đúng giờ nhé!', $schedule->startAt()?->format('H:i') ?? '—'),
+            ['shift_schedule_id' => $schedule->id]
+        );
+    }
+
+    public function notifyShiftCheckoutReminder(\App\Models\ShiftSchedule $schedule): void
+    {
+        $userId = $schedule->employee?->user_id;
+        if (!$userId) {
+            return;
+        }
+
+        $this->sendToUser(
+            $userId,
+            'shift_checkout_reminder',
+            'Sắp đến giờ check-out',
+            sprintf('Bạn có ca check-out lúc %s. Đừng quên chấm công trước khi ra về nhé!', $schedule->endAt()?->format('H:i') ?? '—'),
+            ['shift_schedule_id' => $schedule->id]
+        );
+    }
+
+    public function notifyShiftCheckinMissing(\App\Models\ShiftSchedule $schedule): void
+    {
+        $userId = $schedule->employee?->user_id;
+        if (!$userId) {
+            return;
+        }
+
+        $this->sendToUser(
+            $userId,
+            'shift_checkin_missing',
+            'Bạn chưa check-in',
+            sprintf('Ca của bạn bắt đầu lúc %s nhưng hệ thống chưa ghi nhận check-in. Vui lòng chấm công ngay.', $schedule->startAt()?->format('H:i') ?? '—'),
+            ['shift_schedule_id' => $schedule->id]
+        );
+    }
+
+    public function notifyShiftCheckoutMissing(\App\Models\ShiftSchedule $schedule): void
+    {
+        $userId = $schedule->employee?->user_id;
+        if (!$userId) {
+            return;
+        }
+
+        $this->sendToUser(
+            $userId,
+            'shift_checkout_missing',
+            'Bạn chưa check-out',
+            sprintf('Ca của bạn kết thúc lúc %s nhưng hệ thống chưa ghi nhận check-out. Vui lòng chấm công ngay.', $schedule->endAt()?->format('H:i') ?? '—'),
+            ['shift_schedule_id' => $schedule->id]
         );
     }
 }

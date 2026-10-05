@@ -55,6 +55,8 @@ class Notification extends Model
             'swap'          => ['label' => 'Đổi ca', 'icon' => 'bi-arrow-left-right', 'types' => ['swap_created', 'swap_approved', 'swap_rejected']],
             'staff_request' => ['label' => 'Yêu cầu khác', 'icon' => 'bi-file-earmark-text', 'types' => ['staff_request_created', 'staff_request_approved', 'staff_request_rejected']],
             'account'       => ['label' => 'Tài khoản', 'icon' => 'bi-person-check-fill', 'types' => ['account_registered', 'account_approved', 'account_rejected']],
+            'attendance'    => ['label' => 'Chấm công', 'icon' => 'bi-wifi-off', 'types' => ['attendance_ip_mismatch', 'shift_checkin_reminder', 'shift_checkout_reminder', 'shift_checkin_missing', 'shift_checkout_missing']],
+            'timesheet'     => ['label' => 'Xác nhận công', 'icon' => 'bi-clipboard2-check-fill', 'types' => ['timesheet_confirmed_proxy']],
             'general'       => ['label' => 'Chung', 'icon' => 'bi-bell-fill', 'types' => ['general']],
         ];
     }
@@ -113,11 +115,49 @@ class Notification extends Model
             : null;
     }
 
+    public function attendanceIpMismatchUrl(): ?string
+    {
+        return $this->type === 'attendance_ip_mismatch'
+            ? route('attendance-locations.index')
+            : null;
+    }
+
+    public function shiftReminderUrl(): ?string
+    {
+        return in_array($this->type, ['shift_checkin_reminder', 'shift_checkout_reminder', 'shift_checkin_missing', 'shift_checkout_missing'], true)
+            ? route('attendance.index')
+            : null;
+    }
+
+    public function timesheetConfirmationUrl(): ?string
+    {
+        if ($this->type !== 'timesheet_confirmed_proxy') {
+            return null;
+        }
+
+        return route('timesheet-confirmation.index', [
+            'month' => $this->data['month'] ?? null,
+            'year'  => $this->data['year'] ?? null,
+        ]);
+    }
+
+    public function redzoneUrl(): ?string
+    {
+        if ($this->type !== 'redzone_alert') {
+            return null;
+        }
+
+        $empId = $this->data['employee_id'] ?? null;
+        return $empId ? route('employees.show', $empId) : route('redzone.index');
+    }
+
     public function actionUrl(): ?string
     {
         return $this->penaltyUrl() ?? $this->rewardUrl() ?? $this->reportUrl()
+            ?? $this->redzoneUrl()
             ?? $this->leaveRequestUrl() ?? $this->shiftSwapUrl() ?? $this->staffRequestUrl()
-            ?? $this->accountUrl();
+            ?? $this->accountUrl() ?? $this->attendanceIpMismatchUrl() ?? $this->shiftReminderUrl()
+            ?? $this->timesheetConfirmationUrl();
     }
 
     public function typeIcon(): string
@@ -145,6 +185,10 @@ class Notification extends Model
             'account_registered' => 'bi-person-plus-fill',
             'account_approved'   => 'bi-person-check-fill',
             'account_rejected'   => 'bi-person-x-fill',
+            'attendance_ip_mismatch' => 'bi-wifi-off',
+            'shift_checkin_reminder', 'shift_checkout_reminder' => 'bi-alarm-fill',
+            'shift_checkin_missing', 'shift_checkout_missing' => 'bi-exclamation-circle-fill',
+            'timesheet_confirmed_proxy' => 'bi-clipboard2-check-fill',
             default            => 'bi-bell-fill',
         };
     }
@@ -174,6 +218,10 @@ class Notification extends Model
             'account_registered' => 'text-violet-500 bg-violet-50 dark:bg-violet-900/30',
             'account_approved'   => 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30',
             'account_rejected'   => 'text-red-500 bg-red-50 dark:bg-red-900/30',
+            'attendance_ip_mismatch' => 'text-amber-600 bg-amber-50 dark:bg-amber-900/30',
+            'shift_checkin_reminder', 'shift_checkout_reminder' => 'text-sky-500 bg-sky-50 dark:bg-sky-900/30',
+            'shift_checkin_missing', 'shift_checkout_missing' => 'text-red-600 bg-red-50 dark:bg-red-900/30',
+            'timesheet_confirmed_proxy' => 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30',
             default            => 'text-pcrm-500 bg-pcrm-50 dark:bg-pcrm-900/30',
         };
     }
@@ -203,6 +251,12 @@ class Notification extends Model
             'account_registered' => 'Tài khoản mới đăng ký',
             'account_approved'   => 'Tài khoản được duyệt',
             'account_rejected'   => 'Tài khoản bị từ chối',
+            'attendance_ip_mismatch' => 'Cảnh báo IP văn phòng',
+            'shift_checkin_reminder' => 'Nhắc check-in',
+            'shift_checkout_reminder' => 'Nhắc check-out',
+            'shift_checkin_missing' => 'Chưa check-in',
+            'shift_checkout_missing' => 'Chưa check-out',
+            'timesheet_confirmed_proxy' => 'Công tháng đã xác nhận',
             default            => 'Thông báo chung',
         };
     }
@@ -232,6 +286,10 @@ class Notification extends Model
             'account_registered' => 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
             'account_approved'   => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
             'account_rejected'   => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+            'attendance_ip_mismatch' => 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+            'shift_checkin_reminder', 'shift_checkout_reminder' => 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+            'shift_checkin_missing', 'shift_checkout_missing' => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+            'timesheet_confirmed_proxy' => 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
             default            => 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
         };
     }

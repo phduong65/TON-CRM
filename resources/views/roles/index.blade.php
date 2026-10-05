@@ -3,19 +3,17 @@
 @section('title', 'Vai trò & Quyền hạn')
 @section('page-title', 'Vai trò & Quyền hạn')
 @section('breadcrumb', 'Quản trị')
+@section('page-subtitle', 'Quản lý các nhóm quyền và chức năng được phép')
+
+@section('page-actions')
+    <button onclick="openModal('createRoleModal')" class="btn-primary">
+        <i class="bi bi-shield-plus text-sm"></i>
+        <span>Thêm vai trò</span>
+    </button>
+@endsection
 
 @section('content')
 <div class="space-y-5">
-
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Quản lý các nhóm quyền và chức năng được phép</p>
-        </div>
-        <button onclick="openModal('createRoleModal')" class="btn-primary">
-            <i class="bi bi-shield-plus text-sm"></i>
-            <span>Thêm vai trò</span>
-        </button>
-    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         @php
@@ -206,13 +204,9 @@
 function openEditRoleModal(data) {
     document.getElementById('editRoleId').value   = data.id;
     document.getElementById('editRoleName').value = data.name ?? '';
+    document.getElementById('editRoleTitleName').textContent = data.name ?? '';
     document.getElementById('editRoleForm').action = '/roles/' + data.id;
-
-    const activePerms = data.permissions || [];
-    document.querySelectorAll('.edit-role-perm').forEach(function(cb) {
-        cb.checked = activePerms.includes(cb.dataset.perm);
-    });
-    updateEditRolePermCount();
+    PermPicker.set(document.getElementById('editRolePerms'), data.permissions || []);
     openModal('editRoleModal');
 }
 
@@ -226,42 +220,13 @@ function confirmDeleteRole(roleId, roleName, userCount) {
     openModal('deleteRoleModal');
 }
 
-function createRoleSelectAll() {
-    document.querySelectorAll('.create-role-perm').forEach(cb => cb.checked = true);
-    updateCreateRolePermCount();
-}
-function createRoleDeselectAll() {
-    document.querySelectorAll('.create-role-perm').forEach(cb => cb.checked = false);
-    updateCreateRolePermCount();
-}
-function editRoleSelectAll() {
-    document.querySelectorAll('.edit-role-perm').forEach(cb => cb.checked = true);
-    updateEditRolePermCount();
-}
-function editRoleDeselectAll() {
-    document.querySelectorAll('.edit-role-perm').forEach(cb => cb.checked = false);
-    updateEditRolePermCount();
-}
-function updateCreateRolePermCount() {
-    const el = document.getElementById('createRolePermCount');
-    if (el) el.textContent = document.querySelectorAll('.create-role-perm:checked').length;
-}
-function updateEditRolePermCount() {
-    const el = document.getElementById('editRolePermCount');
-    if (el) el.textContent = document.querySelectorAll('.edit-role-perm:checked').length;
-}
-
-document.querySelectorAll('.create-role-perm').forEach(cb => cb.addEventListener('change', updateCreateRolePermCount));
-document.querySelectorAll('.edit-role-perm').forEach(cb => cb.addEventListener('change', updateEditRolePermCount));
-updateCreateRolePermCount();
-
 @if($errors->any() && old('_modal'))
 document.addEventListener('DOMContentLoaded', function() {
     @if(old('_modal') === 'editRoleModal')
     openEditRoleModal({
-        id: '{{ old("_edit_id") }}',
+        id: {{ Illuminate\Support\Js::from(old('_edit_id')) }},
         name: {{ Illuminate\Support\Js::from(old('name')) }},
-        permissions: {!! json_encode(old('permissions', [])) !!}
+        permissions: {{ Illuminate\Support\Js::from(old('permissions', [])) }}
     });
     @else
     openModal('{{ old("_modal") }}');

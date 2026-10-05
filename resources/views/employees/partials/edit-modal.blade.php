@@ -20,9 +20,14 @@
                     @error('code') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="form-label">Chức vụ</label>
-                    <input type="text" id="editEmpPosition" name="position" class="form-input">
-                    @error('position') <p class="form-error">{{ $message }}</p> @enderror
+                    <label class="form-label">Chức danh</label>
+                    <select id="editEmpPosition" name="position_id" class="form-input">
+                        <option value="">-- Chọn chức danh --</option>
+                        @foreach($positions as $position)
+                            <option value="{{ $position->id }}">{{ $position->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('position_id') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
             </div>
             <div>

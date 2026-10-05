@@ -7,6 +7,7 @@ use App\Mail\AccountRejectedMail;
 use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -16,12 +17,16 @@ class UsersController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with(['roles'])
+        // 'permissions' = quyền riêng (direct) — cột "Quyền riêng" + modal Sửa, tránh N+1
+        // 'employee' = hồ sơ nhân viên liên kết — cột "TT Nhân viên", tránh N+1
+        $query = User::with(['roles', 'permissions', 'employee'])
             ->orderBy('name');
 
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(fn($q) => $q->where('name', 'like', "%$s%")->orWhere('email', 'like', "%$s%"));
+            $query->where(fn($q) => $q->where('name', 'like', "%$s%")
+                ->orWhere('email', 'like', "%$s%")
+                ->orWhereHas('employee', fn($eq) => $eq->where('code', 'like', "%$s%")));
         }
 
         if ($request->filled('role')) {
@@ -32,18 +37,68 @@ class UsersController extends Controller
             $query->where('status', $request->status);
         }
 
+        $empStatus = $request->input('employee_status', 'active');
+        if ($empStatus === 'active' || $empStatus === '1') {
+            $query->whereHas('employee', fn($q) => $q->where('is_active', true));
+        } elseif ($empStatus === 'resigned' || $empStatus === '0') {
+            $query->whereHas('employee', fn($q) => $q->where('is_active', false));
+        } elseif ($empStatus === 'unlinked' || $empStatus === 'none') {
+            $query->doesntHave('employee');
+        } elseif ($empStatus === 'all') {
+            // Không lọc theo trạng thái nhân viên
+        }
+
+        // Base query tính số lượng theo tab trạng thái nhân viên (áp dụng search + role)
+        $tabBase = User::query();
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $tabBase->where(fn($q) => $q->where('name', 'like', "%$s%")
+                ->orWhere('email', 'like', "%$s%")
+                ->orWhereHas('employee', fn($eq) => $eq->where('code', 'like', "%$s%")));
+        }
+        if ($request->filled('role')) {
+            $tabBase->whereHas('roles', fn($q) => $q->where('name', $request->role));
+        }
+
+        $statusCounts = [
+            'all'      => (clone $tabBase)->count(),
+            'active'   => (clone $tabBase)->whereHas('employee', fn($q) => $q->where('is_active', true))->count(),
+            'resigned' => (clone $tabBase)->whereHas('employee', fn($q) => $q->where('is_active', false))->count(),
+            'unlinked' => (clone $tabBase)->doesntHave('employee')->count(),
+        ];
+
+        // Base query tính số lượng theo vai trò (áp dụng search + employee_status)
+        $roleBase = User::query();
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $roleBase->where(fn($q) => $q->where('name', 'like', "%$s%")
+                ->orWhere('email', 'like', "%$s%")
+                ->orWhereHas('employee', fn($eq) => $eq->where('code', 'like', "%$s%")));
+        }
+        if ($empStatus === 'active' || $empStatus === '1') {
+            $roleBase->whereHas('employee', fn($q) => $q->where('is_active', true));
+        } elseif ($empStatus === 'resigned' || $empStatus === '0') {
+            $roleBase->whereHas('employee', fn($q) => $q->where('is_active', false));
+        } elseif ($empStatus === 'unlinked' || $empStatus === 'none') {
+            $roleBase->doesntHave('employee');
+        }
+
+        $totalForRoles = (clone $roleBase)->count();
+        $roleCounts = DB::table('model_has_roles')
+            ->where('model_type', User::class)
+            ->whereIn('model_id', (clone $roleBase)->select('id'))
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->groupBy('roles.name')
+            ->pluck(DB::raw('count(*)'), 'roles.name')
+            ->all();
+
         $users = $query->paginate(15)->withQueryString();
         $roles = Role::with('permissions')->orderBy('name')->get();
         $permissionGroups = $this->permissionGroups();
 
-        return view('users.index', compact('users', 'roles', 'permissionGroups'));
-    }
-
-    public function create()
-    {
-        $roles = Role::orderBy('name')->get();
-        $permissionGroups = $this->permissionGroups();
-        return view('users.form', compact('roles', 'permissionGroups'));
+        return view('users.index', compact(
+            'users', 'roles', 'permissionGroups', 'statusCounts', 'roleCounts', 'totalForRoles'
+        ));
     }
 
     public function store(Request $request)
@@ -85,20 +140,6 @@ class UsersController extends Controller
             ->with('success', 'Tạo người dùng "' . $user->name . '" thành công.');
     }
 
-    public function edit(User $user)
-    {
-        $roles = Role::orderBy('name')->get();
-        $permissionGroups = $this->permissionGroups();
-        $userRole = $user->roles->first()?->name ?? '';
-        $userDirectPermissions = $user->getDirectPermissions()->pluck('name')->toArray();
-        $rolePermissions = $user->getPermissionsViaRoles()->pluck('name')->toArray();
-
-        return view('users.form', compact(
-            'user', 'roles', 'permissionGroups',
-            'userRole', 'userDirectPermissions', 'rolePermissions'
-        ));
-    }
-
     public function update(Request $request, User $user)
     {
         $rules = [
@@ -135,7 +176,11 @@ class UsersController extends Controller
 
         $user->update($updateData);
         $user->syncRoles([$request->role]);
-        $user->syncPermissions($request->permissions ?? []);
+        // Chỉ đồng bộ quyền riêng khi form thực sự có mục "Quyền riêng" (cờ sync_permissions).
+        // Request thiếu cờ (form/client cũ không gửi permissions[]) không được xoá sạch quyền riêng.
+        if ($request->boolean('sync_permissions')) {
+            $user->syncPermissions($request->permissions ?? []);
+        }
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         activity()->causedBy(auth()->user())

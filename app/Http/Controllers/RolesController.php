@@ -15,12 +15,6 @@ class RolesController extends Controller
         return view('roles.index', compact('roles', 'permissionGroups'));
     }
 
-    public function create()
-    {
-        $permissionGroups = $this->permissionGroups();
-        return view('roles.form', compact('permissionGroups'));
-    }
-
     public function store(Request $request)
     {
         $request->validate([
@@ -45,13 +39,6 @@ class RolesController extends Controller
 
         return redirect()->route('roles.index')
             ->with('success', 'Tạo vai trò "' . $request->name . '" thành công.');
-    }
-
-    public function edit(Role $role)
-    {
-        $permissionGroups = $this->permissionGroups();
-        $rolePermissions = $role->permissions->pluck('name')->toArray();
-        return view('roles.form', compact('role', 'permissionGroups', 'rolePermissions'));
     }
 
     public function update(Request $request, Role $role)

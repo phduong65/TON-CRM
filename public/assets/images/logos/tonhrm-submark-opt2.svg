@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" width="100%" height="100%">
+  <defs>
+    <linearGradient id="opt2-sub-blue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#2F55E7" />
+    </linearGradient>
+    <linearGradient id="opt2-sub-green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="opt2-sub-shadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#2F55E7" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <g transform="translate(6, 6)" filter="url(#opt2-sub-shadow)">
+    <rect x="2" y="2" width="48" height="48" rx="14" fill="#F0F4FF" />
+    
+    <!-- Left Wing (Blue) -->
+    <path d="M12 18 C12 14.5 16 14 26 14 L26 21 C20 21 18 22 18 27 L18 38 C18 41 15 41 13 39 C12 38 12 30 12 18 Z" fill="url(#opt2-sub-blue)" />
+    
+    <!-- Right Wing (Emerald) -->
+    <path d="M40 18 C40 14.5 36 14 26 14 L26 21 C32 21 34 22 34 27 L34 38 C34 41 37 41 39 39 C40 38 40 30 40 18 Z" fill="url(#opt2-sub-green)" />
+    
+    <!-- Central Stem -->
+    <rect x="23" y="21" width="6" height="21" rx="3" fill="#1E3A8A" />
+
+    <!-- Human Head Dot -->
+    <circle cx="26" cy="11" r="3.5" fill="#2F55E7" />
+  </g>
+</svg>

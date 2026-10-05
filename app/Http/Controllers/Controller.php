@@ -95,22 +95,38 @@ abstract class Controller extends BaseController
                 'delete-attendance-locations' => 'Xóa',
             ],
             'Chấm công' => [
-                'view-attendance'    => 'Xem báo cáo chấm công',
-                'checkin-attendance' => 'Tự chấm công',
-                'import-attendance'  => 'Nhập chấm công (import)',
+                'view-attendance'      => 'Xem báo cáo chấm công',
+                'checkin-attendance'   => 'Tự chấm công',
+                'view-own-attendance'  => 'Xem lịch sử chấm công của bản thân',
+                'import-attendance'    => 'Nhập chấm công (import)',
+                'create-attendance-logs' => 'Chấm công hộ',
+                'edit-attendance-logs'   => 'Sửa lượt chấm công',
+                'delete-attendance-logs' => 'Xóa lượt chấm công',
+            ],
+            'Xác nhận công' => [
+                'view-own-timesheet-confirmation' => 'Tự xem/xác nhận công của bản thân',
+                'view-timesheet-confirmations'    => 'Xem xác nhận công của nhân viên khác',
+                'confirm-timesheet-on-behalf'     => 'Xác nhận công hộ',
             ],
             'Nghỉ phép & Đổi ca' => [
                 'view-leave-requests'    => 'Xem đơn nghỉ phép',
                 'create-leave-requests'  => 'Tạo đơn nghỉ phép',
                 'approve-leave-requests' => 'Duyệt đơn nghỉ phép',
+                'delete-leave-requests'  => 'Xóa đơn nghỉ phép',
                 'view-shift-swaps'       => 'Xem đơn đổi ca',
                 'create-shift-swaps'     => 'Tạo đơn đổi ca',
                 'approve-shift-swaps'    => 'Duyệt đơn đổi ca',
+                'delete-shift-swaps'     => 'Xóa đơn đổi ca',
             ],
             'Yêu cầu khác' => [
                 'view-staff-requests'    => 'Xem yêu cầu',
                 'create-staff-requests'  => 'Tạo yêu cầu',
+                'edit-staff-requests'    => 'Sửa yêu cầu',
                 'approve-staff-requests' => 'Duyệt yêu cầu',
+                'delete-staff-requests'  => 'Xóa yêu cầu',
+            ],
+            'Phép năm' => [
+                'view-annual-leave' => 'Xem báo cáo phép năm',
             ],
             'Ngày nghỉ lễ' => [
                 'view-holidays'   => 'Xem danh sách',
@@ -131,6 +147,7 @@ abstract class Controller extends BaseController
                 'view-notifications' => 'Xem thông báo',
                 'create-notifications' => 'Tạo thông báo',
                 'view-log-viewer'    => 'Xem log hệ thống',
+                'impersonate-users'  => 'Đăng nhập giả danh (impersonate)',
             ],
         ];
     }

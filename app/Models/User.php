@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'password',
         'theme',
         'status',
+        'avatar',
     ];
 
     /**
@@ -55,6 +57,26 @@ class User extends Authenticatable
     public function employee(): HasOne
     {
         return $this->hasOne(Employee::class);
+    }
+
+    /**
+     * Nhân viên đã từng được xếp ít nhất 1 ca làm việc (ShiftSchedule) — dùng để
+     * ẩn các mục chấm công cá nhân (Chấm công / Lịch sử chấm công) khỏi những
+     * tài khoản chưa có ca nên chưa thể tự chấm công.
+     */
+    public function hasAssignedShift(): bool
+    {
+        return $this->employee?->shiftSchedules()->exists() ?? false;
+    }
+
+    /**
+     * Admin không tự chấm công cá nhân; nhân viên chưa được xếp ca cũng chưa
+     * cần thấy các mục này. Dùng để ẩn "Chấm công" / "Lịch sử chấm công" khỏi
+     * sidebar, topbar và dashboard.
+     */
+    public function canSeeSelfAttendance(): bool
+    {
+        return !$this->hasRole('admin') && $this->hasAssignedShift();
     }
 
     /**

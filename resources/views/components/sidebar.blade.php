@@ -21,6 +21,12 @@
     } catch (\Exception $e) {
         $unreadNotifCount = 0;
     }
+
+    try {
+        $alertCount = \App\Models\AttendanceAlert::whereIn('status', ['open', 'seen'])->count();
+    } catch (\Exception $e) {
+        $alertCount = 0;
+    }
 @endphp
 
 <!-- Left sidebar (desktop) -->
@@ -82,10 +88,10 @@
                 </span>
             @endif
         </a>
-        <a href="/html/Luat_Thuong_Phat_NhanVien.html" target="_blank"
-            class="sidebar-link sidebar-link-inactive">
+        <a href="{{ route('policy.index') }}" target="_blank" rel="noopener"
+            class="sidebar-link {{ $isActive(['policy']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-file-earmark-text text-base"></i>
-            <span>Nội quy công ty</span>
+            <span>Nội Quy Công Ty</span>
         </a>
         {{-- ── NHÂN SỰ ──────────────────────────────── --}}
         <p
@@ -116,25 +122,25 @@
             </a>
         @endcan
 
-        {{-- ── CA LÀM VIỆC & CHẤM CÔNG ──────────────── --}}
-        @canany(['view-own-schedule', 'checkin-attendance', 'view-shifts', 'view-shift-schedules', 'view-attendance-locations', 'view-attendance', 'view-leave-requests', 'view-shift-swaps', 'view-staff-requests', 'view-holidays'])
+        @can('view-positions')
+            <a href="{{ route('positions.index') }}"
+                class="sidebar-link {{ $isActive(['positions']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-person-badge text-base"></i>
+                <span>Chức danh</span>
+            </a>
+        @endcan
+
+        {{-- ── CA LÀM VIỆC ───────────────────────────── --}}
+        @canany(['view-own-schedule', 'view-shifts', 'view-shift-schedules', 'view-holidays'])
         <p
             class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            Ca làm việc &amp; Chấm công</p>
+            Ca làm việc</p>
 
         @can('view-own-schedule')
             <a href="{{ route('my-schedule.index') }}"
                 class="sidebar-link {{ $isActive(['my-schedule']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-calendar3 text-base"></i>
                 <span>Lịch làm việc</span>
-            </a>
-        @endcan
-
-        @can('checkin-attendance')
-            <a href="{{ route('attendance.index') }}"
-                class="sidebar-link {{ $isActive(['attendance.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-fingerprint text-base"></i>
-                <span>Chấm công</span>
             </a>
         @endcan
 
@@ -146,6 +152,28 @@
             </a>
         @endcan
 
+        @can('view-shift-schedules')
+            <a href="{{ route('shift-schedules.index') }}"
+                class="sidebar-link {{ $isActive(['shift-schedules']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar-week text-base"></i>
+                <span>Xếp ca</span>
+            </a>
+        @endcan
+
+        @can('view-shift-coverage')
+            <a href="{{ route('operational-schedule.index') }}"
+                class="sidebar-link {{ $isActive(['operational-schedule']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar2-range text-base"></i>
+                <span>Lịch vận hành</span>
+            </a>
+
+            <a href="{{ route('shift-coverage-requirements.index') }}"
+                class="sidebar-link {{ $isActive(['shift-coverage-requirements']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-people-fill text-base"></i>
+                <span>Định biên ca</span>
+            </a>
+        @endcan
+
         @can('view-holidays')
             <a href="{{ route('holidays.index') }}"
                 class="sidebar-link {{ $isActive(['holidays']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -153,13 +181,32 @@
                 <span>Ngày nghỉ lễ</span>
             </a>
         @endcan
+        @endcanany
 
-        @can('view-shift-schedules')
-            <a href="{{ route('shift-schedules.index') }}"
-                class="sidebar-link {{ $isActive(['shift-schedules']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-calendar-week text-base"></i>
-                <span>Xếp ca</span>
+        {{-- ── CHẤM CÔNG ──────────────────────────────── --}}
+        @canany(['checkin-attendance', 'view-own-attendance', 'view-attendance-locations', 'view-attendance', 'import-attendance', 'view-staff-requests', 'view-leave-requests', 'view-shift-swaps', 'view-own-timesheet-confirmation', 'view-timesheet-confirmations'])
+        <p
+            class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            Chấm công</p>
+
+        @can('checkin-attendance')
+            @if (auth()->user()->canSeeSelfAttendance())
+            <a href="{{ route('attendance.index') }}"
+                class="sidebar-link {{ $isActive(['attendance.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-fingerprint text-base"></i>
+                <span>Chấm công</span>
             </a>
+            @endif
+        @endcan
+
+        @can('view-own-attendance')
+            @if (auth()->user()->canSeeSelfAttendance())
+            <a href="{{ route('my-attendance-logs.index') }}"
+                class="sidebar-link {{ $isActive(['my-attendance-logs']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-list-check text-base"></i>
+                <span>Lịch sử chấm công</span>
+            </a>
+            @endif
         @endcan
 
         @can('view-attendance-locations')
@@ -178,13 +225,61 @@
             </a>
         @endcan
 
+        @can('view-attendance-alerts')
+            <a href="{{ route('attendance-alerts.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-alerts']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-exclamation-triangle text-base"></i>
+                <span class="flex-1">Cảnh báo Ca</span>
+                @if ($alertCount > 0)
+                    <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-amber-500 text-white leading-none">
+                        {{ $alertCount > 99 ? '99+' : $alertCount }}
+                    </span>
+                @endif
+            </a>
+        @endcan
+
+        @can('import-attendance')
+            <a href="{{ route('attendance-import.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-file-earmark-arrow-up text-base"></i>
+                <span>Import Chấm Công</span>
+            </a>
+        @endcan
+
+        @if(\App\Models\Setting::getValue('timesheet_confirmation_enabled', '0') === '1')
+            @can('view-own-timesheet-confirmation')
+                @if (auth()->user()->canSeeSelfAttendance())
+                <a href="{{ route('timesheet-confirmation.index') }}"
+                    class="sidebar-link {{ $isActive(['timesheet-confirmation.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-check2-square text-base"></i>
+                    <span>Xác nhận công</span>
+                </a>
+                @endif
+            @endcan
+            @can('view-timesheet-confirmations')
+                <a href="{{ route('timesheet-confirmations.index') }}"
+                    class="sidebar-link {{ $isActive(['timesheet-confirmations.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-clipboard2-check-fill text-base"></i>
+                    <span>Xác nhận công (HR)</span>
+                </a>
+            @endcan
+        @endif
+
         @canany(['view-staff-requests', 'view-leave-requests', 'view-shift-swaps'])
             <a href="{{ route('staff-requests.index') }}"
                 class="sidebar-link {{ $isActive(['staff-requests', 'leave-requests', 'shift-swap-requests']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-clipboard2-check text-base"></i>
-                <span>Yêu cầu và Phê duyệt</span>
+                <span>Đơn & Phê duyệt</span>
             </a>
         @endcanany
+
+        @can('view-annual-leave')
+            <a href="{{ route('annual-leave.index') }}"
+                class="sidebar-link {{ $isActive(['annual-leave']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar2-check text-base"></i>
+                <span>Phép năm</span>
+            </a>
+        @endcan
         @endcanany
 
         {{-- ── THƯỞNG PHẠT ──────────────────────────── --}}
@@ -208,14 +303,6 @@
             </a>
         @endcan
 
-        @can('view-reports')
-            <a href="{{ route('reports.index') }}"
-                class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-flag text-base"></i>
-                <span>Báo cáo vi phạm</span>
-            </a>
-        @endcan
-
         @can('view-appeals')
             <a href="{{ route('appeals.index') }}"
                 class="sidebar-link {{ $isActive(['appeals']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -224,11 +311,11 @@
             </a>
         @endcan
 
-        @can('import-attendance')
-            <a href="{{ route('attendance-import.index') }}"
-                class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-file-earmark-arrow-up text-base"></i>
-                <span>Import Chấm Công</span>
+        @can('view-reports')
+            <a href="{{ route('reports.index') }}"
+                class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-flag text-base"></i>
+                <span>Báo cáo vi phạm</span>
             </a>
         @endcan
 
@@ -238,6 +325,7 @@
             <span>Bảng xếp hạng</span>
         </a>
 
+        @can('view-redzone')
         <a href="{{ route('redzone.index') }}"
             class="sidebar-link {{ $isActive(['redzone']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-exclamation-octagon text-base"></i>
@@ -247,6 +335,7 @@
                     class="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white">{{ $redzoneCount }}</span>
             @endif
         </a>
+        @endcan
         @canany(['view-violations', 'view-regulations', 'view-reward-types', 'view-reward-categories'])
             <p class="px-3 pb-1.5 pt-3 text-[10px] font-medium text-slate-300 dark:text-slate-600 uppercase tracking-wider">
                 Danh mục</p>
@@ -296,6 +385,11 @@
                     <i class="bi bi-file-earmark-spreadsheet text-base"></i>
                     <span>Google Sheets</span>
                 </a>
+                <a href="{{ route('themes.index') }}"
+                    class="sidebar-link {{ $isActive(['themes']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-palette text-base"></i>
+                    <span>Quản lý chủ đề</span>
+                </a>
             @endcan
 
             @can('view-activity-log')
@@ -337,6 +431,17 @@
             @endcan
         @endcanany
 
+        @if(session('impersonator_id'))
+            <form action="{{ route('impersonate.leave') }}" method="POST" class="mt-2">
+                @csrf @method('DELETE')
+                <button type="submit"
+                    class="sidebar-link sidebar-link-inactive w-full text-amber-600 dark:text-amber-400">
+                    <i class="bi bi-box-arrow-left text-base"></i>
+                    <span>Thoát đăng nhập hộ</span>
+                </button>
+            </form>
+        @endif
+
     </nav>
 </aside>
 
@@ -350,16 +455,23 @@
 
     <div class="px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-700 shrink-0">
         <div class="flex items-center gap-3">
-            <div
-                class="w-9 h-9 rounded-xl bg-pcrm-100 dark:bg-pcrm-900/50 flex items-center justify-center text-pcrm-700 dark:text-pcrm-400 font-bold text-sm shrink-0">
-                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
-            </div>
-            <div class="min-w-0">
-                <p class="font-semibold text-slate-900 dark:text-white text-sm truncate">{{ auth()->user()->name }}</p>
-                <p class="text-xs text-slate-400 truncate">{{ auth()->user()->email }}</p>
-            </div>
+            <a href="{{ route('profile.show') }}" class="flex items-center gap-3 min-w-0 flex-1 group hover:opacity-80 transition-all" onclick="closeMobilePanel()">
+                @if(auth()->user()->avatar)
+                    <img src="{{ asset(auth()->user()->avatar) }}" alt="{{ auth()->user()->name }}"
+                        class="w-9 h-9 rounded-xl object-cover shrink-0">
+                @else
+                    <div
+                        class="w-9 h-9 rounded-xl bg-pcrm-100 dark:bg-pcrm-900/50 flex items-center justify-center text-pcrm-700 dark:text-pcrm-400 font-bold text-sm shrink-0">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                    </div>
+                @endif
+                <div class="min-w-0">
+                    <p class="font-semibold text-slate-900 dark:text-white text-sm truncate group-hover:text-pcrm-600 transition-colors">{{ auth()->user()->name }}</p>
+                    <p class="text-xs text-slate-400 truncate">{{ auth()->user()->email }}</p>
+                </div>
+            </a>
             <button onclick="closeMobilePanel()"
-                class="ml-auto shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
+                class="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
                 <i class="bi bi-x text-base"></i>
             </button>
         </div>
@@ -384,10 +496,10 @@
                 </span>
             @endif
         </a>
-         <a href="/html/Luat_Thuong_Phat_NhanVien.html" target="_blank"
-            class="sidebar-link sidebar-link-inactive">
+         <a href="{{ route('policy.index') }}" target="_blank" rel="noopener"
+            class="sidebar-link {{ $isActive(['policy']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-file-earmark-text text-base"></i>
-            <span>Nội quy công ty</span>
+            <span>Nội Quy Công Ty</span>
         </a>
         <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Nhân sự</p>
         @can('view-employees')
@@ -408,19 +520,19 @@
                 <i class="bi bi-building text-base"></i><span>Chi nhánh</span>
             </a>
         @endcan
+        @can('view-positions')
+            <a href="{{ route('positions.index') }}"
+                class="sidebar-link {{ $isActive(['positions']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-person-badge text-base"></i><span>Chức danh</span>
+            </a>
+        @endcan
 
-        @canany(['view-own-schedule', 'checkin-attendance', 'view-shifts', 'view-shift-schedules', 'view-attendance-locations', 'view-attendance', 'view-leave-requests', 'view-shift-swaps', 'view-staff-requests', 'view-holidays'])
-        <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Ca làm việc &amp; Chấm công</p>
+        @canany(['view-own-schedule', 'view-shifts', 'view-shift-schedules', 'view-holidays'])
+        <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Ca làm việc</p>
         @can('view-own-schedule')
             <a href="{{ route('my-schedule.index') }}"
                 class="sidebar-link {{ $isActive(['my-schedule']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-calendar3 text-base"></i><span>Lịch làm việc</span>
-            </a>
-        @endcan
-        @can('checkin-attendance')
-            <a href="{{ route('attendance.index') }}"
-                class="sidebar-link {{ $isActive(['attendance.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-fingerprint text-base"></i><span>Chấm công</span>
             </a>
         @endcan
         @can('view-shifts')
@@ -429,17 +541,47 @@
                 <i class="bi bi-clock-history text-base"></i><span>Mẫu ca làm việc</span>
             </a>
         @endcan
+        @can('view-shift-schedules')
+            <a href="{{ route('shift-schedules.index') }}"
+                class="sidebar-link {{ $isActive(['shift-schedules']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar-week text-base"></i><span>Xếp ca</span>
+            </a>
+        @endcan
+        @can('view-shift-coverage')
+            <a href="{{ route('operational-schedule.index') }}"
+                class="sidebar-link {{ $isActive(['operational-schedule']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar2-range text-base"></i><span>Lịch vận hành</span>
+            </a>
+            <a href="{{ route('shift-coverage-requirements.index') }}"
+                class="sidebar-link {{ $isActive(['shift-coverage-requirements']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-people-fill text-base"></i><span>Định biên ca</span>
+            </a>
+        @endcan
         @can('view-holidays')
             <a href="{{ route('holidays.index') }}"
                 class="sidebar-link {{ $isActive(['holidays']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-calendar-event text-base"></i><span>Ngày nghỉ lễ</span>
             </a>
         @endcan
-        @can('view-shift-schedules')
-            <a href="{{ route('shift-schedules.index') }}"
-                class="sidebar-link {{ $isActive(['shift-schedules']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-calendar-week text-base"></i><span>Xếp ca</span>
+        @endcanany
+
+        @canany(['checkin-attendance', 'view-own-attendance', 'view-attendance-locations', 'view-attendance', 'import-attendance', 'view-staff-requests', 'view-leave-requests', 'view-shift-swaps', 'view-own-timesheet-confirmation', 'view-timesheet-confirmations'])
+        <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Chấm công</p>
+        @can('checkin-attendance')
+            @if (auth()->user()->canSeeSelfAttendance())
+            <a href="{{ route('attendance.index') }}"
+                class="sidebar-link {{ $isActive(['attendance.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-fingerprint text-base"></i><span>Chấm công</span>
             </a>
+            @endif
+        @endcan
+        @can('view-own-attendance')
+            @if (auth()->user()->canSeeSelfAttendance())
+            <a href="{{ route('my-attendance-logs.index') }}"
+                class="sidebar-link {{ $isActive(['my-attendance-logs']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-list-check text-base"></i><span>Lịch sử chấm công</span>
+            </a>
+            @endif
         @endcan
         @can('view-attendance-locations')
             <a href="{{ route('attendance-locations.index') }}"
@@ -453,12 +595,52 @@
                 <i class="bi bi-clipboard-check text-base"></i><span>Báo cáo chấm công</span>
             </a>
         @endcan
+        @can('view-attendance-alerts')
+            <a href="{{ route('attendance-alerts.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-alerts']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-exclamation-triangle text-base"></i>
+                <span class="flex-1">Cảnh báo Ca</span>
+                @if ($alertCount > 0)
+                    <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full bg-amber-500 text-white leading-none">
+                        {{ $alertCount > 99 ? '99+' : $alertCount }}
+                    </span>
+                @endif
+            </a>
+        @endcan
+        @can('import-attendance')
+            <a href="{{ route('attendance-import.index') }}"
+                class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-file-earmark-arrow-up text-base"></i><span>Import Chấm Công</span>
+            </a>
+        @endcan
+        @if(\App\Models\Setting::getValue('timesheet_confirmation_enabled', '0') === '1')
+            @can('view-own-timesheet-confirmation')
+                @if (auth()->user()->canSeeSelfAttendance())
+                <a href="{{ route('timesheet-confirmation.index') }}"
+                    class="sidebar-link {{ $isActive(['timesheet-confirmation.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-check2-square text-base"></i><span>Xác nhận công</span>
+                </a>
+                @endif
+            @endcan
+            @can('view-timesheet-confirmations')
+                <a href="{{ route('timesheet-confirmations.index') }}"
+                    class="sidebar-link {{ $isActive(['timesheet-confirmations.']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-clipboard2-check-fill text-base"></i><span>Xác nhận công (HR)</span>
+                </a>
+            @endcan
+        @endif
         @canany(['view-staff-requests', 'view-leave-requests', 'view-shift-swaps'])
             <a href="{{ route('staff-requests.index') }}"
                 class="sidebar-link {{ $isActive(['staff-requests', 'leave-requests', 'shift-swap-requests']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-clipboard2-check text-base"></i><span>Yêu cầu và Phê duyệt</span>
+                <i class="bi bi-clipboard2-check text-base"></i><span>Đơn & Phê duyệt</span>
             </a>
         @endcanany
+        @can('view-annual-leave')
+            <a href="{{ route('annual-leave.index') }}"
+                class="sidebar-link {{ $isActive(['annual-leave']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-calendar2-check text-base"></i><span>Phép năm</span>
+            </a>
+        @endcan
         @endcanany
 
         <p class="px-3 pb-1.5 pt-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Thưởng phạt</p>
@@ -474,28 +656,23 @@
                 <i class="bi bi-gift text-base"></i><span>Thưởng điểm</span>
             </a>
         @endcan
-        @can('view-reports')
-            <a href="{{ route('reports.index') }}"
-                class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-flag text-base"></i><span>Báo cáo vi phạm</span>
-            </a>
-        @endcan
         @can('view-appeals')
             <a href="{{ route('appeals.index') }}"
                 class="sidebar-link {{ $isActive(['appeals']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                 <i class="bi bi-chat-left-text text-base"></i><span>Khiếu nại</span>
             </a>
         @endcan
-        @can('import-attendance')
-            <a href="{{ route('attendance-import.index') }}"
-                class="sidebar-link {{ $isActive(['attendance-import']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
-                <i class="bi bi-file-earmark-arrow-up text-base"></i><span>Import Chấm Công</span>
+        @can('view-reports')
+            <a href="{{ route('reports.index') }}"
+                class="sidebar-link {{ $isActive(['reports']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                <i class="bi bi-flag text-base"></i><span>Báo cáo vi phạm</span>
             </a>
         @endcan
         <a href="{{ route('rankings.index') }}"
             class="sidebar-link {{ $isActive(['rankings']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-trophy text-base"></i><span>Bảng xếp hạng</span>
         </a>
+        @can('view-redzone')
         <a href="{{ route('redzone.index') }}"
             class="sidebar-link {{ $isActive(['redzone']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
             <i class="bi bi-exclamation-octagon text-base"></i>
@@ -505,6 +682,7 @@
                     class="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-red-500 text-white">{{ $redzoneCount }}</span>
             @endif
         </a>
+        @endcan
         @can('view-violations')
             <a href="{{ route('violations.index') }}"
                 class="sidebar-link {{ $isActive(['violations']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
@@ -541,6 +719,10 @@
                     class="sidebar-link {{ $isActive(['google-sheets']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
                     <i class="bi bi-file-earmark-spreadsheet text-base"></i><span>Google Sheets</span>
                 </a>
+                <a href="{{ route('themes.index') }}"
+                    class="sidebar-link {{ $isActive(['themes']) ? 'sidebar-link-active' : 'sidebar-link-inactive' }}">
+                    <i class="bi bi-palette text-base"></i><span>Quản lý chủ đề</span>
+                </a>
             @endcan
             @can('view-activity-log')
                 <a href="{{ route('activity.log') }}"
@@ -571,6 +753,16 @@
             @endcan
         @endcanany
 
+        @if(session('impersonator_id'))
+            <form action="{{ route('impersonate.leave') }}" method="POST" class="mt-2">
+                @csrf @method('DELETE')
+                <button type="submit"
+                    class="sidebar-link sidebar-link-inactive w-full text-amber-600 dark:text-amber-400">
+                    <i class="bi bi-box-arrow-left text-base"></i><span>Thoát đăng nhập hộ</span>
+                </button>
+            </form>
+        @endif
+
     </nav>
 </aside>
 
@@ -582,6 +774,9 @@
         panel.classList.toggle('hidden', !isHidden);
         panel.classList.toggle('flex', isHidden);
         overlay.classList.toggle('hidden', !isHidden);
+        const trigger = e && e.currentTarget;
+        if (trigger) trigger.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        document.body.classList.toggle('overflow-hidden', isHidden);
     }
 
     function closeMobilePanel() {
@@ -590,6 +785,7 @@
         panel.classList.add('hidden');
         panel.classList.remove('flex');
         overlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
     }
 
     // ── Thu nhỏ sidebar (desktop only — state lưu ở localStorage) ──────────
@@ -598,8 +794,31 @@
         localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0');
     }
 
-    // Tooltip khi thu nhỏ: dùng chính label làm title, không cần sửa từng link
-    document.querySelectorAll('#left-panel .sidebar-link').forEach(function (link) {
-        if (!link.title) link.title = link.textContent.trim();
-    });
+    // ── Tooltip nổi cao cấp khi thu nhỏ sidebar ─────────────────────────
+    (function () {
+        const tip = document.createElement('div');
+        tip.id = 'sidebar-rail-tooltip';
+        tip.className = 'fixed hidden z-[9999] pointer-events-none px-2.5 py-1.5 text-xs font-semibold text-white bg-slate-900 dark:bg-slate-700 rounded-lg shadow-xl border border-slate-700/60 dark:border-slate-600 transition-opacity duration-150 whitespace-nowrap';
+        document.body.appendChild(tip);
+
+        document.querySelectorAll('#left-panel .sidebar-link').forEach(function (link) {
+            const labelEl = link.querySelector('span:not(.rounded-full)');
+            const text = (labelEl ? labelEl.textContent : link.textContent).trim();
+            if (text) {
+                link.removeAttribute('title');
+                link.addEventListener('mouseenter', function () {
+                    if (!document.documentElement.classList.contains('sidebar-collapsed')) return;
+                    const rect = link.getBoundingClientRect();
+                    tip.textContent = text;
+                    tip.style.top = (rect.top + rect.height / 2) + 'px';
+                    tip.style.left = (rect.right + 10) + 'px';
+                    tip.style.transform = 'translateY(-50%)';
+                    tip.classList.remove('hidden');
+                });
+                link.addEventListener('mouseleave', function () {
+                    tip.classList.add('hidden');
+                });
+            }
+        });
+    })();
 </script>

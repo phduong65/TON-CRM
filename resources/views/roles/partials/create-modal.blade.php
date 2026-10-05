@@ -1,62 +1,50 @@
+@php $isCreateRoleErr = old('_modal') === 'createRoleModal'; @endphp
 <div id="createRoleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
      onclick="if(event.target===this)closeModal('createRoleModal')">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col">
-        <div class="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
-            <h3 class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                <i class="bi bi-shield-plus text-pcrm-600"></i> Thêm vai trò mới
-            </h3>
-            <button onclick="closeModal('createRoleModal')" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
-                <i class="bi bi-x-lg text-sm"></i>
+    <div class="pcrm-dialog max-w-4xl" role="dialog" aria-modal="true" aria-labelledby="createRoleTitle">
+        <div class="pcrm-dialog-head">
+            <span class="pcrm-dialog-icon bg-[#E9EEFF] text-[#2F55E7] dark:bg-[#2F55E7]/20 dark:text-[#809ff9]" aria-hidden="true">
+                <i class="bi bi-shield-plus"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <h3 id="createRoleTitle" class="pcrm-dialog-title">Thêm vai trò</h3>
+                <p class="pcrm-dialog-sub">Đặt tên vai trò và chọn những việc vai trò này được phép làm</p>
+            </div>
+            <button type="button" onclick="closeModal('createRoleModal')" class="pcrm-dialog-close" aria-label="Đóng">
+                <i class="bi bi-x-lg"></i>
             </button>
         </div>
-        <form action="{{ route('roles.store') }}" method="POST" class="px-4 sm:px-6 py-4 sm:py-5 space-y-5 overflow-y-auto">
+
+        <form action="{{ route('roles.store') }}" method="POST" class="pcrm-dialog-form">
             @csrf
             <input type="hidden" name="_modal" value="createRoleModal">
-            <div>
-                <label class="form-label">Tên vai trò <span class="text-red-500">*</span></label>
-                <input type="text" name="name" class="form-input max-w-sm" value="{{ old('name') }}" placeholder="VD: supervisor" required>
-                <p class="text-[11px] text-slate-400 mt-1">Chỉ dùng chữ thường và dấu gạch dưới, VD: <span class="font-mono">team_leader</span></p>
-                @error('name') <p class="form-error">{{ $message }}</p> @enderror
+
+            <div class="pcrm-dialog-body">
+                <section class="pcrm-form-section">
+                    <label for="createRoleName" class="form-label">Tên vai trò <span class="text-red-500">*</span></label>
+                    <input type="text" id="createRoleName" name="name" class="form-input sm:max-w-sm"
+                           value="{{ $isCreateRoleErr ? old('name') : '' }}" placeholder="VD: supervisor" required
+                           aria-describedby="createRoleNameHelp">
+                    <p id="createRoleNameHelp" class="pcrm-help">Chữ thường và dấu gạch dưới, VD: <span class="font-mono">team_leader</span></p>
+                    @if ($isCreateRoleErr) @error('name') <p class="form-error">{{ $message }}</p> @enderror @endif
+                </section>
+
+                <section class="pcrm-form-section">
+                    <div class="pcrm-form-section-head">
+                        <h4 class="pcrm-form-section-title">Quyền hạn</h4>
+                        <p class="pcrm-help mt-0">Mỗi nhóm tương ứng một module; dùng "Chọn nhóm" để cấp nhanh toàn bộ quyền của module.</p>
+                    </div>
+                    @if ($isCreateRoleErr) @error('permissions') <p class="form-error">{{ $message }}</p> @enderror @endif
+                    <x-permission-picker id="createRolePerms" :groups="$permissionGroups"
+                                         :checked="$isCreateRoleErr ? old('permissions', []) : []" />
+                </section>
             </div>
 
-            <div>
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quyền hạn</h4>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="createRoleSelectAll()" class="text-xs text-pcrm-600 dark:text-pcrm-400 hover:underline">Chọn tất cả</button>
-                        <span class="text-slate-300 dark:text-slate-600">|</span>
-                        <button type="button" onclick="createRoleDeselectAll()" class="text-xs text-slate-500 hover:underline">Bỏ chọn</button>
-                    </div>
-                </div>
-                <div class="space-y-4">
-                    @foreach($permissionGroups as $groupName => $perms)
-                    <div>
-                        <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">{{ $groupName }}</p>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                            @foreach($perms as $permKey => $permLabel)
-                                @php $checked = in_array($permKey, old('permissions', [])); @endphp
-                                <label class="flex items-start gap-2 p-2 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer
-                                              hover:border-pcrm-300 dark:hover:border-pcrm-600 transition-colors text-xs
-                                              {{ $checked ? 'bg-pcrm-50 dark:bg-pcrm-900/20 border-pcrm-200 dark:border-pcrm-700' : '' }}">
-                                    <input type="checkbox" name="permissions[]" value="{{ $permKey }}" {{ $checked ? 'checked' : '' }}
-                                           class="create-role-perm rounded border-slate-300 dark:border-slate-600 text-pcrm-600 mt-0.5 shrink-0">
-                                    <div class="min-w-0">
-                                        <p class="font-medium text-slate-700 dark:text-slate-300 leading-tight">{{ $permLabel }}</p>
-                                        <p class="text-[10px] text-slate-400 font-mono leading-tight">{{ $permKey }}</p>
-                                    </div>
-                                </label>
-                            @endforeach
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
-                <p class="text-sm text-slate-500">Đã chọn: <span id="createRolePermCount" class="font-semibold text-pcrm-600">0</span> quyền</p>
-                <div class="flex items-center gap-3">
+            <div class="pcrm-dialog-foot">
+                <p class="text-sm text-slate-500 dark:text-slate-400">Đã chọn <strong data-perm-total class="text-[#2F55E7] dark:text-[#809ff9] tabular-nums">0</strong> quyền</p>
+                <div class="flex items-center gap-2">
                     <button type="button" onclick="closeModal('createRoleModal')" class="btn-secondary">Hủy</button>
-                    <button type="submit" class="btn-primary"><i class="bi bi-floppy"></i> Tạo vai trò</button>
+                    <button type="submit" class="btn-primary"><i class="bi bi-check2"></i> Tạo vai trò</button>
                 </div>
             </div>
         </form>

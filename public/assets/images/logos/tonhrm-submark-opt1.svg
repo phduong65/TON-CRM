@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" width="100%" height="100%">
+  <defs>
+    <linearGradient id="opt1-sub-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="50%" stop-color="#2F55E7" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+    <linearGradient id="opt1-sub-accent" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#60A5FA" />
+      <stop offset="100%" stop-color="#93C5FD" />
+    </linearGradient>
+    <filter id="opt1-sub-shadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#2F55E7" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <g transform="translate(6, 6)" filter="url(#opt1-sub-shadow)">
+    <!-- Hexagonal Shield / Cube Background -->
+    <path d="M26 2 L48 14 L48 38 L26 50 L4 38 L4 14 Z" fill="url(#opt1-sub-grad)" />
+    <!-- Dynamic Isometric facets -->
+    <path d="M26 2 L48 14 L26 26 L4 14 Z" fill="url(#opt1-sub-accent)" opacity="0.3" />
+    <path d="M4 14 L26 26 L26 50 L4 38 Z" fill="#1D4ED8" opacity="0.4" />
+    
+    <!-- Stylized Modern 'T' Monogram -->
+    <path d="M14 18 L38 18 L38 24 L29 24 L29 40 L23 40 L23 24 L14 24 Z" fill="#FFFFFF" />
+    
+    <!-- Tech Accent Dot -->
+    <circle cx="26" cy="11" r="2.5" fill="#67E8F9" />
+  </g>
+</svg>

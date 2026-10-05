@@ -4,19 +4,20 @@
 @section('page-title', 'Danh mục thưởng')
 @section('breadcrumb', 'Thưởng phạt / Danh mục thưởng')
 
-@section('content')
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Danh mục nhóm loại thưởng — phân loại các hình thức khen thưởng</p>
-        </div>
-        @can('create-reward-categories')
-        <button onclick="openModal('createRewardCategoryModal')" class="btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm danh mục</span>
-        </button>
-        @endcan
-    </div>
+@section('page-subtitle')
+    Danh mục nhóm loại thưởng — phân loại các hình thức khen thưởng
+@endsection
 
+@section('page-actions')
+    @can('create-reward-categories')
+    <button onclick="openModal('createRewardCategoryModal')" class="btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        <span>Thêm danh mục</span>
+    </button>
+    @endcan
+@endsection
+
+@section('content')
     <div class="card">
         {{-- Filter bar --}}
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
@@ -38,7 +39,7 @@
                         </select>
                     </div>
                     <div class="flex gap-2 items-end sm:hidden">
-                        <button type="submit" class="btn-primary h-9 px-4 text-sm flex-1 gap-1">
+                        <button type="submit" class="btn-secondary h-9 px-4 text-sm flex-1 gap-1">
                             <i class="bi bi-funnel text-xs"></i> Lọc
                         </button>
                         @if($rcFilterActive)
@@ -49,7 +50,7 @@
                     </div>
                 </div>
                 <div class="hidden sm:flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm gap-1.5">
+                    <button type="submit" class="btn-secondary h-9 px-4 text-sm gap-1.5">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
                     @if($rcFilterActive)

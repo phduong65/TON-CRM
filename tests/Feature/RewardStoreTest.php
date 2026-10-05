@@ -256,4 +256,46 @@ class RewardStoreTest extends TestCase
         $response->assertStatus(403);
         $this->assertDatabaseCount('rewards', 0);
     }
+
+    /**
+     * Reward dùng SoftDeletes, và RewardsController::store() đã dùng withTrashed() khi đếm để
+     * sinh code — verify thực sự không trùng "code" sau khi xoá mềm 1 phiếu ở giữa tháng
+     * (cùng lớp lỗi vừa fix ở StaffRequest/LeaveRequest/ShiftSwapRequest/Penalty).
+     */
+    public function test_creating_reward_after_soft_delete_does_not_collide_on_code(): void
+    {
+        $emp = $this->makeEmployee('EMP-001');
+
+        // Mỗi lần tạo dùng total_points_awarded khác nhau — không phải double-submit thật (đã có
+        // guard chặn riêng, xem test_double_submit_creates_only_one_reward), chỉ để có 3 bản ghi
+        // phân biệt cho kịch bản này.
+        $this->actingAs($this->creator)->post(route('rewards.store'), $this->basePayload(['employee_id' => $emp->id, 'total_points_awarded' => 21]));
+        $this->actingAs($this->creator)->post(route('rewards.store'), $this->basePayload(['employee_id' => $emp->id, 'total_points_awarded' => 22]));
+        $this->actingAs($this->creator)->post(route('rewards.store'), $this->basePayload(['employee_id' => $emp->id, 'total_points_awarded' => 23]));
+
+        Reward::orderBy('id')->skip(1)->first()->delete(); // soft-delete phiếu thứ 2
+
+        $response = $this->actingAs($this->creator)->post(route('rewards.store'), $this->basePayload(['employee_id' => $emp->id, 'total_points_awarded' => 24]));
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseCount('rewards', 4); // 3 tạo đầu (1 đã xoá mềm, vẫn còn dòng vật lý) + 1 vừa tạo
+        $codes = Reward::withTrashed()->pluck('code');
+        $this->assertEquals($codes->count(), $codes->unique()->count(), 'Code bị trùng giữa các bản ghi.');
+    }
+
+    /**
+     * Double-click / gửi lại form khi mạng chậm không được tạo 2 phiếu thưởng giống hệt nhau.
+     * Xem PreventsDuplicateSubmission::wasJustSubmitted() và RewardsController::store().
+     */
+    public function test_double_submit_creates_only_one_reward(): void
+    {
+        $emp = $this->makeEmployee('EMP-001');
+        $payload = $this->basePayload(['employee_id' => $emp->id]);
+
+        $this->actingAs($this->creator)->post(route('rewards.store'), $payload)->assertRedirect();
+        $this->actingAs($this->creator)->post(route('rewards.store'), $payload)->assertRedirect();
+
+        $this->assertDatabaseCount('rewards', 1);
+    }
 }

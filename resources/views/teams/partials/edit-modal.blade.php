@@ -40,11 +40,18 @@
                 <textarea id="editTeamDesc" name="description" rows="2" class="form-input"></textarea>
                 @error('description') <p class="form-error">{{ $message }}</p> @enderror
             </div>
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="editTeamActive" name="is_active" value="1"
-                       class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
-                <span class="text-sm text-slate-700 dark:text-slate-300">Đang hoạt động</span>
-            </label>
+            <div class="flex flex-wrap items-center gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="editTeamOffice" name="is_office" value="1"
+                           class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
+                    <span class="text-sm text-slate-700 dark:text-slate-300">Khối văn phòng</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="editTeamActive" name="is_active" value="1"
+                           class="rounded border-slate-300 dark:border-slate-600 text-pcrm-600">
+                    <span class="text-sm text-slate-700 dark:text-slate-300">Đang hoạt động</span>
+                </label>
+            </div>
             <div class="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                 <button type="button" onclick="closeModal('editTeamModal')" class="btn-secondary">Hủy</button>
                 <button type="submit" class="btn-primary"><i class="bi bi-floppy"></i> Cập nhật</button>

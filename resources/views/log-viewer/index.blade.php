@@ -1,7 +1,8 @@
 @extends('layouts.admin')
 
 @section('title', 'System Logs')
-@section('page-title', 'System Logs')
+@section('page-title', 'Nhật ký hệ thống')
+@section('page-subtitle', 'Nhật ký kỹ thuật của hệ thống — chỉ dành cho quản trị viên')
 @section('breadcrumb', 'Hệ thống / System Logs')
 
 @php
@@ -58,7 +59,7 @@ $levelConfig = [
                 </div>
 
                 <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm">
+                    <button type="submit" class="btn-secondary h-9 px-4 text-sm">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
                     @if($levelFilter || $search)
@@ -125,7 +126,7 @@ $levelConfig = [
                                     {{ $badgeLabel }}
                                 </span>
                             </td>
-                            <td class="table-td">
+                            <td class="table-td whitespace-normal min-w-[280px]">
                                 <p class="text-xs font-mono text-slate-700 dark:text-slate-300 leading-snug break-all line-clamp-2">
                                     {{ $entry['message'] }}
                                 </p>
