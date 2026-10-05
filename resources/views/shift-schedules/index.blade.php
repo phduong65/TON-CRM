@@ -16,6 +16,12 @@
 
 @section('content')
     @php
+        $currentBranch = request('branch_id');
+        $currentTeam = request('team_id');
+        $q = fn(array $set = [], array $drop = []) => array_filter(
+            array_merge(request()->except(array_merge(['page'], $drop, array_keys($set))), $set),
+            fn($v) => $v !== null && $v !== ''
+        );
         $sortedEmployees = $employees;
         if ($myEmployee) {
             $sortedEmployees = collect($employees instanceof \Illuminate\Pagination\LengthAwarePaginator ? $employees->items() : $employees)->sortBy(function($emp) use ($myEmployee) {
@@ -27,17 +33,69 @@
     @endphp
     <form action="{{ route('shift-schedules.index') }}" method="GET" id="shiftSchedulesFilterForm">
         <input type="hidden" name="view" id="schedCurrentViewInput" value="{{ $viewMode }}">
-        @if(request('branch_id'))<input type="hidden" name="branch_id" value="{{ request('branch_id') }}">@endif
-        @if(request('team_id'))<input type="hidden" name="team_id" value="{{ request('team_id') }}">@endif
         @if(request('employee_id'))<input type="hidden" name="employee_id" value="{{ request('employee_id') }}">@endif
         @if(request('no_shift_today'))<input type="hidden" name="no_shift_today" value="{{ request('no_shift_today') }}">@endif
-        <div class="card mb-4">
+        @if(request('branch_id'))<input type="hidden" name="branch_id" value="{{ request('branch_id') }}">@endif
+        @if(request('team_id'))<input type="hidden" name="team_id" value="{{ request('team_id') }}">@endif
+
+        <div class="card overflow-hidden mb-4">
+            {{-- Status Tabs: Lọc theo Chi nhánh (như trang Thông báo) --}}
+            <div class="notif-head">
+                <nav class="status-tabs" aria-label="Lọc theo Chi nhánh">
+                    <a href="{{ route('shift-schedules.index', $q([], ['branch_id', 'team_id'])) }}"
+                       class="status-tab {{ !$currentBranch ? 'is-active' : '' }}" @if (!$currentBranch) aria-current="page" @endif>
+                        Tất cả chi nhánh <span class="status-tab-count">{{ number_format($branchCounts['all'] ?? $allEmployees->count()) }}</span>
+                    </a>
+                    @foreach ($branches as $b)
+                        <a href="{{ route('shift-schedules.index', $q(['branch_id' => $b->id], ['team_id'])) }}"
+                           class="status-tab {{ $currentBranch == $b->id ? 'is-active' : '' }}"
+                           @if ($currentBranch == $b->id) aria-current="page" @endif>
+                            {{ $b->name }} <span class="status-tab-count">{{ number_format($branchCounts[$b->id] ?? 0) }}</span>
+                        </a>
+                    @endforeach
+                </nav>
+                @if(request()->anyFilled(['branch_id', 'team_id']))
+                    <a href="{{ route('shift-schedules.index', $q([], ['branch_id', 'team_id'])) }}"
+                       class="notif-head-action text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400"
+                       title="Bỏ lọc chi nhánh & đội nhóm">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i>
+                        <span class="hidden sm:inline">Bỏ lọc</span>
+                    </a>
+                @endif
+            </div>
+
+            {{-- Type Chips: Lọc theo Đội nhóm (như nhóm Thông báo) --}}
+            @php
+                $visibleTeams = $teams->when($currentBranch, fn($c) => $c->where('branch_id', $currentBranch));
+                $totalForTeams = $visibleTeams->sum(fn($t) => $teamCounts[$t->id] ?? 0);
+            @endphp
+            @if ($visibleTeams->isNotEmpty() || $currentTeam)
+                <div class="type-chips notif-chips" role="group" aria-label="Lọc theo Đội nhóm">
+                    <a href="{{ route('shift-schedules.index', $q([], ['team_id'])) }}"
+                       class="type-chip {{ !$currentTeam ? 'is-active' : '' }}" @if (!$currentTeam) aria-current="true" @endif>
+                        <i class="bi bi-grid" aria-hidden="true"></i> Mọi đội nhóm
+                        <span class="type-chip-count">{{ number_format($totalForTeams) }}</span>
+                    </a>
+                    @foreach ($visibleTeams as $t)
+                        <a href="{{ route('shift-schedules.index', $q(['team_id' => $t->id])) }}"
+                           class="type-chip {{ $currentTeam == $t->id ? 'is-active' : '' }}"
+                           @if ($currentTeam == $t->id) aria-current="true" @endif>
+                            <i class="bi bi-people" aria-hidden="true"></i> {{ $t->name }}
+                            <span class="type-chip-count">{{ number_format($teamCounts[$t->id] ?? 0) }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
             <x-table-toolbar>
                 <x-slot:info>
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <label for="schedWeekInput" class="text-xs font-bold text-slate-500 dark:text-slate-400 font-heading">Tuần:</label>
-                        <input type="date" id="schedWeekInput" name="week" value="{{ $weekStart->toDateString() }}" class="form-input text-xs w-auto py-1 px-2.5 h-9 font-mono font-semibold" onchange="this.form.submit()">
-                        <div class="ops-views ml-1" role="tablist" aria-label="Chế độ hiển thị">
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <div class="flex items-center gap-1.5">
+                            <label for="schedWeekInput" class="text-xs font-bold text-slate-500 dark:text-slate-400 font-heading">Tuần:</label>
+                            <input type="date" id="schedWeekInput" name="week" value="{{ $weekStart->toDateString() }}" class="form-input text-xs w-auto py-1 px-2.5 h-9 font-mono font-semibold" onchange="this.form.submit()">
+                        </div>
+
+                        <div class="ops-views" role="tablist" aria-label="Chế độ hiển thị">
                             <button type="button" role="tab" id="viewBtnMatrix" onclick="switchScheduleView('matrix')"
                                     aria-selected="{{ $viewMode === 'matrix' ? 'true' : 'false' }}" aria-controls="scheduleMatrixView"
                                     class="ops-view-btn font-heading {{ $viewMode === 'matrix' ? 'is-active' : '' }}" title="Lưới tuần chi tiết">
@@ -57,7 +115,7 @@
                     </div>
                 </x-slot:info>
 
-                <button type="button" onclick="toggleFilterDrawer(true)" class="btn-secondary h-9 px-3 gap-1.5 text-xs font-black relative">
+                <button type="button" onclick="toggleFilterDrawer(true)" class="btn-secondary h-9 px-2.5 sm:px-3 gap-1.5 text-xs font-black relative" title="Bộ lọc tìm kiếm">
                     <i class="bi bi-funnel"></i>
                     <span>Bộ lọc</span>
                     @if(request()->anyFilled(['branch_id', 'team_id', 'employee_id']))
@@ -71,25 +129,26 @@
                         : array_merge(request()->query(), ['no_shift_today' => 1]);
                 @endphp
                 <a href="{{ route('shift-schedules.index', $noShiftTodayParams) }}"
-                   class="btn-secondary h-9 text-xs font-bold {{ $noShiftTodayActive ? '!border-pcrm-400 !bg-pcrm-50 !text-pcrm-700 dark:!border-pcrm-600 dark:!bg-pcrm-900/30 dark:!text-pcrm-400' : '' }}"
+                   class="btn-secondary h-9 px-2.5 sm:px-3 text-xs font-bold {{ $noShiftTodayActive ? '!border-pcrm-400 !bg-pcrm-50 !text-pcrm-700 dark:!border-pcrm-600 dark:!bg-pcrm-900/30 dark:!text-pcrm-400' : '' }}"
+                   title="{{ $noShiftTodayActive ? 'Bỏ lọc nhân viên chưa có ca hôm nay' : 'Lọc nhân viên chưa có ca hôm nay' }}"
                    @if($noShiftTodayActive) aria-current="true" @endif>
                     <i class="bi bi-person-dash"></i>
                     <span>{{ $noShiftTodayActive ? 'Đang lọc: Chưa có ca hôm nay' : 'NV chưa có ca hôm nay' }}</span>
                 </a>
                 @can('view-attendance')
-                <button type="button" onclick="openOnShiftModal()" class="btn-secondary h-9 text-xs font-bold">
+                <button type="button" onclick="openOnShiftModal()" class="btn-secondary h-9 px-2.5 sm:px-3 text-xs font-bold" title="Xem danh sách nhân viên đang trong ca trực">
                     <i class="bi bi-person-badge-fill"></i>
                     <span>NV đang trong ca</span>
                 </button>
                 @endcan
                 @can('export-shift-schedules')
-                <button type="button" onclick="openModal('exportShiftSchedulesModal')" class="btn-secondary h-9 text-xs font-bold">
+                <button type="button" onclick="openModal('exportShiftSchedulesModal')" class="btn-secondary h-9 px-2.5 sm:px-3 text-xs font-bold" title="Xuất dữ liệu xếp ca ra file Excel">
                     <i class="bi bi-file-earmark-excel"></i>
-                    <span>Xuất Excel</span>
+                    <span class="hidden sm:inline">Xuất</span> <span>Excel</span>
                 </button>
                 @endcan
                 @can('delete-shift-schedules')
-                <button type="button" onclick="openModal('deleteShiftScheduleModal')" class="btn-secondary h-9 text-xs font-bold text-red-600 dark:text-red-400">
+                <button type="button" onclick="openModal('deleteShiftScheduleModal')" class="btn-secondary h-9 px-2.5 sm:px-3 text-xs font-bold text-red-600 dark:text-red-400" title="Xoá ca theo khoảng ngày hoặc nhân viên">
                     <i class="bi bi-trash3"></i>
                     <span>Xoá ca</span>
                 </button>

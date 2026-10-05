@@ -96,6 +96,10 @@ class ShiftSchedulesController extends Controller
         $teams         = Team::where('is_active', true)->orderBy('name')->get();
         $allEmployees  = Employee::where('is_active', true)->orderBy('name')->get();
 
+        $branchCounts = $allEmployees->groupBy('branch_id')->map->count();
+        $branchCounts['all'] = $allEmployees->count();
+        $teamCounts = $allEmployees->groupBy('team_id')->map->count();
+
         // Lịch sắp tới của chính người đang đăng nhập — dùng cho modal "Đổi ca"
         // (chọn ca nào của mình để đề xuất đổi với ca của người khác).
         $myEmployee = auth()->user()->employee;
@@ -122,6 +126,8 @@ class ShiftSchedulesController extends Controller
             'branches',
             'teams',
             'allEmployees',
+            'branchCounts',
+            'teamCounts',
             'myEmployee',
             'myUpcomingSchedules',
             'viewMode'

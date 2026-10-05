@@ -1496,4 +1496,32 @@ class ShiftScheduleTest extends TestCase
         $response->assertSee('scheduleListTable');
         $response->assertSee($this->employee->name);
     }
+
+    public function test_manager_can_filter_shift_schedules_by_branch_and_team(): void
+    {
+        $otherBranch = Branch::create(['name' => 'Chi nhánh Quận 7', 'code' => 'CN-Q7', 'is_active' => true]);
+        $otherTeam = Team::create(['name' => 'Team Bar Q7', 'code' => 'BAR-Q7', 'branch_id' => $otherBranch->id, 'is_active' => true]);
+        $otherEmp = Employee::create([
+            'code' => 'EMP-Q7-01',
+            'name' => 'Nhân viên Quận 7',
+            'branch_id' => $otherBranch->id,
+            'team_id' => $otherTeam->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->manager)->get(route('shift-schedules.index', [
+            'branch_id' => $otherBranch->id,
+            'team_id' => $otherTeam->id,
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertSee('status-tabs');
+        $response->assertSee('type-chips');
+        $response->assertSee($otherBranch->name);
+        $response->assertSee($otherTeam->name);
+        $response->assertViewHas('employees', function ($employees) use ($otherEmp) {
+            return $employees->contains('id', $otherEmp->id) && !$employees->contains('id', $this->employee->id);
+        });
+    }
 }
+
