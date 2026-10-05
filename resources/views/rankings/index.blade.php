@@ -2,6 +2,7 @@
 
 @section('title', 'Bảng xếp hạng')
 @section('page-title', 'Bảng xếp hạng')
+@section('page-subtitle', 'Xếp hạng nhân viên và đội nhóm theo điểm trong kỳ')
 @section('breadcrumb', 'Phân tích / Xếp hạng')
 
 @php
@@ -185,10 +186,8 @@
                                 </div>
 
                                 {{-- Avatar --}}
-                                <div
-                                    class="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold {{ $rankAvatarClass($rank, $zone) }}">
-                                    {{ strtoupper(mb_substr($emp->name, 0, 2)) }}
-                                </div>
+                                <x-employee-avatar :employee="$emp" size="w-10 h-10" :initials="2"
+                                    :fallback="$rankAvatarClass($rank, $zone)" />
 
                                 {{-- Info --}}
                                 <div class="flex-1 min-w-0">
@@ -318,7 +317,7 @@
                     <input type="hidden" name="eval_year_only" value="{{ $evalYearOnly }}">
                     <div>
                         <label class="form-label text-xs mb-1">Chọn tháng</label>
-                        <select name="eval_month" class="form-select text-sm w-32" onchange="syncMonthYear(this)">
+                        <select name="eval_month" class="form-input form-select text-sm w-32" onchange="syncMonthYear(this)">
                             @foreach ($monthOptions as $opt)
                                 <option value="{{ $opt['month'] }}" data-year="{{ $opt['year'] }}"
                                     {{ $opt['month'] == $evalMonth && $opt['year'] == $evalYear ? 'selected' : '' }}>
@@ -348,10 +347,9 @@
                                 Nhân viên xuất sắc tháng
                                 {{ str_pad($evalMonth, 2, '0', STR_PAD_LEFT) }}/{{ $evalYear }}
                             </div>
-                            <div
-                                class="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-amber-200 dark:bg-amber-800 flex items-center justify-center text-xl lg:text-2xl font-black text-amber-800 dark:text-amber-200 mx-auto mb-2 lg:mb-3">
-                                {{ strtoupper(mb_substr($employeeOfMonth->name, 0, 2)) }}
-                            </div>
+                            <x-employee-avatar :employee="$employeeOfMonth" size="w-12 h-12 lg:w-16 lg:h-16" :initials="2"
+                                text="text-xl lg:text-2xl" fallback="bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200"
+                                class="font-black mx-auto mb-2 lg:mb-3" />
                             <h3 class="text-base lg:text-xl font-black text-slate-900 dark:text-white mb-0.5">
                                 {{ $employeeOfMonth->name }}</h3>
                             <p class="text-xs lg:text-sm text-slate-500 dark:text-slate-400 mb-3 lg:mb-4">
@@ -415,10 +413,8 @@
                                             @endif
                                         </div>
 
-                                        <div
-                                            class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold {{ $rankAvatarClass($rank, $z) }}">
-                                            {{ strtoupper(mb_substr($emp->name, 0, 2)) }}
-                                        </div>
+                                        <x-employee-avatar :employee="$emp" size="w-9 h-9" :initials="2"
+                                            :fallback="$rankAvatarClass($rank, $z)" />
 
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center gap-1.5 flex-wrap">
@@ -484,7 +480,7 @@
                     <input type="hidden" name="eval_year" value="{{ $evalYear }}">
                     <div>
                         <label class="form-label text-xs mb-1">Chọn năm</label>
-                        <select name="eval_year_only" class="form-select text-sm w-28">
+                        <select name="eval_year_only" class="form-input form-select text-sm w-28">
                             @foreach ($yearOptions as $y)
                                 <option value="{{ $y }}" {{ $y == $evalYearOnly ? 'selected' : '' }}>
                                     {{ $y }}</option>
@@ -510,10 +506,9 @@
                                 class="text-[10px] lg:text-[11px] font-bold uppercase tracking-widest text-pcrm-600 dark:text-pcrm-400 mb-2 lg:mb-3">
                                 Nhân viên xuất sắc năm {{ $evalYearOnly }}
                             </div>
-                            <div
-                                class="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-pcrm-200 dark:bg-pcrm-800 flex items-center justify-center text-xl lg:text-2xl font-black text-pcrm-800 dark:text-pcrm-200 mx-auto mb-2 lg:mb-3">
-                                {{ strtoupper(mb_substr($employeeOfYear->name, 0, 2)) }}
-                            </div>
+                            <x-employee-avatar :employee="$employeeOfYear" size="w-12 h-12 lg:w-16 lg:h-16" :initials="2"
+                                text="text-xl lg:text-2xl" fallback="bg-pcrm-200 dark:bg-pcrm-800 text-pcrm-800 dark:text-pcrm-200"
+                                class="font-black mx-auto mb-2 lg:mb-3" />
                             <h3 class="text-base lg:text-xl font-black text-slate-900 dark:text-white mb-0.5">
                                 {{ $employeeOfYear->name }}</h3>
                             <p class="text-xs lg:text-sm text-slate-500 dark:text-slate-400 mb-3 lg:mb-4">
@@ -576,10 +571,8 @@
                                             @endif
                                         </div>
 
-                                        <div
-                                            class="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold {{ $rankAvatarClass($rank, $z) }}">
-                                            {{ strtoupper(mb_substr($emp->name, 0, 2)) }}
-                                        </div>
+                                        <x-employee-avatar :employee="$emp" size="w-9 h-9" :initials="2"
+                                            :fallback="$rankAvatarClass($rank, $z)" />
 
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center gap-1.5 flex-wrap">

@@ -12,14 +12,17 @@ use App\Models\PenaltyMember;
 use App\Models\Violation;
 use App\Services\AttachmentService;
 use App\Services\NotificationService;
+use App\Support\Concerns\PreventsDuplicateSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PenaltiesController extends Controller
 {
+    use PreventsDuplicateSubmission;
+
     public function index(Request $request)
     {
-        $query = Penalty::with(['employee', 'violation.regulation', 'approver', 'members', 'attachments', 'appeals' => fn($q) => $q->where('status', 'pending')])
+        $query = Penalty::with(['employee.team', 'employee.branch', 'employee.user', 'violation.regulation', 'approver', 'members', 'attachments', 'appeals' => fn($q) => $q->where('status', 'pending')])
             ->orderBy('created_at', 'desc');
 
         // Nhân viên chỉ thấy phiếu phạt của chính mình; người có quyền duyệt thấy tất cả
@@ -43,16 +46,23 @@ class PenaltiesController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
 
         if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Số phiếu theo trạng thái cho tab lọc — cùng phạm vi quyền + tìm kiếm + khoảng ngày,
+        // chỉ bỏ điều kiện trạng thái (để tab nào cũng hiển thị đúng số của nó).
+        $statusCounts = (clone $query)->reorder()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         $penalties = $query->paginate(15)->withQueryString();
@@ -109,17 +119,23 @@ class PenaltiesController extends Controller
         ]);
 
         return view('penalties.index', compact(
-            'penalties', 'violations', 'regulations', 'employees', 'branches', 'teams',
+            'penalties', 'statusCounts', 'violations', 'regulations', 'employees', 'branches', 'teams',
             'regulationViolationsMap', 'teamEmployeesMap', 'violationDefaults'
         ));
     }
 
     public function store(StorePenaltyRequest $request, AttachmentService $attachments)
     {
-        $count = Penalty::whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
-            ->count() + 1;
-        $code = 'PNL-' . now()->format('Ym') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        // Chặn double-submit (double-click / gửi lại khi mạng chậm) tạo trùng 2 phiếu giống hệt.
+        $duplicate = $this->findJustSubmitted(Penalty::class, [
+            'employee_id' => $request->employee_id, 'violation_id' => $request->violation_id,
+            'total_points_deducted' => $request->points_deducted,
+        ]);
+        if ($duplicate) {
+            return redirect()->route('penalties.show', $duplicate)->with('success', 'Tạo phiếu phạt thành công!');
+        }
+
+        $code = Penalty::nextCode();
 
         $penalty = Penalty::create([
             'code'                  => $code,
@@ -177,8 +193,23 @@ class PenaltiesController extends Controller
     public function show(Penalty $penalty)
     {
         $this->authorizeEmployeeView($penalty);
-        $penalty->load(['employee', 'violation.regulation', 'approver', 'members.employee', 'attachments']);
-        return view('penalties.show', compact('penalty'));
+        $penalty->load([
+            'employee.team', 'employee.branch', 'employee.user',
+            'violation.regulation', 'creator', 'approver', 'revoker',
+            'members.employee.team', 'members.employee.user', 'attachments',
+            'appeals' => fn($q) => $q->with(['appellant', 'reviewer'])->latest(),
+        ]);
+
+        // Lịch sử xử lý: các hành động đã ghi audit log trên chính phiếu này (tạo/sửa/duyệt/từ chối/thu hồi)
+        $history = \Spatie\Activitylog\Models\Activity::query()
+            ->where('subject_type', $penalty->getMorphClass())
+            ->where('subject_id', $penalty->id)
+            ->with('causer')
+            ->latest()
+            ->limit(30)
+            ->get();
+
+        return view('penalties.show', compact('penalty', 'history'));
     }
 
     public function detailJson(Penalty $penalty)
@@ -195,6 +226,7 @@ class PenaltiesController extends Controller
                 'pending'  => 'Chờ duyệt',
                 'approved' => 'Đã duyệt',
                 'rejected' => 'Từ chối',
+                'revoked'  => 'Đã thu hồi',
                 default    => $penalty->status,
             },
             'employee'              => [

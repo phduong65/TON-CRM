@@ -13,14 +13,17 @@ use App\Models\RewardMember;
 use App\Models\RewardType;
 use App\Models\Team;
 use App\Services\NotificationService;
+use App\Support\Concerns\PreventsDuplicateSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class RewardsController extends Controller
 {
+    use PreventsDuplicateSubmission;
+
     public function index(Request $request)
     {
-        $query = Reward::with(['employee.branch', 'rewardType', 'approver', 'members'])
+        $query = Reward::with(['employee.branch', 'employee.team', 'employee.user', 'rewardType.category', 'approver'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('search')) {
@@ -29,10 +32,6 @@ class RewardsController extends Controller
                 $q->where('code', 'like', "%$s%")
                     ->orWhereHas('employee', fn($eq) => $eq->where('name', 'like', "%$s%")->orWhere('code', 'like', "%$s%"));
             });
-        }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
         }
 
         if ($request->filled('reward_type_id')) {
@@ -47,7 +46,26 @@ class RewardsController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $rewards = $query->paginate(15)->withQueryString();
+        // Số phiếu theo trạng thái cho tab lọc — cùng bộ lọc tìm kiếm/loại/khoảng ngày, trừ trạng thái
+        $statusCounts = (clone $query)->reorder()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // withCount sau khi đếm theo trạng thái: subselect members_count trong GROUP BY vi phạm only_full_group_by (MySQL)
+        $rewards = $query->withCount('members')->paginate(15)->withQueryString();
+
+        // Tên đối tượng của phiếu tập thể (chi nhánh/đội) — tải 1 lần thay vì find() từng dòng
+        $targetBranchNames = Branch::withTrashed()
+            ->whereIn('id', $rewards->where('target_type', 'branch')->pluck('target_id')->filter()->unique())
+            ->pluck('name', 'id');
+        $targetTeamNames = Team::withTrashed()
+            ->whereIn('id', $rewards->where('target_type', 'team')->pluck('target_id')->filter()->unique())
+            ->pluck('name', 'id');
 
         $rewardTypes = RewardType::active()->orderBy('name')->get();
         $employees   = Employee::where('is_active', true)->with(['branch', 'team'])->orderBy('name')->get();
@@ -58,11 +76,31 @@ class RewardsController extends Controller
             $rt->id => ['points' => $rt->default_points],
         ]);
 
-        return view('rewards.index', compact('rewards', 'rewardTypes', 'employees', 'branches', 'teams', 'rewardTypeDefaults'));
+        return view('rewards.index', compact(
+            'rewards', 'statusCounts', 'targetBranchNames', 'targetTeamNames',
+            'rewardTypes', 'employees', 'branches', 'teams', 'rewardTypeDefaults'
+        ));
     }
 
     public function store(StoreRewardRequest $request)
     {
+        $targetTypeForDupCheck = $request->input('target_type', 'individual');
+
+        // Chặn double-submit (double-click / gửi lại khi mạng chậm) tạo trùng 2 phiếu giống hệt.
+        $dupConditions = [
+            'target_type' => $targetTypeForDupCheck, 'reward_type_id' => $request->reward_type_id,
+            'total_points_awarded' => $request->total_points_awarded,
+        ];
+        if ($targetTypeForDupCheck === 'individual') {
+            $dupConditions['employee_id'] = $request->employee_id;
+        } elseif (in_array($targetTypeForDupCheck, ['branch', 'team'])) {
+            $dupConditions['target_id'] = $request->target_id;
+        }
+        $duplicate = $this->findJustSubmitted(Reward::class, $dupConditions);
+        if ($duplicate) {
+            return redirect()->route('rewards.show', $duplicate)->with('success', 'Tạo phiếu thưởng thành công!');
+        }
+
         $count = Reward::whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->withTrashed()
@@ -121,34 +159,74 @@ class RewardsController extends Controller
 
     public function show(Reward $reward)
     {
-        $reward->load(['employee.branch', 'rewardType', 'approver', 'members.employee', 'creator', 'revoker']);
-        return view('rewards.show', compact('reward'));
+        $reward->load([
+            'employee.branch', 'employee.team', 'employee.user', 'rewardType.category',
+            'approver', 'members.employee.team', 'members.employee.user', 'creator', 'revoker',
+        ]);
+
+        $targetName = match ($reward->target_type) {
+            'branch' => Branch::withTrashed()->find($reward->target_id)?->name,
+            'team'   => Team::withTrashed()->find($reward->target_id)?->name,
+            default  => null,
+        };
+
+        // Lịch sử xử lý: các hành động đã ghi audit log trên chính phiếu này
+        $history = \Spatie\Activitylog\Models\Activity::query()
+            ->where('subject_type', $reward->getMorphClass())
+            ->where('subject_id', $reward->id)
+            ->with('causer')
+            ->latest()
+            ->limit(30)
+            ->get();
+
+        $rewardTypes = $reward->status === 'pending' ? RewardType::active()->orderBy('name')->get() : collect();
+        $employees = $reward->status === 'pending' && ($reward->target_type ?? 'individual') === 'individual'
+            ? Employee::where('is_active', true)->with('branch')->orderBy('name')->get()
+            : collect();
+
+        return view('rewards.show', compact('reward', 'targetName', 'history', 'rewardTypes', 'employees'));
     }
 
     public function update(UpdateRewardRequest $request, Reward $reward)
     {
         abort_if($reward->status !== 'pending', 403, 'Không thể chỉnh sửa phiếu thưởng đã xử lý.');
 
-        $reward->update([
-            'reward_type_id'       => $request->reward_type_id,
-            'employee_id'          => $request->employee_id,
-            'description'          => $request->description,
-            'total_points_awarded' => $request->total_points_awarded,
-        ]);
+        $isIndividual = ($reward->target_type ?? 'individual') === 'individual';
 
-        $reward->members()->delete();
-        if ($request->filled('members')) {
-            foreach ($request->members as $m) {
-                if (!empty($m['employee_id'])) {
-                    RewardMember::create([
-                        'reward_id'      => $reward->id,
-                        'employee_id'    => $m['employee_id'],
-                        'points_awarded' => $m['points_awarded'] ?? $request->total_points_awarded,
-                        'note'           => $m['note'] ?? null,
-                    ]);
+        DB::transaction(function () use ($request, $reward, $isIndividual) {
+            $data = [
+                'reward_type_id'       => $request->reward_type_id,
+                'description'          => $request->description,
+                'total_points_awarded' => $request->total_points_awarded,
+            ];
+
+            if ($isIndividual) {
+                $data['employee_id'] = $request->employee_id;
+            }
+
+            $reward->update($data);
+
+            if (!$isIndividual) {
+                // Phiếu tập thể (chi nhánh/đội/tất cả): danh sách người nhận là reward_members, mỗi
+                // người cùng một mức điểm (xem createBulkMembers) → chỉ cập nhật mức điểm, KHÔNG xoá
+                // danh sách và không gán employee_id.
+                $reward->members()->update(['points_awarded' => $request->total_points_awarded]);
+            } elseif ($request->boolean('sync_members')) {
+                // Chỉ thay danh sách người liên đới khi form thực sự có mục này (cờ sync_members);
+                // form không gửi members[] thì giữ nguyên, tránh xoá nhầm.
+                $reward->members()->delete();
+                foreach ($request->input('members', []) as $m) {
+                    if (!empty($m['employee_id'])) {
+                        RewardMember::create([
+                            'reward_id'      => $reward->id,
+                            'employee_id'    => $m['employee_id'],
+                            'points_awarded' => $m['points_awarded'] ?? $request->total_points_awarded,
+                            'note'           => $m['note'] ?? null,
+                        ]);
+                    }
                 }
             }
-        }
+        });
 
         $reward->refresh()->loadMissing(['rewardType', 'employee']);
         activity()->causedBy(auth()->user())

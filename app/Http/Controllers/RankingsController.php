@@ -15,17 +15,17 @@ class RankingsController extends Controller
     {
         $defaultScore = (int) Setting::getValue('default_score_per_month', 100);
 
-        // ── All-time employee ranking (sum of monthly final_score + surplus) ──
+        // ── All-time employee ranking (average of monthly final_score + surplus) ──
         $employees = Employee::where('is_active', true)
             ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['director', 'admin'])))
-            ->with(['branch', 'team', 'monthlyScores'])
+            ->with(['branch', 'team', 'user', 'monthlyScores'])
             ->get()
             ->map(function ($emp) use ($defaultScore) {
                 $scores = $emp->monthlyScores;
                 // Employees with no records yet default to the current default score
                 // (prevents non-penalised employees from showing 0 and ranking last)
-                $emp->alltime_score   = $scores->isEmpty() ? $defaultScore : $scores->sum('final_score');
-                $emp->alltime_surplus = $scores->sum('surplus_points');
+                $emp->alltime_score   = $scores->isEmpty() ? $defaultScore : round($scores->avg('final_score'), 1);
+                $emp->alltime_surplus = $scores->isEmpty() ? 0 : round($scores->avg('surplus_points'), 1);
                 $currentRecord = $scores
                     ->where('month', now()->month)
                     ->where('year', now()->year)
@@ -112,7 +112,7 @@ class RankingsController extends Controller
 
         $ranked = Employee::where('is_active', true)
             ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['director', 'admin'])))
-            ->with(['branch', 'team'])
+            ->with(['branch', 'team', 'user'])
             ->get()
             ->map(function ($emp) use ($scoreMap, $defaultScore) {
                 $record = $scoreMap->get($emp->id);
@@ -149,7 +149,7 @@ class RankingsController extends Controller
     {
         $ranked = Employee::where('is_active', true)
             ->whereDoesntHave('user', fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['director', 'admin'])))
-            ->with(['branch', 'team', 'monthlyScores' => fn($q) => $q->where('year', $year)])
+            ->with(['branch', 'team', 'user', 'monthlyScores' => fn($q) => $q->where('year', $year)])
             ->get()
             ->map(function ($emp) use ($defaultScore) {
                 $records = $emp->monthlyScores;

@@ -143,6 +143,16 @@
             function _renderRow(e) {
                 var initials = (e.employee_name || 'N').trim().substring(0, 1).toUpperCase();
                 var metaParts = [e.branch, e.team].filter(Boolean).join(' · ');
+                var avatarHtml;
+                if (e.avatar_url) {
+                    var img = document.createElement('img');
+                    img.src = e.avatar_url;
+                    img.alt = e.employee_name || '';
+                    img.className = 'w-8 h-8 rounded-full object-cover flex-shrink-0';
+                    avatarHtml = img.outerHTML;
+                } else {
+                    avatarHtml = '<div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex-shrink-0">' + initials + '</div>';
+                }
 
                 var statusBadge;
                 if (e.in_shift_window === false) {
@@ -157,9 +167,7 @@
 
                 return '<div class="flex items-center justify-between py-3 gap-3">' +
                     '<div class="flex items-center gap-2.5 min-w-0">' +
-                        '<div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-semibold text-emerald-700 dark:text-emerald-400 flex-shrink-0">' +
-                            initials +
-                        '</div>' +
+                        avatarHtml +
                         '<div class="min-w-0">' +
                             '<p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">' + (e.employee_name || 'N/A') + '</p>' +
                             '<p class="text-xs text-slate-400 truncate">' + (metaParts || '—') +

@@ -13,7 +13,7 @@ class AppealsController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Appeal::with(['penalty.employee.branch', 'penalty.violation', 'appellant'])
+        $query = Appeal::with(['penalty.employee.branch', 'penalty.employee.team', 'penalty.employee.user', 'penalty.violation', 'appellant', 'reviewer'])
             ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'accepted' THEN 1 WHEN 'rejected' THEN 2 ELSE 3 END")
             ->orderBy('created_at', 'desc');
 
@@ -34,10 +34,6 @@ class AppealsController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
@@ -46,9 +42,19 @@ class AppealsController extends Controller
             });
         }
 
+        // Số khiếu nại theo trạng thái cho tab lọc — cùng phạm vi quyền + tìm kiếm, chưa lọc trạng thái
+        $statusCounts = (clone $query)->reorder()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         $appeals = $query->paginate(15)->withQueryString();
 
-        return view('appeals.index', compact('appeals'));
+        return view('appeals.index', compact('appeals', 'statusCounts'));
     }
 
     public function store(Request $request, Penalty $penalty)
