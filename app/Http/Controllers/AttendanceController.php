@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceLocation;
 use App\Models\AttendanceLog;
+use App\Models\Setting;
 use App\Models\ShiftSchedule;
+use App\Services\AttendanceAlertService;
+use App\Services\AttendanceAutoPenaltyService;
+use App\Services\AttendanceIpMismatchAlertService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -15,14 +19,21 @@ class AttendanceController extends Controller
         $employee = auth()->user()->employee;
         abort_if(!$employee, 403, 'Tài khoản của bạn chưa được gắn với hồ sơ nhân viên.');
 
+        // Rà soát cảnh báo chấm công mới nhất cho nhân viên
+        app(AttendanceAlertService::class)->scanAlerts($employee->id, 7);
+
         $today = now()->toDateString();
 
-        $shiftSchedules = ShiftSchedule::with(['shift', 'attendanceLog'])
-            ->where('employee_id', $employee->id)
-            ->where('work_date', $today)
-            ->where('status', 'scheduled')
+        $shiftSchedules = $this->relevantShiftSchedulesQuery($employee->id, $today)
+            ->with(['shift', 'attendanceLog'])
             ->orderBy('id')
             ->get();
+
+        // Tách ca "đang diễn ra" (còn check-in/out được) khỏi ca "đã bỏ lỡ" (quá giờ kết thúc mà
+        // chưa từng check-in) — xem ShiftSchedule::isMissed(). Hiển thị riêng để nhân viên không
+        // nhầm tưởng vẫn còn chấm công được cho ca đã lỡ.
+        $activeShifts = $shiftSchedules->reject(fn($s) => $s->isMissed())->values();
+        $missedShifts = $shiftSchedules->filter(fn($s) => $s->isMissed())->values();
 
         // Chỉ cần khi không có ca nào hôm nay — hiển thị lại trạng thái chấm công "ca ngoài lịch" đã lỡ thực hiện.
         $unscheduledLog = $shiftSchedules->isEmpty()
@@ -32,13 +43,14 @@ class AttendanceController extends Controller
                 ->first()
             : null;
 
-        return view('attendance.index', compact('employee', 'shiftSchedules', 'unscheduledLog'));
+        return view('attendance.index', compact('employee', 'activeShifts', 'missedShifts', 'unscheduledLog'));
     }
 
     /**
      * Xác định ca cần chấm công hôm nay.
-     * - Nếu client gửi shift_schedule_id: dùng đúng ca đó (phải thuộc về nhân viên & đúng ngày hôm nay).
-     * - Nếu không gửi: chỉ tự suy ra khi nhân viên có 0 hoặc đúng 1 ca hôm nay (tương thích ngược).
+     * - Nếu client gửi shift_schedule_id: dùng đúng ca đó (phải thuộc về nhân viên & nằm trong
+     *   phạm vi ca "đang diễn ra" — xem relevantShiftSchedulesQuery()).
+     * - Nếu không gửi: chỉ tự suy ra khi nhân viên có 0 hoặc đúng 1 ca (tương thích ngược).
      *   Có ≥2 ca mà không chỉ định rõ thì bắt buộc client phải chọn.
      *
      * @return array{0: ?ShiftSchedule, 1: ?string} [shiftSchedule, error]
@@ -46,26 +58,32 @@ class AttendanceController extends Controller
     private function resolveShiftScheduleForCheck(\App\Models\Employee $employee, string $today, ?int $requestedId): array
     {
         if ($requestedId) {
-            $schedule = ShiftSchedule::with('shift')
+            $schedule = $this->relevantShiftSchedulesQuery($employee->id, $today)
+                ->with('shift')
                 ->where('id', $requestedId)
-                ->where('employee_id', $employee->id)
-                ->where('work_date', $today)
                 ->first();
 
             return $schedule ? [$schedule, null] : [null, 'Ca làm việc không hợp lệ.'];
         }
 
-        $todaySchedules = ShiftSchedule::with('shift')
-            ->where('employee_id', $employee->id)
-            ->where('work_date', $today)
-            ->where('status', 'scheduled')
+        $candidateSchedules = $this->relevantShiftSchedulesQuery($employee->id, $today)
+            ->with('shift')
             ->get();
 
-        if ($todaySchedules->count() > 1) {
+        if ($candidateSchedules->count() > 1) {
             return [null, 'Bạn có nhiều ca hôm nay, vui lòng chọn ca cần chấm công.'];
         }
 
-        return [$todaySchedules->first(), null];
+        return [$candidateSchedules->first(), null];
+    }
+
+    /**
+     * Danh sách ca "đang diễn ra" cho nhân viên. Logic dùng chung với DashboardController
+     * (widget chấm công nhanh) — xem ShiftSchedule::relevantForEmployeeToday().
+     */
+    private function relevantShiftSchedulesQuery(int $employeeId, string $today)
+    {
+        return ShiftSchedule::relevantForEmployeeToday($employeeId, $today);
     }
 
     public function checkIn(Request $request)
@@ -89,17 +107,38 @@ class AttendanceController extends Controller
             return response()->json(['success' => false, 'message' => $resolveError], 422);
         }
 
-        [$method, $locationId, $error] = $this->resolveCheckMethod($shiftSchedule, $employee->branch_id, $validated['lat'] ?? null, $validated['lng'] ?? null, $ip);
+        // Ca đã quá giờ kết thúc mà chưa từng check-in ("đã bỏ lỡ" — xem ShiftSchedule::isMissed())
+        // thì chặn hẳn, không cho check-in trễ tuỳ ý. Nhân viên cần liên hệ quản lý để được chấm
+        // công hộ qua AttendanceLogsController::store() (permission create-attendance-logs).
+        if ($shiftSchedule && $shiftSchedule->isMissed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ca này đã kết thúc, bạn không thể check-in nữa. Vui lòng liên hệ quản lý để được hỗ trợ chấm công.',
+            ], 422);
+        }
+
+        [$method, $locationId, $error, $mismatchLocation] = $this->resolveCheckMethod($shiftSchedule, $employee->branch_id, $validated['lat'] ?? null, $validated['lng'] ?? null, $ip);
 
         if ($error) {
+            if ($mismatchLocation) {
+                app(AttendanceIpMismatchAlertService::class)->recordAndMaybeAlert($mismatchLocation, $employee, $ip);
+            }
+
             return response()->json(['success' => false, 'message' => $error], 422);
         }
 
-        $shiftScheduleId = $shiftSchedule?->id;
+        if ($method === 'gps_ip' && $locationId) {
+            app(AttendanceIpMismatchAlertService::class)->clearAlertIfResolved($locationId);
+        }
 
-        $result = DB::transaction(function () use ($employee, $today, $shiftSchedule, $shiftScheduleId, $method, $locationId, $validated, $ip, $device) {
+        $shiftScheduleId = $shiftSchedule?->id;
+        // Ca qua đêm: dùng đúng work_date gốc của ShiftSchedule (không phải "hôm nay") để bản ghi
+        // check-in/out cùng khớp một log dù check-out diễn ra sau khi đã sang ngày mới.
+        $logWorkDate = $shiftSchedule ? $shiftSchedule->work_date->toDateString() : $today;
+
+        $result = DB::transaction(function () use ($employee, $logWorkDate, $shiftSchedule, $shiftScheduleId, $method, $locationId, $validated, $ip, $device) {
             $log = AttendanceLog::where('employee_id', $employee->id)
-                ->where('work_date', $today)
+                ->where('work_date', $logWorkDate)
                 ->when($shiftScheduleId, fn($q) => $q->where('shift_schedule_id', $shiftScheduleId), fn($q) => $q->whereNull('shift_schedule_id'))
                 ->lockForUpdate()
                 ->first();
@@ -108,16 +147,18 @@ class AttendanceController extends Controller
                 return ['success' => false, 'message' => 'Bạn đã check-in ca này hôm nay rồi.'];
             }
 
+            // Ca WFH chỉ bỏ qua xác thực GPS/WiFi (method='wfh') — vẫn phải tính trễ/sớm như ca
+            // onsite bình thường, dựa theo giờ ca đã xếp (effectiveShift()).
             $lateMinutes    = 0;
             $effectiveShift = $shiftSchedule ? $this->resolveEffectiveShift($shiftSchedule) : null;
-            if ($effectiveShift && $method !== 'wfh') {
-                $lateMinutes = $this->computeLateMinutes($effectiveShift);
+            if ($effectiveShift) {
+                $lateMinutes = $this->computeLateMinutes($shiftSchedule);
             }
 
             $data = [
                 'employee_id'          => $employee->id,
                 'shift_schedule_id'    => $shiftScheduleId,
-                'work_date'            => $today,
+                'work_date'            => $logWorkDate,
                 'check_in_at'          => now(),
                 'check_in_method'      => $method,
                 'check_in_lat'         => $validated['lat'] ?? null,
@@ -126,12 +167,17 @@ class AttendanceController extends Controller
                 'check_in_location_id' => $locationId,
                 'check_in_device'      => $device,
                 'late_minutes'         => $lateMinutes,
+                ...($shiftSchedule?->shiftSnapshotAttributes() ?? []),
             ];
 
             if ($log) {
                 $log->update($data);
             } else {
                 $log = AttendanceLog::create($data);
+            }
+
+            if ($lateMinutes > 0) {
+                app(AttendanceAutoPenaltyService::class)->createIfNeeded($log, 'late', $lateMinutes);
             }
 
             return ['success' => true, 'log' => $log];
@@ -146,6 +192,8 @@ class AttendanceController extends Controller
             ->inLog('attendance')
             ->withProperties(['employee_code' => $employee->code, 'method' => $method, 'device' => $device])
             ->log("Check-in chấm công — {$employee->name}");
+
+        app(AttendanceAlertService::class)->resolveAlertsOnLog($result['log']);
 
         return response()->json(['success' => true, 'message' => 'Check-in thành công!']);
     }
@@ -171,17 +219,28 @@ class AttendanceController extends Controller
             return response()->json(['success' => false, 'message' => $resolveError], 422);
         }
 
-        [$method, $locationId, $error] = $this->resolveCheckMethod($shiftSchedule, $employee->branch_id, $validated['lat'] ?? null, $validated['lng'] ?? null, $ip);
+        [$method, $locationId, $error, $mismatchLocation] = $this->resolveCheckMethod($shiftSchedule, $employee->branch_id, $validated['lat'] ?? null, $validated['lng'] ?? null, $ip);
 
         if ($error) {
+            if ($mismatchLocation) {
+                app(AttendanceIpMismatchAlertService::class)->recordAndMaybeAlert($mismatchLocation, $employee, $ip);
+            }
+
             return response()->json(['success' => false, 'message' => $error], 422);
         }
 
-        $shiftScheduleId = $shiftSchedule?->id;
+        if ($method === 'gps_ip' && $locationId) {
+            app(AttendanceIpMismatchAlertService::class)->clearAlertIfResolved($locationId);
+        }
 
-        $result = DB::transaction(function () use ($employee, $today, $shiftSchedule, $shiftScheduleId, $method, $locationId, $validated, $ip, $device) {
+        $shiftScheduleId = $shiftSchedule?->id;
+        // Ca qua đêm: dùng đúng work_date gốc của ShiftSchedule (không phải "hôm nay") để bản ghi
+        // check-in/out cùng khớp một log dù check-out diễn ra sau khi đã sang ngày mới.
+        $logWorkDate = $shiftSchedule ? $shiftSchedule->work_date->toDateString() : $today;
+
+        $result = DB::transaction(function () use ($employee, $logWorkDate, $shiftSchedule, $shiftScheduleId, $method, $locationId, $validated, $ip, $device) {
             $log = AttendanceLog::where('employee_id', $employee->id)
-                ->where('work_date', $today)
+                ->where('work_date', $logWorkDate)
                 ->when($shiftScheduleId, fn($q) => $q->where('shift_schedule_id', $shiftScheduleId), fn($q) => $q->whereNull('shift_schedule_id'))
                 ->lockForUpdate()
                 ->first();
@@ -194,10 +253,11 @@ class AttendanceController extends Controller
                 return ['success' => false, 'message' => 'Bạn đã check-out ca này hôm nay rồi.'];
             }
 
+            // Xem giải thích ở checkIn() — WFH chỉ bỏ qua xác thực vị trí, không bỏ qua tính sớm.
             $earlyMinutes   = 0;
             $effectiveShift = $shiftSchedule ? $this->resolveEffectiveShift($shiftSchedule) : null;
-            if ($effectiveShift && $method !== 'wfh') {
-                $earlyMinutes = $this->computeEarlyMinutes($effectiveShift);
+            if ($effectiveShift) {
+                $earlyMinutes = $this->computeEarlyMinutes($shiftSchedule);
             }
 
             $log->update([
@@ -211,6 +271,10 @@ class AttendanceController extends Controller
                 'early_minutes'         => $earlyMinutes,
             ]);
 
+            if ($earlyMinutes > 0) {
+                app(AttendanceAutoPenaltyService::class)->createIfNeeded($log, 'early', $earlyMinutes);
+            }
+
             return ['success' => true, 'log' => $log, 'device_changed' => $log->deviceChanged()];
         });
 
@@ -223,6 +287,8 @@ class AttendanceController extends Controller
             ->inLog('attendance')
             ->withProperties(['employee_code' => $employee->code, 'method' => $method, 'device' => $device, 'device_changed' => $result['device_changed']])
             ->log("Check-out chấm công — {$employee->name}");
+
+        app(AttendanceAlertService::class)->resolveAlertsOnLog($result['log']);
 
         $message = 'Check-out thành công!';
         if ($result['device_changed']) {
@@ -239,12 +305,20 @@ class AttendanceController extends Controller
     /**
      * Xác định phương thức xác thực hợp lệ hoặc trả lỗi.
      *
-     * Bắt buộc đạt CẢ HAI: GPS trong bán kính cho phép VÀ IP thuộc WiFi văn phòng — của CÙNG một
-     * điểm chấm công (không tính gộp GPS khớp điểm A + IP khớp điểm B). Chỉ có 2 kết quả hợp lệ:
-     * 'gps_ip' (đạt cả hai) hoặc 'wfh' (ca WFH, bỏ qua xác thực vị trí). Các giá trị 'gps'/'ip'
-     * trong enum cột chỉ còn giữ lại cho dữ liệu lịch sử trước khi đổi sang yêu cầu cả hai.
+     * Cách xác thực áp dụng phụ thuộc 2 cờ cấu hình toàn hệ thống — settings.attendance_verify_gps
+     * và settings.attendance_verify_wifi (xem SettingsController) — bật cờ nào thì kiểm tra cờ đó:
+     * - Cả hai bật: bắt buộc đạt CẢ HAI (GPS trong bán kính cho phép VÀ IP thuộc WiFi văn phòng)
+     *   của CÙNG một điểm chấm công (không tính gộp GPS khớp điểm A + IP khớp điểm B) → 'gps_ip'.
+     * - Chỉ GPS bật: chỉ cần đúng vị trí GPS của 1 điểm bất kỳ → 'gps'.
+     * - Chỉ WiFi bật: chỉ cần đúng IP văn phòng của 1 điểm bất kỳ → 'ip'.
+     * - Cả hai tắt: bỏ qua xác thực vị trí hoàn toàn → 'skip'.
+     * Ca WFH luôn bỏ qua xác thực vị trí bất kể cấu hình → 'wfh'.
      *
-     * @return array{0: ?string, 1: ?int, 2: ?string} [method, location_id, error]
+     * Khi lỗi xảy ra đúng vì "GPS đúng nhưng IP sai" trong chế độ bắt buộc cả hai (nhân viên thực sự
+     * đang ở văn phòng), trả kèm $mismatchLocation — điểm chấm công đó — để caller ghi nhận qua
+     * AttendanceIpMismatchAlertService (dấu hiệu allowed_ips có thể đã lỗi thời do ISP đổi IP public).
+     *
+     * @return array{0: ?string, 1: ?int, 2: ?string, 3: ?AttendanceLocation} [method, location_id, error, mismatchLocation]
      */
     private function resolveCheckMethod(?ShiftSchedule $shiftSchedule, ?int $branchId, ?float $lat, ?float $lng, string $ip): array
     {
@@ -253,11 +327,18 @@ class AttendanceController extends Controller
             : (bool) $shiftSchedule?->shift?->isWfh();
 
         if ($isWfh) {
-            return ['wfh', null, null];
+            return ['wfh', null, null, null];
+        }
+
+        $gpsEnabled  = Setting::getValue('attendance_verify_gps', '1') !== '0';
+        $wifiEnabled = Setting::getValue('attendance_verify_wifi', '1') !== '0';
+
+        if (!$gpsEnabled && !$wifiEnabled) {
+            return ['skip', null, null, null];
         }
 
         if (!$branchId) {
-            return [null, null, 'Bạn chưa được gán chi nhánh, không thể xác định điểm chấm công.'];
+            return [null, null, 'Bạn chưa được gán chi nhánh, không thể xác định điểm chấm công.', null];
         }
 
         $locations = AttendanceLocation::where('branch_id', $branchId)
@@ -265,18 +346,52 @@ class AttendanceController extends Controller
             ->get();
 
         if ($locations->isEmpty()) {
-            return [null, null, 'Chi nhánh của bạn chưa cấu hình điểm chấm công.'];
+            return [null, null, 'Chi nhánh của bạn chưa cấu hình điểm chấm công.', null];
         }
 
+        if ($gpsEnabled && $wifiEnabled) {
+            return $this->resolveGpsAndIpMethod($locations, $lat, $lng, $ip);
+        }
+
+        if ($gpsEnabled) {
+            foreach ($locations as $location) {
+                if ($lat !== null && $lng !== null && $location->isWithinRadius($lat, $lng)) {
+                    return ['gps', $location->id, null, null];
+                }
+            }
+
+            return [null, null, 'Bạn không ở trong khu vực chấm công cho phép (sai vị trí GPS).', null];
+        }
+
+        foreach ($locations as $location) {
+            if ($location->matchesIp($ip)) {
+                return ['ip', $location->id, null, null];
+            }
+        }
+
+        return [null, null, 'Bạn chưa kết nối đúng WiFi văn phòng để chấm công.', null];
+    }
+
+    /**
+     * @param \Illuminate\Support\Collection<int, AttendanceLocation> $locations
+     * @return array{0: ?string, 1: ?int, 2: ?string, 3: ?AttendanceLocation}
+     */
+    private function resolveGpsAndIpMethod($locations, ?float $lat, ?float $lng, string $ip): array
+    {
         $ipOkAny  = false;
         $gpsOkAny = false;
+        $gpsOkLocation = null;
 
         foreach ($locations as $location) {
             $ipOk  = $location->matchesIp($ip);
             $gpsOk = $lat !== null && $lng !== null && $location->isWithinRadius($lat, $lng);
 
             if ($ipOk && $gpsOk) {
-                return ['gps_ip', $location->id, null];
+                return ['gps_ip', $location->id, null, null];
+            }
+
+            if ($gpsOk && !$gpsOkAny) {
+                $gpsOkLocation = $location;
             }
 
             $ipOkAny  = $ipOkAny || $ipOk;
@@ -284,59 +399,55 @@ class AttendanceController extends Controller
         }
 
         if (!$gpsOkAny && !$ipOkAny) {
-            return [null, null, 'Bạn không ở trong khu vực chấm công cho phép (sai vị trí GPS và không kết nối WiFi văn phòng). Cần đạt cả hai để chấm công.'];
+            return [null, null, 'Bạn không ở trong khu vực chấm công cho phép (sai vị trí GPS và không kết nối WiFi văn phòng). Cần đạt cả hai để chấm công.', null];
         }
         if (!$gpsOkAny) {
-            return [null, null, 'Bạn đã kết nối đúng WiFi văn phòng nhưng vị trí GPS không đúng khu vực chấm công. Cần đạt cả hai để chấm công.'];
+            return [null, null, 'Bạn đã kết nối đúng WiFi văn phòng nhưng vị trí GPS không đúng khu vực chấm công. Cần đạt cả hai để chấm công.', null];
         }
 
-        return [null, null, 'Vị trí GPS hợp lệ nhưng bạn chưa kết nối WiFi văn phòng. Cần đạt cả hai để chấm công.'];
+        return [null, null, 'Vị trí GPS hợp lệ nhưng bạn chưa kết nối WiFi văn phòng. Cần đạt cả hai để chấm công.', $gpsOkLocation];
+    }
+
+    private function resolveEffectiveShift(ShiftSchedule $shiftSchedule): ?\App\Models\Shift
+    {
+        return $shiftSchedule->effectiveShift();
     }
 
     /**
-     * Shift dùng để tính trễ/sớm: shift thật nếu có, hoặc Shift tạm (không lưu DB) dựng từ
-     * custom_start_time/custom_end_time của ca linh hoạt — không cho phép trễ/sớm (grace = 0).
+     * Dùng ShiftSchedule::startAt() (đã tính đúng theo work_date gốc, xử lý đúng ca qua đêm) thay
+     * vì tự dựng mốc giờ từ now()'s date (setTimeFromTimeString) — nếu không, check-in trễ SAU
+     * NỬA ĐÊM cho ca qua đêm (VD ca 22h-06h, check-in lúc 00h20) sẽ tính ra mốc "start" rơi vào
+     * TƯƠNG LAI (22h cùng ngày hiện tại), khiến now() <= start → trả về 0 phút trễ dù thực trễ.
      */
-    private function resolveEffectiveShift(ShiftSchedule $shiftSchedule): ?\App\Models\Shift
+    private function computeLateMinutes(ShiftSchedule $shiftSchedule): int
     {
-        if ($shiftSchedule->shift) {
-            return $shiftSchedule->shift;
+        $shift = $shiftSchedule->effectiveShift();
+        $start = $shiftSchedule->startAt();
+        if (!$shift || !$start) {
+            return 0;
         }
 
-        if ($shiftSchedule->isFlexible() && $shiftSchedule->custom_start_time) {
-            return new \App\Models\Shift([
-                'start_time'          => $shiftSchedule->custom_start_time,
-                'end_time'            => $shiftSchedule->custom_end_time,
-                'is_overnight'        => (bool) $shiftSchedule->custom_is_overnight,
-                'grace_late_minutes'  => 0,
-                'grace_early_minutes' => 0,
-            ]);
-        }
-
-        return null;
-    }
-
-    private function computeLateMinutes(\App\Models\Shift $shift): int
-    {
-        $now   = now();
-        $start = $now->copy()->setTimeFromTimeString((string) $shift->start_time);
-
+        $now = now();
         if ($now->lessThanOrEqualTo($start)) {
             return 0;
         }
 
-        return max(0, $start->diffInMinutes($now) - $shift->grace_late_minutes);
+        return max(0, $start->diffInMinutes($now) - ($shift->grace_late_minutes ?? 0));
     }
 
-    private function computeEarlyMinutes(\App\Models\Shift $shift): int
+    private function computeEarlyMinutes(ShiftSchedule $shiftSchedule): int
     {
-        $now = now();
-        $end = $now->copy()->setTimeFromTimeString((string) $shift->end_time);
+        $shift = $shiftSchedule->effectiveShift();
+        $end   = $shiftSchedule->endAt();
+        if (!$shift || !$end) {
+            return 0;
+        }
 
+        $now = now();
         if ($now->greaterThanOrEqualTo($end)) {
             return 0;
         }
 
-        return max(0, $now->diffInMinutes($end) - $shift->grace_early_minutes);
+        return max(0, $now->diffInMinutes($end) - ($shift->grace_early_minutes ?? 0));
     }
 }

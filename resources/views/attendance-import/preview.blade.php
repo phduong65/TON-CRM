@@ -4,16 +4,17 @@
 @section('page-title', 'Xem trước Import')
 @section('breadcrumb', 'Kỷ luật / Import Đi Trễ Về Sớm / Xem trước')
 
-@section('content')
-<div class="page-header">
-    <div>
-        <p class="page-subtitle">Kiểm tra kết quả khớp ngưỡng và chọn dòng cần tạo phiếu phạt</p>
-    </div>
+@section('page-subtitle')
+    Kiểm tra kết quả khớp ngưỡng và chọn dòng cần tạo phiếu phạt
+@endsection
+
+@section('page-actions')
     <a href="{{ route('attendance-import.index') }}" class="btn-ghost">
         <i class="bi bi-arrow-left"></i> Quay lại
     </a>
-</div>
+@endsection
 
+@section('content')
 @if ($errors->any())
     <div class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex gap-2 items-start">
         <i class="bi bi-exclamation-triangle-fill text-red-500 mt-0.5 flex-shrink-0"></i>
@@ -114,7 +115,7 @@
                 <thead>
                     <tr class="bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700">
                         <th class="px-3 py-3 text-center w-10"></th>
-                        <th class="px-3 py-3 text-left">Nhân viên</th>
+                        <th class="px-3 py-3 text-left" data-mcard-title>Nhân viên</th>
                         <th class="px-3 py-3 text-left">Ngày / Ca</th>
                         <th class="px-3 py-3 text-center">Phút</th>
                         <th class="px-3 py-3 text-left">Ngưỡng khớp</th>

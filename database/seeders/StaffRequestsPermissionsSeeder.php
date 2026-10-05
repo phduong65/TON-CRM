@@ -17,7 +17,7 @@ class StaffRequestsPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        $allPermissions = ['view-staff-requests', 'create-staff-requests', 'approve-staff-requests'];
+        $allPermissions = ['view-staff-requests', 'create-staff-requests', 'approve-staff-requests', 'edit-staff-requests', 'delete-staff-requests'];
 
         // Nhân viên thường: tự tạo/xem yêu cầu của mình, không được duyệt.
         $employeePermissions = ['view-staff-requests', 'create-staff-requests'];

@@ -21,6 +21,7 @@ class StaffRequest extends Model
         'type',
         'work_date',
         'payload',
+        'reversal_data',
         'reason',
         'status',
         'approval_outcome',
@@ -32,9 +33,10 @@ class StaffRequest extends Model
     protected function casts(): array
     {
         return [
-            'work_date'   => 'date:Y-m-d',
-            'payload'     => 'array',
-            'reviewed_at' => 'datetime',
+            'work_date'     => 'date:Y-m-d',
+            'payload'       => 'array',
+            'reversal_data' => 'array',
+            'reviewed_at'   => 'datetime',
         ];
     }
 
@@ -78,6 +80,26 @@ class StaffRequest extends Model
             'rejected' => 'badge-danger',
             default    => 'badge-neutral',
         };
+    }
+
+    /**
+     * Nhãn phụ hiển thị cạnh "Đã duyệt" cho 2 loại yêu cầu có thể ảnh hưởng tới trễ/sớm —
+     * "Đã tha lỗi" (full_credit=true — chỉ xảy ra khi late_early duyệt với kết quả "Công thường":
+     * late_minutes/early_minutes bị xoá về 0 nên KHÔNG tính kỷ luật/nhắc nhở, nhưng KHÔNG ảnh hưởng
+     * tới công — công vẫn luôn tính theo giờ chấm công thực tế, xem AttendanceLog::computeCong())
+     * hoặc "Ghi nhận" (đã duyệt nhưng KHÔNG tha lỗi — AttendanceLog vẫn giữ nguyên trễ/sớm thực tế,
+     * chỉ là đã có đơn xin phép được ghi nhận). Không phải trạng thái lưu riêng — suy ra từ type +
+     * approval_outcome đã có sẵn trên chính StaffRequest.
+     */
+    public function correctionOutcomeLabel(): ?string
+    {
+        if ($this->status !== 'approved' || !in_array($this->type, ['late_early', 'time_change'], true)) {
+            return null;
+        }
+
+        return ($this->type === 'late_early' && $this->approval_outcome === 'normal')
+            ? 'Đã tha lỗi'
+            : 'Ghi nhận';
     }
 
     /**

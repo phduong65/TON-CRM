@@ -1,31 +1,38 @@
 @php
-    $metaHeaders = ['STT', 'Mã nhân viên', 'Tên', 'Chi nhánh', 'Phòng ban', 'Chức danh'];
+    $metaHeaders = ['STT', 'Mã nhân viên', 'Tên', 'Chức danh'];
     $weekdayLabels = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
 
-    // Mỗi nhóm cột tổng hợp: paired = true nghĩa là có 2 cột con "Chính thức" / "Thử việc".
-    // Hệ thống chưa lưu trạng thái Thử việc / lịch Nghỉ lễ / tăng ca — các cột này luôn trả về 0,
-    // giữ nguyên bố cục để đối chiếu với file mẫu.
-    $summaryGroups = [
-        ['label' => 'Ngày công thực tế', 'key' => 'actual_workdays', 'paired' => true],
-        ['label' => 'Ngày công thực tế nghỉ lễ', 'key' => 'holiday_workdays', 'paired' => true],
-        ['label' => 'Tổng ngày công thực tế', 'key' => 'total_actual_workdays', 'paired' => true],
-        ['label' => 'Số ngày nghỉ có lương', 'key' => 'paid_leave_days', 'paired' => true],
-        ['label' => 'Số ngày nghỉ không lương', 'key' => 'unpaid_leave_days', 'paired' => true],
-        ['label' => 'Nghỉ lễ', 'key' => 'holiday_days', 'paired' => true],
-        ['label' => 'Công tính lương', 'key' => 'payroll_workdays', 'paired' => true],
-        ['label' => 'Số lần đi muộn', 'key' => 'late_count', 'paired' => true],
-        ['label' => 'Số lần về sớm', 'key' => 'early_count', 'paired' => true],
-        ['label' => 'Số lần không chấm công', 'key' => 'missing_total', 'paired' => true],
-        ['label' => 'Số lần không chấm công vào', 'key' => 'missing_check_in', 'paired' => true],
-        ['label' => 'Số lần không chấm công ra', 'key' => 'missing_check_out', 'paired' => true],
-        ['label' => 'Công ca tăng ca', 'key' => 'overtime_shifts', 'paired' => true],
-        ['label' => 'Tổng giờ tăng ca', 'key' => 'overtime_hours', 'paired' => true],
-        ['label' => 'Tổng giờ làm thêm giờ', 'key' => 'extra_hours', 'paired' => false],
-        ['label' => 'Thưởng nghỉ lễ', 'key' => 'holiday_bonus_amount', 'paired' => false],
-    ];
+    $isPartTime = $isPartTime ?? false;
+    if ($isPartTime) {
+        $summaryGroups = [
+            ['label' => 'Tổng giờ làm', 'key' => 'worked_hours'],
+            ['label' => 'Số lần không chấm công', 'key' => 'missing_total'],
+            ['label' => 'Số lần không chấm công vào', 'key' => 'missing_check_in'],
+            ['label' => 'Số lần không chấm công ra', 'key' => 'missing_check_out'],
+            ['label' => 'Tổng giờ tăng ca', 'key' => 'overtime_hours'],
+            ['label' => 'Thưởng nghỉ lễ', 'key' => 'holiday_bonus_amount'],
+        ];
+    } else {
+        $summaryGroups = [
+            ['label' => 'Ngày công thực tế', 'key' => 'actual_workdays'],
+            ['label' => 'Ngày công thực tế nghỉ lễ', 'key' => 'holiday_workdays'],
+            ['label' => 'Tổng ngày công thực tế', 'key' => 'total_actual_workdays'],
+            ['label' => 'Tổng giờ làm', 'key' => 'worked_hours'],
+            ['label' => 'Số ngày nghỉ có lương', 'key' => 'paid_leave_days'],
+            ['label' => 'Số ngày nghỉ không lương', 'key' => 'unpaid_leave_days'],
+            ['label' => 'Nghỉ lễ', 'key' => 'holiday_days'],
+            ['label' => 'Công tính lương', 'key' => 'payroll_workdays'],
+            ['label' => 'Số lần không chấm công', 'key' => 'missing_total'],
+            ['label' => 'Số lần không chấm công vào', 'key' => 'missing_check_in'],
+            ['label' => 'Số lần không chấm công ra', 'key' => 'missing_check_out'],
+            ['label' => 'Công ca tăng ca', 'key' => 'overtime_shifts'],
+            ['label' => 'Tổng giờ tăng ca', 'key' => 'overtime_hours'],
+            ['label' => 'Thưởng nghỉ lễ', 'key' => 'holiday_bonus_amount'],
+            ['label' => 'Công chuẩn', 'key' => 'standard_workdays'],
+        ];
+    }
 
-    $pairedCols = collect($summaryGroups)->sum(fn($g) => $g['paired'] ? 2 : 1);
-    $totalCols  = count($metaHeaders) + $days->count() + $pairedCols + 1; // +1 = cột Công chuẩn
+    $totalCols = count($metaHeaders) + $days->count() + count($summaryGroups);
 @endphp
 <table>
     @include('exports.partials.banner', ['title' => 'BẢNG CHẤM CÔNG', 'subtitle' => $rangeLabel, 'colspan' => $totalCols])
@@ -41,24 +48,14 @@
         @endforeach
 
         @foreach($summaryGroups as $g)
-            <td colspan="{{ $g['paired'] ? 2 : 1 }}" @if(!$g['paired']) rowspan="2" @endif
-                style="background-color:#2563eb; color:#ffffff; font-weight:bold; font-size:10px; padding:4px; text-align:center; border:1px solid #1d4ed8;">{{ $g['label'] }}</td>
+            <td rowspan="2" style="background-color:#2563eb; color:#ffffff; font-weight:bold; font-size:10px; padding:4px; text-align:center; border:1px solid #1d4ed8;">{{ $g['label'] }}</td>
         @endforeach
-
-        <td rowspan="2" style="background-color:#2563eb; color:#ffffff; font-weight:bold; font-size:10px; padding:4px; text-align:center; border:1px solid #1d4ed8;">Công chuẩn</td>
     </tr>
 
     {{-- Header dòng 2 --}}
     <tr>
         @foreach($days as $day)
             <td style="background-color:#dbeafe; color:#1e3a8a; font-size:9px; padding:3px 2px; text-align:center; border:1px solid #bfdbfe;">{{ $weekdayLabels[$day->dayOfWeek] }}</td>
-        @endforeach
-
-        @foreach($summaryGroups as $g)
-            @if($g['paired'])
-                <td style="background-color:#dbeafe; color:#1e3a8a; font-size:9px; padding:3px; text-align:center; border:1px solid #bfdbfe;">Chính thức</td>
-                <td style="background-color:#dbeafe; color:#1e3a8a; font-size:9px; padding:3px; text-align:center; border:1px solid #bfdbfe;">Thử việc</td>
-            @endif
         @endforeach
     </tr>
 
@@ -69,22 +66,16 @@
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $i + 1 }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $row['employee']->code }}</td>
             <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px; font-weight:bold;">{{ $row['employee']->name }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $row['employee']->branch?->name }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $row['employee']->team?->name }}</td>
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $row['employee']->position }}</td>
+            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; font-size:11px;">{{ $row['employee']->position?->name }}</td>
 
-            @foreach($row['day_cells'] as $cell)
+            @php $cellsToRender = $isPartTime ? $row['day_cells_hours'] : $row['day_cells']; @endphp
+            @foreach($cellsToRender as $cell)
                 <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:10px;">{{ $cell }}</td>
             @endforeach
 
             @foreach($summaryGroups as $g)
                 <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; font-weight:bold;">{{ $row['summary'][$g['key']] }}</td>
-                @if($g['paired'])
-                    <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px; color:#94a3b8;">0</td>
-                @endif
             @endforeach
-
-            <td style="background-color:{{ $rowBg }}; border:1px solid #e2e8f0; text-align:center; font-size:11px;">{{ $standardWorkdays }}</td>
         </tr>
     @empty
         <tr>
@@ -93,4 +84,25 @@
             </td>
         </tr>
     @endforelse
+
+    {{-- Ghi chú viết tắt --}}
+    <tr><td colspan="{{ $totalCols }}" style="padding:6px; border:none;"></td></tr>
+    <tr>
+        <td colspan="{{ $totalCols }}" style="font-size:11px; font-weight:bold; padding:4px 2px; border:none; text-align:left;">Ghi chú các ký hiệu viết tắt trong bảng:</td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalCols }}" style="font-size:10px; padding:2px 2px; border:none; text-align:left;">
+            <b>NC</b> = Nghỉ có lương &nbsp;·&nbsp; <b>NK</b> = Nghỉ không lương &nbsp;·&nbsp; <b>NL</b> = Nghỉ lễ (có lương)
+        </td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalCols }}" style="font-size:10px; padding:2px 2px; border:none; text-align:left;">
+            Ô trống = không có lịch làm việc/chưa đến ngày &nbsp;·&nbsp; Số đơn lẻ (VD "1") = công thực tế ngày đó
+        </td>
+    </tr>
+    <tr>
+        <td colspan="{{ $totalCols }}" style="font-size:10px; padding:2px 2px; border:none; text-align:left;">
+            "X, NL" = đi làm đúng ngày nghỉ lễ, công thực tế X &nbsp;·&nbsp; "X, NC+Y" hoặc "X, NK+Y" = nghỉ theo giờ (nửa ca): công thực tế X + Y ngày phép (NC=có lương/NK=không lương)
+        </td>
+    </tr>
 </table>

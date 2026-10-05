@@ -16,8 +16,8 @@ class LeaveSwapPermissionsSeeder extends Seeder
     public function run(): void
     {
         $allPermissions = [
-            'view-leave-requests', 'create-leave-requests', 'approve-leave-requests',
-            'view-shift-swaps', 'create-shift-swaps', 'approve-shift-swaps',
+            'view-leave-requests', 'create-leave-requests', 'approve-leave-requests', 'delete-leave-requests',
+            'view-shift-swaps', 'create-shift-swaps', 'approve-shift-swaps', 'delete-shift-swaps',
         ];
 
         // Nhân viên thường: tự tạo/xem đơn của mình, không được duyệt.

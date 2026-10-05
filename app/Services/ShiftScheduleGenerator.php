@@ -62,6 +62,7 @@ class ShiftScheduleGenerator
                             'employee_id'     => $employee->id,
                             'shift_id'        => $shiftId,
                             'branch_id'       => $employee->branch_id,
+                            'team_id'         => $employee->team_id,
                             'work_date'       => $date->toDateString(),
                             'assignment_type' => 'fixed',
                             'status'          => 'scheduled',

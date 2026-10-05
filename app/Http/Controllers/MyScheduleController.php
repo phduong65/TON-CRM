@@ -7,6 +7,7 @@ use App\Models\AttendanceLog;
 use App\Models\LeaveRequest;
 use App\Models\ShiftSchedule;
 use App\Support\Concerns\ResolvesExportDateRange;
+use App\Support\Concerns\ResolvesPartialLeaveIndex;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -14,17 +15,137 @@ use Maatwebsite\Excel\Facades\Excel;
 class MyScheduleController extends Controller
 {
     use ResolvesExportDateRange;
+    use ResolvesPartialLeaveIndex;
 
     /**
      * Trang khung — bản thân lịch được FullCalendar render phía client,
      * dữ liệu sự kiện lấy qua endpoint events() bên dưới (JSON feed).
      */
-    public function index()
+    public function index(Request $request)
     {
         $employee = auth()->user()->employee;
         abort_if(!$employee, 403, 'Tài khoản của bạn chưa được gắn với hồ sơ nhân viên.');
 
-        return view('my-schedule.index', compact('employee'));
+        $month = $request->integer('month', now()->month);
+        $year  = $request->integer('year', now()->year);
+
+        if ($month < 1 || $month > 12) {
+            $month = now()->month;
+        }
+        if ($year < 2020 || $year > 2030) {
+            $year = now()->year;
+        }
+
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate   = $startDate->copy()->endOfMonth();
+
+        $schedules = ShiftSchedule::with('shift')
+            ->where('employee_id', $employee->id)
+            ->where('status', 'scheduled')
+            ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->orderBy('work_date', 'asc')
+            ->get();
+
+        // Lấy TẤT CẢ lượt chấm công (không keyBy theo ngày — ngày đa ca có nhiều lượt/ngày, keyBy sẽ
+        // ghi đè chỉ còn 1, gây hiển thị trùng giờ vào/ra cho mọi ca và tính công thiếu).
+        $attendanceLogs = AttendanceLog::where('employee_id', $employee->id)
+            ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get();
+
+        // Khớp lượt chấm công theo ĐÚNG ca đã xếp (shift_schedule_id); log cũ/chấm công ngoài lịch
+        // (không gắn ca) gom theo ngày để fallback khi ngày đó đúng 1 ca.
+        $logsByScheduleId = $attendanceLogs->whereNotNull('shift_schedule_id')->keyBy('shift_schedule_id');
+        $looseLogsByDate  = $attendanceLogs->whereNull('shift_schedule_id')
+            ->groupBy(fn($log) => $log->work_date->toDateString());
+        $schedulesByDate  = $schedules->groupBy(fn($s) => $s->work_date->toDateString());
+
+        // scheduleId => AttendanceLog|null — resolve sẵn cho từng ca để view không dùng chung 1 log/ngày.
+        $scheduleLogs = [];
+        foreach ($schedules as $s) {
+            $dateStr = $s->work_date->toDateString();
+            $log = $logsByScheduleId->get($s->id);
+            if (!$log && ($schedulesByDate->get($dateStr)?->count() === 1)) {
+                $log = $looseLogsByDate->get($dateStr)?->first();
+            }
+            $scheduleLogs[$s->id] = $log;
+        }
+
+        $leaveRequests = LeaveRequest::where('employee_id', $employee->id)
+            ->where('status', 'approved')
+            ->where('date_from', '<=', $endDate->toDateString())
+            ->where('date_to', '>=', $startDate->toDateString())
+            ->get();
+
+        $partialLeaveIndex = $this->partialLeaveFractionIndex($attendanceLogs);
+
+        $daysInMonth = [];
+        $today = now()->toDateString();
+
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            $dateStr = $date->toDateString();
+            $daySchedules = $schedules->filter(fn($s) => $s->work_date->toDateString() === $dateStr);
+            $dayLeaves = $leaveRequests->filter(fn($l) => $date->between($l->date_from, $l->date_to));
+
+            $daysInMonth[$dateStr] = [
+                'date' => $date->copy(),
+                'schedules' => $daySchedules,
+                'leaves' => $dayLeaves,
+            ];
+        }
+
+        $workedHours = 0.0;
+        $cong = 0.0;
+        $daysWorked = 0;
+
+        foreach ($attendanceLogs as $log) {
+            $hours = $log->netWorkedHours();
+            if ($hours !== null) {
+                $workedHours += $hours;
+                $daysWorked++;
+            }
+            $leaveFraction = $partialLeaveIndex[$log->employee_id . '_' . $log->work_date->toDateString() . '_' . $log->shift_schedule_id] ?? null;
+            $cong += $log->computeCong(null, $leaveFraction) ?? 0;
+        }
+
+        $summary = [
+            'worked_hours' => round($workedHours, 2),
+            'cong' => round($cong, 2),
+            'days_worked' => $daysWorked,
+        ];
+
+        $prevDate = Carbon::createFromDate($year, $month, 1)->subMonth();
+        $nextDate = Carbon::createFromDate($year, $month, 1)->addMonth();
+
+        // Dữ liệu cho giao diện mobile (dải tuần + ca ngày chọn + ca tiếp theo); bản desktop bỏ qua.
+        $selectedDate = now();
+        if ($request->filled('date')) {
+            try {
+                $selectedDate = Carbon::parse($request->query('date'));
+            } catch (\Throwable) {
+                $selectedDate = now();
+            }
+        }
+        $weekStart = $selectedDate->copy()->startOfWeek(Carbon::MONDAY);
+        $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+        $weekSchedules = ShiftSchedule::with(['shift', 'attendanceLog', 'branch'])
+            ->where('employee_id', $employee->id)
+            ->where('status', 'scheduled')
+            ->whereBetween('work_date', [$weekStart->toDateString(), $weekEnd->toDateString()])
+            ->orderBy('work_date')
+            ->get()
+            ->groupBy(fn($s) => $s->work_date->toDateString());
+        $upcomingSchedules = ShiftSchedule::with(['shift', 'branch'])
+            ->where('employee_id', $employee->id)
+            ->where('status', 'scheduled')
+            ->where('work_date', '>', now()->toDateString())
+            ->orderBy('work_date')
+            ->limit(4)
+            ->get();
+
+        return view('my-schedule.index', compact(
+            'employee', 'month', 'year', 'daysInMonth', 'scheduleLogs', 'summary', 'partialLeaveIndex', 'prevDate', 'nextDate',
+            'selectedDate', 'weekStart', 'weekEnd', 'weekSchedules', 'upcomingSchedules'
+        ));
     }
 
     /**
@@ -49,8 +170,14 @@ class MyScheduleController extends Controller
 
         $attendanceLogs = AttendanceLog::where('employee_id', $employee->id)
             ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
-            ->get()
-            ->keyBy(fn($log) => $log->work_date->toDateString());
+            ->get();
+
+        // Khớp lượt chấm công theo ĐÚNG ca (shift_schedule_id); log không gắn ca fallback theo ngày
+        // chỉ khi ngày đó đúng 1 ca — tránh 1 log hiện trùng cho mọi ca của ngày đa ca.
+        $logsByScheduleId = $attendanceLogs->whereNotNull('shift_schedule_id')->keyBy('shift_schedule_id');
+        $looseLogsByDate  = $attendanceLogs->whereNull('shift_schedule_id')
+            ->groupBy(fn($log) => $log->work_date->toDateString());
+        $schedulesByDate  = $schedules->groupBy(fn($s) => $s->work_date->toDateString());
 
         // Bảng màu nhạt xoay vòng theo shift_id — dùng khi ca chưa cấu hình màu riêng.
         $palette = [
@@ -65,10 +192,12 @@ class MyScheduleController extends Controller
         $today = now()->toDateString();
 
         foreach ($schedules as $schedule) {
-            $shift = $schedule->shift;
+            // effectiveShift(): ca linh hoạt (shift_id null) dựng Shift tạm từ custom_*.
+            $shift = $schedule->effectiveShift();
             if (!$shift) {
                 continue;
             }
+            $shiftName = $schedule->shift?->name ?? 'Ca linh hoạt';
 
             $colors = $palette[$schedule->shift_id % count($palette)];
             $bg     = $shift->color ? $shift->color . '1a' : $colors['bg'];
@@ -77,7 +206,10 @@ class MyScheduleController extends Controller
 
             $timeRange = substr($shift->start_time, 0, 5) . '–' . substr($shift->end_time, 0, 5);
             $dateKey   = $schedule->work_date->toDateString();
-            $log       = $attendanceLogs->get($dateKey);
+            $log       = $logsByScheduleId->get($schedule->id);
+            if (!$log && ($schedulesByDate->get($dateKey)?->count() === 1)) {
+                $log = $looseLogsByDate->get($dateKey)?->first();
+            }
 
             // Xác định trạng thái chấm công của ngày này để hiển thị ngay trên lịch:
             // completed (đã check-in + check-out), in_progress (mới check-in), missed (đã qua ngày mà
@@ -93,7 +225,7 @@ class MyScheduleController extends Controller
             }
 
             $events[] = [
-                'title'           => ($shift->isWfh() ? '🏠 ' : '') . $shift->name . ' (' . $timeRange . ')',
+                'title'           => ($shift->isWfh() ? '🏠 ' : '') . $shiftName .' (' . $timeRange . ')',
                 'start'           => $dateKey,
                 'allDay'          => true,
                 'backgroundColor' => $bg,
@@ -101,7 +233,7 @@ class MyScheduleController extends Controller
                 'textColor'       => $text,
                 'extendedProps'   => [
                     'type'             => 'shift',
-                    'shiftCode'        => $shift->code,
+                    'shiftCode'        => $schedule->shift?->code,
                     'timeRange'        => $timeRange,
                     'wfh'              => $shift->isWfh(),
                     'attendanceStatus' => $attendanceStatus,
@@ -137,6 +269,47 @@ class MyScheduleController extends Controller
         }
 
         return response()->json($events, 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Tổng hợp giờ làm/công của CHÍNH nhân viên đang đăng nhập trong khoảng ngày đang xem trên
+     * lịch (FullCalendar gọi lại mỗi khi đổi tháng/tuần) — quyền view-own-attendance, tách biệt
+     * với view-attendance (xem của mọi nhân viên, dành cho HR/Manager ở /attendance-logs).
+     */
+    public function attendanceSummary(Request $request)
+    {
+        $employee = auth()->user()->employee;
+        abort_if(!$employee, 403, 'Tài khoản của bạn chưa được gắn với hồ sơ nhân viên.');
+
+        $start = $request->filled('start') ? Carbon::parse($request->start) : now()->startOfMonth();
+        $end   = $request->filled('end') ? Carbon::parse($request->end) : now()->endOfMonth();
+
+        $logs = AttendanceLog::with('shiftSchedule.shift')
+            ->where('employee_id', $employee->id)
+            ->whereBetween('work_date', [$start->toDateString(), $end->toDateString()])
+            ->get();
+
+        $partialLeaveIndex = $this->partialLeaveFractionIndex($logs);
+
+        $workedHours = 0.0;
+        $cong        = 0.0;
+        $daysWorked  = 0;
+
+        foreach ($logs as $log) {
+            $hours = $log->netWorkedHours();
+            if ($hours !== null) {
+                $workedHours += $hours;
+                $daysWorked++;
+            }
+            $leaveFraction = $partialLeaveIndex[$log->employee_id . '_' . $log->work_date->toDateString() . '_' . $log->shift_schedule_id] ?? null;
+            $cong += $log->computeCong(null, $leaveFraction) ?? 0;
+        }
+
+        return response()->json([
+            'worked_hours' => round($workedHours, 2),
+            'cong'         => round($cong, 2),
+            'days_worked'  => $daysWorked,
+        ]);
     }
 
     /**

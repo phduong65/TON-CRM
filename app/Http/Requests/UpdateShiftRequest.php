@@ -23,6 +23,7 @@ class UpdateShiftRequest extends FormRequest
             'end_time'             => 'required|date_format:H:i',
             'is_overnight'         => 'nullable|boolean',
             'break_minutes'        => 'nullable|integer|min:0|max:600',
+            'break_start_time'     => 'nullable|date_format:H:i',
             'grace_late_minutes'   => 'nullable|integer|min:0|max:120',
             'grace_early_minutes'  => 'nullable|integer|min:0|max:120',
             'standard_work_hours'  => 'nullable|numeric|min:1|max:24',

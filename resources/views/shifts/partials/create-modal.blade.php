@@ -45,18 +45,28 @@
                     @error('end_time') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Nghỉ giữa ca (phút)</label>
                     <input type="number" name="break_minutes" class="form-input" value="{{ old('break_minutes', 0) }}" min="0">
                 </div>
                 <div>
+                    <label class="form-label">Giờ bắt đầu nghỉ giữa ca</label>
+                    <input type="time" name="break_start_time" class="form-input" value="{{ old('break_start_time') }}">
+                    <p class="text-xs text-slate-400 mt-1">VD 12:00 — dùng để tách nghỉ nửa ngày theo giờ công thực.</p>
+                    @error('break_start_time') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
                     <label class="form-label">Cho phép trễ (phút)</label>
                     <input type="number" name="grace_late_minutes" class="form-input" value="{{ old('grace_late_minutes', 0) }}" min="0">
+                    <p class="text-xs text-slate-400 mt-1">Số phút đi trễ không bị tính kỷ luật.</p>
                 </div>
                 <div>
                     <label class="form-label">Cho phép sớm (phút)</label>
                     <input type="number" name="grace_early_minutes" class="form-input" value="{{ old('grace_early_minutes', 0) }}" min="0">
+                    <p class="text-xs text-slate-400 mt-1">Số phút về sớm không bị tính kỷ luật.</p>
                 </div>
             </div>
             <div>

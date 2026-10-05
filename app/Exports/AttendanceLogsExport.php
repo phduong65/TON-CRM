@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\AttendanceLog;
+use App\Support\Concerns\ResolvesPartialLeaveIndex;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Concerns\FromView;
@@ -11,6 +12,8 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 class AttendanceLogsExport implements FromView, ShouldAutoSize, WithTitle
 {
+    use ResolvesPartialLeaveIndex;
+
     public function __construct(
         private readonly Request $request,
         private readonly string $rangeLabel,
@@ -19,9 +22,17 @@ class AttendanceLogsExport implements FromView, ShouldAutoSize, WithTitle
 
     public function view(): View
     {
-        $query = AttendanceLog::with(['employee.branch', 'employee.team', 'shiftSchedule.shift'])
-            ->orderBy('work_date')
-            ->orderBy('employee_id');
+        // Sắp xếp theo chi nhánh → tên nhân viên → ngày để nhóm các lượt chấm công cùng chi
+        // nhánh lại gần nhau, dễ nhìn và quản lý hơn khi xuất báo cáo nhiều nhân viên — thay vì
+        // chỉ theo ngày như trước (xen kẽ nhân viên các chi nhánh khác nhau).
+        $query = AttendanceLog::query()
+            ->select('attendance_logs.*')
+            ->leftJoin('employees', 'employees.id', '=', 'attendance_logs.employee_id')
+            ->leftJoin('branches', 'branches.id', '=', 'employees.branch_id')
+            ->with(['employee.branch', 'employee.team', 'employee.position', 'shiftSchedule.shift'])
+            ->orderBy('branches.name')
+            ->orderBy('employees.name')
+            ->orderBy('attendance_logs.work_date');
 
         if ($this->request->filled('branch_id')) {
             $query->whereHas('employee', fn($q) => $q->where('branch_id', $this->request->branch_id));
@@ -39,9 +50,12 @@ class AttendanceLogsExport implements FromView, ShouldAutoSize, WithTitle
             $query->whereDate('work_date', '<=', $this->request->date_to);
         }
 
+        $logs = $query->get();
+
         return view('exports.attendance-logs', [
-            'logs'       => $query->get(),
-            'rangeLabel' => $this->rangeLabel,
+            'logs'              => $logs,
+            'rangeLabel'        => $this->rangeLabel,
+            'partialLeaveIndex' => $this->partialLeaveFractionIndex($logs),
         ]);
     }
 

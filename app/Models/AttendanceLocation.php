@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttendanceLocation extends Model
 {
@@ -20,17 +21,40 @@ class AttendanceLocation extends Model
     protected function casts(): array
     {
         return [
-            'latitude'      => 'float',
-            'longitude'     => 'float',
-            'radius_meters' => 'integer',
-            'allowed_ips'   => 'array',
-            'is_active'     => 'boolean',
+            'latitude'                => 'float',
+            'longitude'               => 'float',
+            'radius_meters'           => 'integer',
+            'allowed_ips'             => 'array',
+            'is_active'               => 'boolean',
+            'ip_mismatch_alerted_at'  => 'datetime',
         ];
     }
 
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function ipMismatches(): HasMany
+    {
+        return $this->hasMany(AttendanceIpMismatch::class);
+    }
+
+    /**
+     * Số nhân viên (khác nhau) có GPS đúng nhưng IP không khớp tại điểm này, hôm nay —
+     * dấu hiệu IP văn phòng có thể đã đổi. Dùng cho banner cảnh báo trên trang quản lý.
+     */
+    public function todayIpMismatchEmployeeCount(): int
+    {
+        return $this->ipMismatches()
+            ->whereDate('created_at', now()->toDateString())
+            ->distinct()
+            ->count('employee_id');
+    }
+
+    public function latestIpMismatch(): ?AttendanceIpMismatch
+    {
+        return $this->ipMismatches()->latest()->first();
     }
 
     /**

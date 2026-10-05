@@ -10,6 +10,14 @@ class AttendanceLog extends Model
     protected $fillable = [
         'employee_id',
         'shift_schedule_id',
+        'holiday_id',
+        'source',
+        'shift_start_time',
+        'shift_end_time',
+        'shift_break_minutes',
+        'shift_is_overnight',
+        'shift_type',
+        'shift_standard_work_hours',
         'work_date',
         'check_in_at',
         'check_out_at',
@@ -27,6 +35,8 @@ class AttendanceLog extends Model
         'check_out_device',
         'late_minutes',
         'early_minutes',
+        'late_penalty_id',
+        'early_penalty_id',
         'full_credit',
         'overtime_hours',
     ];
@@ -41,6 +51,9 @@ class AttendanceLog extends Model
             'early_minutes' => 'integer',
             'full_credit'   => 'boolean',
             'overtime_hours' => 'decimal:2',
+            'shift_break_minutes'       => 'integer',
+            'shift_is_overnight'        => 'boolean',
+            'shift_standard_work_hours' => 'decimal:2',
         ];
     }
 
@@ -54,6 +67,17 @@ class AttendanceLog extends Model
         return $this->belongsTo(ShiftSchedule::class);
     }
 
+    public function holiday(): BelongsTo
+    {
+        return $this->belongsTo(Holiday::class);
+    }
+
+    /** Bản ghi chấm công nghỉ lễ tự tạo (khối được nghỉ lễ, không cần check-in). */
+    public function isHoliday(): bool
+    {
+        return $this->source === 'holiday' || $this->holiday_id !== null;
+    }
+
     public function checkInLocation(): BelongsTo
     {
         return $this->belongsTo(AttendanceLocation::class, 'check_in_location_id');
@@ -64,15 +88,50 @@ class AttendanceLog extends Model
         return $this->belongsTo(AttendanceLocation::class, 'check_out_location_id');
     }
 
+    public function latePenalty(): BelongsTo
+    {
+        return $this->belongsTo(Penalty::class, 'late_penalty_id');
+    }
+
+    public function earlyPenalty(): BelongsTo
+    {
+        return $this->belongsTo(Penalty::class, 'early_penalty_id');
+    }
+
     /**
-     * True nếu thiết bị (User-Agent) dùng lúc check-out khác với lúc check-in.
-     * Chỉ mang tính cảnh báo — KHÔNG chặn chấm công.
+     * True nếu THIẾT BỊ VẬT LÝ dùng lúc check-out khác với lúc check-in. Chỉ mang tính cảnh
+     * báo — KHÔNG chặn chấm công. So sánh theo deviceSignature() (nền tảng/dòng máy) chứ
+     * KHÔNG so nguyên văn User-Agent — nếu không, đổi trình duyệt (VD Safari → Chrome) trên
+     * cùng 1 điện thoại sẽ bị báo nhầm là "khác thiết bị" dù vẫn là 1 máy.
      */
     public function deviceChanged(): bool
     {
-        return $this->check_in_device !== null
-            && $this->check_out_device !== null
-            && $this->check_in_device !== $this->check_out_device;
+        $checkInSignature  = self::deviceSignature($this->check_in_device);
+        $checkOutSignature = self::deviceSignature($this->check_out_device);
+
+        return $checkInSignature !== null
+            && $checkOutSignature !== null
+            && $checkInSignature !== $checkOutSignature;
+    }
+
+    /**
+     * Rút gọn User-Agent về phần thiết bị/hệ điều hành — thường nằm trong cặp ngoặc đơn đầu
+     * tiên (VD "(iPhone; CPU iPhone OS 17_0 like Mac OS X)", "(Linux; Android 13; SM-G991B)").
+     * Phần này giữ nguyên dù dùng trình duyệt nào (Safari/Chrome/CriOS/Firefox...) trên cùng
+     * một máy, nên so sánh ở đây tránh báo nhầm khi nhân viên chỉ đổi app trình duyệt — vẫn
+     * phát hiện đúng khi đổi sang điện thoại/hệ điều hành thực sự khác.
+     */
+    private static function deviceSignature(?string $userAgent): ?string
+    {
+        if (!$userAgent) {
+            return null;
+        }
+
+        if (preg_match('/\(([^)]+)\)/', $userAgent, $matches)) {
+            return strtolower(trim($matches[1]));
+        }
+
+        return strtolower(trim($userAgent));
     }
 
     /**
@@ -97,7 +156,11 @@ class AttendanceLog extends Model
         if ($shift) {
             $scheduledStart = $checkIn->copy()->setTimeFromTimeString((string) $shift->start_time);
             $scheduledEnd   = $checkIn->copy()->setTimeFromTimeString((string) $shift->end_time);
-            if ($shift->is_overnight && $scheduledEnd->lessThanOrEqualTo($scheduledStart)) {
+            // Suy ra ca qua đêm trực tiếp từ giờ kết thúc <= giờ bắt đầu, KHÔNG chỉ dựa vào cờ
+            // is_overnight (nhập tay, có thể sai/bị bỏ quên) — nếu không, ca thực sự qua đêm
+            // (VD 18h-24h) mà cờ bị sai sẽ khiến scheduledEnd nằm TRƯỚC scheduledStart, checkOut
+            // sau khi clamp trở thành <= checkIn, và netWorkedHours() trả về 0 dù đã chấm công đủ.
+            if ($scheduledEnd->lessThanOrEqualTo($scheduledStart)) {
                 $scheduledEnd->addDay();
             }
 
@@ -120,36 +183,43 @@ class AttendanceLog extends Model
     }
 
     /**
-     * Số "công" quy đổi từ giờ làm thực tế — dùng chung cho Báo cáo chấm công và Bảng chấm công:
-     * - full_credit (đi muộn/về sớm đã được duyệt "Công thường"): luôn 1 công.
-     * - Ca văn phòng/full-time (Shift::shift_type = fulltime, hoặc không xác định được ca): 1 ca
-     *   chấm công đủ vào-ra = 1 công, không quy đổi theo giờ.
-     * - Ca part-time: giờ làm thực tế / giờ công chuẩn của ca (Shift::standard_work_hours, mặc
-     *   định 8h nếu không xác định được ca).
+     * Số "công" quy đổi từ giờ làm thực tế — dùng chung cho Báo cáo chấm công, Lịch sử chấm công
+     * của tôi, Xuất Excel và Bảng chấm công:
+     * - $partialLeaveFraction (ngày đó có đơn nghỉ theo giờ đã duyệt — truyền day_fraction của
+     *   đơn vào): công phần đi làm cố định = 1 - tỉ lệ nghỉ (0 nếu chưa chấm công đủ vào/ra phần
+     *   ca còn lại).
+     * - Mọi loại ca (kể cả Shift::shift_type = fulltime): giờ làm thực tế / giờ công chuẩn của ca
+     *   (Shift::standard_work_hours, mặc định 8h nếu không xác định được ca) — đi trễ/về sớm LUÔN
+     *   trừ công theo đúng số giờ chấm công thực tế, không còn "1 ca đủ vào-ra = 1 công" cứng như
+     *   trước cho ca full-time.
+     * - full_credit (đi muộn/về sớm đã được duyệt "Công thường" qua yêu cầu "Đi muộn về sớm"):
+     *   CHỈ dùng để tha lỗi late_minutes/early_minutes khỏi bị tính kỷ luật/nhắc nhở (xem
+     *   StaffRequestsController::applyLateEarlyForgiveness()) — KHÔNG còn ảnh hưởng tới công,
+     *   công luôn tính đúng theo giờ chấm công thực tế dù đã "thả lỗi" trễ/sớm.
      * Giờ tăng ca đã được duyệt (overtime_hours — xem overtimeCong()) luôn được cộng thêm vào
      * kết quả trên, kể cả khi chưa có giờ vào/ra thực tế (VD: tăng ca vào ngày nghỉ).
      */
-    public function computeCong(?Shift $shift = null): ?float
+    public function computeCong(?Shift $shift = null, ?float $partialLeaveFraction = null): ?float
     {
         $shift        = $this->resolveShift($shift);
-        $workedHours  = $this->netWorkedHours($shift);
         $overtimeCong = $this->overtimeCong($shift);
+
+        if ($partialLeaveFraction !== null) {
+            $workCredit = ($this->check_in_at && $this->check_out_at) ? round(1 - $partialLeaveFraction, 2) : 0.0;
+
+            return round($workCredit + $overtimeCong, 2);
+        }
+
+        $workedHours = $this->netWorkedHours($shift);
 
         if ($workedHours === null) {
             return $overtimeCong > 0 ? round($overtimeCong, 2) : null;
         }
 
-        if ($this->full_credit) {
-            return round(1.0 + $overtimeCong, 2);
-        }
-
-        if ($shift && $shift->isFulltimeCategory()) {
-            return round(1.0 + $overtimeCong, 2);
-        }
-
         $standardHours = $shift?->standardWorkHours() ?? 8.0;
+        $workedCong    = $workedHours / $standardHours;
 
-        return round(($workedHours / $standardHours) + $overtimeCong, 2);
+        return round($workedCong + $overtimeCong, 2);
     }
 
     /**
@@ -171,15 +241,28 @@ class AttendanceLog extends Model
     }
 
     /**
-     * Trả về Shift để tính công: dùng $shift truyền vào nếu có (đã eager-load, tránh lazy-load),
-     * nếu không thì lấy từ shiftSchedule->shift. Với ca linh hoạt (shiftSchedule->isFlexible()),
-     * shift_id luôn null nên dựng 1 Shift tạm (không lưu DB) từ các cột custom_* của lịch xếp ca,
-     * để tái dùng nguyên công thức tính công/giờ đã có trong Shift (overnight, break, tỷ lệ giờ/8h).
+     * Trả về Shift để tính công: dùng $shift truyền vào nếu có (đã eager-load, tránh lazy-load).
+     * Ưu tiên tiếp theo là snapshot giờ ca đã lưu ngay trên bản ghi này lúc chấm công (cột
+     * shift_start_time/shift_end_time/...) — vì shift_schedule_id dùng nullOnDelete(), ShiftSchedule
+     * gốc có thể đã bị xoá/sửa lại sau đó (VD xếp lại lịch tuần) khiến quan hệ shiftSchedule->shift
+     * không còn đúng hoặc null, làm sai lệch giờ công của dữ liệu lịch sử. Chỉ khi bản ghi cũ chưa
+     * có snapshot (tạo trước khi có cột này) mới rơi về shiftSchedule->shift/custom_* như cũ.
      */
     private function resolveShift(?Shift $shift): ?Shift
     {
         if ($shift) {
             return $shift;
+        }
+
+        if ($this->shift_start_time) {
+            return new Shift([
+                'start_time'          => $this->shift_start_time,
+                'end_time'            => $this->shift_end_time,
+                'break_minutes'       => $this->shift_break_minutes ?? 0,
+                'is_overnight'        => (bool) $this->shift_is_overnight,
+                'shift_type'          => $this->shift_type,
+                'standard_work_hours' => $this->shift_standard_work_hours,
+            ]);
         }
 
         $schedule = $this->shiftSchedule;

@@ -71,7 +71,10 @@ class ShiftSwapRequestsController extends Controller
             })->exists();
         abort_if($hasPendingConflict, 422, 'Một trong hai ca đang có yêu cầu đổi ca khác chờ xử lý.');
 
-        $count = ShiftSwapRequest::whereYear('created_at', now()->year)
+        // withTrashed() bắt buộc: nếu chỉ đếm bản ghi còn sống, xoá 1 yêu cầu ở giữa tháng sẽ làm
+        // số đếm bị lùi lại, sinh trùng "code" với yêu cầu chưa xoá (code có unique constraint).
+        $count = ShiftSwapRequest::withTrashed()
+            ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->count() + 1;
         $code = 'SWP-' . now()->format('Ym') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
@@ -166,18 +169,77 @@ class ShiftSwapRequestsController extends Controller
         return back()->with('success', 'Đã từ chối yêu cầu đổi ca.');
     }
 
+    /**
+     * Quy tắc xoá theo trạng thái:
+     * - Chờ duyệt: chính chủ tự huỷ, HOẶC người có delete-shift-swaps xoá.
+     * - Từ chối: người có delete-shift-swaps xoá (không có gì để đảo ngược).
+     * - Đã duyệt: CHỈ admin (delete-approved-requests) — xoá kèm HOÁN LỊCH TRỞ LẠI chủ cũ. Chặn nếu
+     *   2 ca không còn ở đúng trạng thái đã hoán (VD đã bị 1 đơn đổi ca/nghỉ khác thay đổi tiếp).
+     */
     public function destroy(ShiftSwapRequest $shiftSwapRequest)
     {
-        abort_unless(
-            $shiftSwapRequest->requesterEmployee?->user_id === auth()->id(),
-            403,
-            'Bạn chỉ có thể huỷ yêu cầu do chính mình tạo.'
-        );
-        abort_if($shiftSwapRequest->status !== 'pending', 403, 'Chỉ có thể huỷ yêu cầu đang chờ duyệt.');
+        $isOwner    = $shiftSwapRequest->requesterEmployee?->user_id === auth()->id();
+        $canPurge   = auth()->user()->can('delete-shift-swaps');
+        $canReverse = auth()->user()->can('delete-approved-requests');
+        $status     = $shiftSwapRequest->status;
 
-        $shiftSwapRequest->delete();
+        if ($status === 'approved') {
+            abort_unless($canReverse, 403, 'Chỉ admin được xoá yêu cầu đã duyệt (thao tác sẽ hoán lịch trở lại chủ cũ).');
+        } elseif ($status === 'pending') {
+            abort_unless($isOwner || $canPurge, 403, 'Bạn không có quyền xoá yêu cầu này.');
+        } else { // rejected
+            abort_unless($canPurge, 403, 'Bạn không có quyền xoá yêu cầu này.');
+        }
 
-        return back()->with('success', 'Đã huỷ yêu cầu đổi ca.');
+        DB::transaction(function () use ($shiftSwapRequest, $status) {
+            $swap = ShiftSwapRequest::lockForUpdate()->findOrFail($shiftSwapRequest->id);
+
+            if ($status === 'approved') {
+                $this->reverseSwap($swap);
+            }
+
+            $swap->delete();
+        });
+
+        $verb = $status === 'pending' && $isOwner && !$canPurge ? 'huỷ' : 'xoá';
+        activity()->causedBy(auth()->user())
+            ->performedOn($shiftSwapRequest)
+            ->inLog('shift_swap_request')
+            ->withProperties(['code' => $shiftSwapRequest->code, 'status_before' => $status, 'reversed' => $status === 'approved'])
+            ->log(ucfirst($verb) . " đổi ca {$shiftSwapRequest->code}" . ($status === 'approved' ? ' (đã hoán lịch trở lại)' : ''));
+
+        return back()->with('success', 'Đã ' . $verb . ' yêu cầu đổi ca'
+            . ($status === 'approved' ? ' và hoán lịch trở lại chủ cũ.' : '.'));
+    }
+
+    /**
+     * Hoán quyền sở hữu 2 dòng lịch trở lại chủ ban đầu (đảo ngược approve()). Chặn nếu 2 ca không
+     * còn ở đúng trạng thái đã hoán — nghĩa là đã có thao tác khác (đổi ca/nghỉ) tác động tiếp,
+     * hoán ngược lúc này sẽ sai chủ sở hữu.
+     */
+    private function reverseSwap(ShiftSwapRequest $swap): void
+    {
+        $ids = collect([$swap->requester_schedule_id, $swap->target_schedule_id])->sort()->values();
+        $schedules = ShiftSchedule::whereIn('id', $ids)->lockForUpdate()->get()->keyBy('id');
+
+        $reqSchedule = $schedules->get($swap->requester_schedule_id);
+        $tgtSchedule = $schedules->get($swap->target_schedule_id);
+
+        abort_if(!$reqSchedule || !$tgtSchedule, 422, 'Không thể hoán lịch trở lại: một trong hai ca không còn tồn tại.');
+
+        // Sau khi duyệt: requester_schedule thuộc target, target_schedule thuộc requester. Nếu không
+        // còn đúng như vậy nghĩa là đã bị thao tác khác thay đổi tiếp -> chặn để tránh hoán sai.
+        $stillSwapped = $reqSchedule->employee_id === $swap->target_employee_id
+            && $tgtSchedule->employee_id === $swap->requester_employee_id;
+
+        abort_unless($stillSwapped, 422, 'Không thể hoán lịch trở lại: 2 ca đã bị thay đổi bởi thao tác khác sau khi đổi. '
+            . 'Vui lòng xử lý thao tác đó trước, hoặc chỉnh lịch thủ công.');
+
+        $requesterEmployee = Employee::findOrFail($swap->requester_employee_id);
+        $targetEmployee    = Employee::findOrFail($swap->target_employee_id);
+
+        $reqSchedule->update(['employee_id' => $requesterEmployee->id, 'branch_id' => $requesterEmployee->branch_id]);
+        $tgtSchedule->update(['employee_id' => $targetEmployee->id, 'branch_id' => $targetEmployee->branch_id]);
     }
 
     /**
@@ -197,6 +259,12 @@ class ShiftSwapRequestsController extends Controller
         abort_if($tgtSchedule->employee_id !== $targetEmployeeId, 422, 'Ca này không còn thuộc về nhân viên được chọn.');
         abort_if($reqSchedule->status !== 'scheduled' || $tgtSchedule->status !== 'scheduled', 422, 'Một trong hai ca không còn hiệu lực (đã bị huỷ).');
         abort_if($reqSchedule->work_date->lt(today()) || $tgtSchedule->work_date->lt(today()), 422, 'Không thể đổi ca đã diễn ra trong quá khứ.');
+
+        // Ca đã bị điều chỉnh giờ do một đơn nghỉ theo giờ được duyệt (xem LeaveRequestsController::approve())
+        // gắn liền với ĐÚNG nhân viên đã được duyệt — đổi ca sẽ khiến người nhận ca thừa hưởng nhầm
+        // khung giờ đã điều chỉnh của người khác. Chặn hẳn thay vì âm thầm xoá/giữ sai.
+        abort_if($reqSchedule->adjusted_start_time || $reqSchedule->adjusted_end_time, 422, 'Ca này đã được điều chỉnh giờ do nghỉ phép theo giờ đã duyệt, không thể đổi ca.');
+        abort_if($tgtSchedule->adjusted_start_time || $tgtSchedule->adjusted_end_time, 422, 'Ca được chọn đã được điều chỉnh giờ do nghỉ phép theo giờ đã duyệt, không thể đổi ca.');
 
         // Lưu ý: một nhân viên có thể có NHIỀU ca khác nhau trong cùng 1 ngày (đa ca) — điều đó hợp lệ,
         // không phải xung đột. Chỉ chặn khi kết quả đổi ca khiến 1 người có 2 dòng TRÙNG shift_id trong

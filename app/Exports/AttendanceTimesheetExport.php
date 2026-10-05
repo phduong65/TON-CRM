@@ -2,14 +2,11 @@
 
 namespace App\Exports;
 
-use App\Services\AttendanceTimesheetBuilder;
+use App\Exports\Sheets\AttendanceTimesheetSheetExport;
 use Carbon\Carbon;
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
-class AttendanceTimesheetExport implements FromView, ShouldAutoSize, WithTitle
+class AttendanceTimesheetExport implements WithMultipleSheets
 {
     public function __construct(
         private readonly Carbon $from,
@@ -21,26 +18,31 @@ class AttendanceTimesheetExport implements FromView, ShouldAutoSize, WithTitle
     ) {
     }
 
-    public function view(): View
+    public function sheets(): array
     {
-        $data = (new AttendanceTimesheetBuilder())->build(
-            $this->from,
-            $this->to,
-            $this->branchId,
-            $this->teamId,
-            $this->employeeId,
-        );
-
-        return view('exports.attendance-timesheet', [
-            'days'             => $data['days'],
-            'rows'             => $data['rows'],
-            'standardWorkdays' => $data['standard_workdays'],
-            'rangeLabel'       => $this->rangeLabel,
-        ]);
-    }
-
-    public function title(): string
-    {
-        return 'Bảng chấm công';
+        return [
+            new AttendanceTimesheetSheetExport(
+                $this->from,
+                $this->to,
+                $this->rangeLabel,
+                $this->branchId,
+                $this->teamId,
+                $this->employeeId,
+                ['full_time', 'intern'],
+                'Nhân viên Full-time',
+                false
+            ),
+            new AttendanceTimesheetSheetExport(
+                $this->from,
+                $this->to,
+                $this->rangeLabel,
+                $this->branchId,
+                $this->teamId,
+                $this->employeeId,
+                'part_time',
+                'Nhân viên Part-time',
+                true
+            ),
+        ];
     }
 }

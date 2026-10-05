@@ -3,6 +3,14 @@
 @section('title', 'Import Đi Trễ / Về Sớm')
 @section('page-title', 'Import Chấm Công')
 @section('breadcrumb', 'Kỷ luật / Import Đi Trễ Về Sớm')
+@section('page-subtitle', 'Tải file chấm công để tự động tạo phiếu phạt theo ngưỡng đã cấu hình')
+
+@section('page-actions')
+    <a href="{{ route('penalties.index') }}" class="btn-secondary">
+        <i class="bi bi-arrow-left"></i>
+        <span>Danh sách phiếu phạt</span>
+    </a>
+@endsection
 
 @section('content')
 
@@ -34,17 +42,6 @@
     background-color: rgb(79 70 229 / .1) !important;
 }
 </style>
-
-{{-- Header --}}
-<div class="page-header ai1">
-    <div>
-        <p class="page-subtitle text-sm">Tải file chấm công để tự động tạo phiếu phạt theo ngưỡng đã cấu hình</p>
-    </div>
-    <a href="{{ route('penalties.index') }}" class="btn-danger">
-        <i class="bi bi-arrow-left"></i>
-        <span>Danh sách phiếu phạt</span>
-    </a>
-</div>
 
 
 @if ($errors->any())

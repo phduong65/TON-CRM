@@ -353,6 +353,7 @@ class LeaveRequestTest extends TestCase
     public function test_manager_with_delete_permission_can_purge_approved_request(): void
     {
         $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-leave-requests']));
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-approved-requests']));
 
         $leave = LeaveRequest::create([
             'code' => 'LR-TEST-0007', 'employee_id' => $this->staffEmployee->id,
@@ -365,6 +366,108 @@ class LeaveRequestTest extends TestCase
 
         $response->assertRedirect();
         $this->assertSoftDeleted('leave_requests', ['id' => $leave->id]);
+    }
+
+    /**
+     * Xoá đơn ĐÃ DUYỆT chỉ dành cho admin (delete-approved-requests). Người chỉ có
+     * delete-leave-requests (VD manager) KHÔNG được xoá đơn đã duyệt — bị 403.
+     */
+    public function test_delete_leave_permission_alone_cannot_delete_approved_request(): void
+    {
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-leave-requests']));
+
+        $leave = LeaveRequest::create([
+            'code' => 'LR-TEST-0007B', 'employee_id' => $this->staffEmployee->id,
+            'date_from' => now()->toDateString(), 'date_to' => now()->toDateString(),
+            'type' => 'annual', 'reason' => 'Nghỉ', 'status' => 'approved',
+            'reviewed_by' => $this->manager->id, 'reviewed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->manager)->delete(route('leave-requests.destroy', $leave));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('leave_requests', ['id' => $leave->id, 'deleted_at' => null]);
+    }
+
+    /**
+     * Xoá đơn nghỉ phép NĂM (có lương) ĐÃ DUYỆT phải: (1) hoàn số ngày phép về cho nhân viên
+     * (remainingDays trở lại như trước khi duyệt), (2) khôi phục ca đã bị huỷ lúc duyệt về "đã xếp".
+     */
+    public function test_deleting_approved_paid_leave_refunds_balance_and_restores_schedule(): void
+    {
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-leave-requests']));
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-approved-requests']));
+        $this->staffEmployee->update(['joined_at' => now()->subMonths(6)->toDateString()]);
+
+        $shift = Shift::create([
+            'code' => 'CA-FD', 'name' => 'Ca hành chính', 'shift_type' => 'fulltime',
+            'start_time' => '09:00', 'end_time' => '18:00', 'break_minutes' => 60,
+            'break_start_time' => '12:00', 'work_mode' => 'onsite',
+        ]);
+        // Ca nằm GIỮA khoảng nghỉ (date_from +3 … date_to +5) — mốc giữa để whereBetween khớp chắc
+        // chắn trên cả SQLite (test) lẫn MySQL (prod); xem test_manager_can_approve..._in_range.
+        $dateFrom = now()->addDays(3)->toDateString();
+        $dateTo   = now()->addDays(5)->toDateString();
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->staffEmployee->id, 'shift_id' => $shift->id,
+            'work_date' => now()->addDays(4)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+
+        $service  = app(AnnualLeaveService::class);
+        $entitled = $service->entitledDays($this->staffEmployee, now()->year);
+
+        $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from' => $dateFrom, 'date_to' => $dateTo,
+            'type' => 'annual', 'reason' => 'Nghỉ cả ngày',
+        ])->assertRedirect();
+
+        $leave = LeaveRequest::firstOrFail();
+        $requested = (float) $leave->daysCount(); // 3 ngày
+        $this->actingAs($this->manager)->post(route('leave-requests.approve', $leave))->assertRedirect();
+
+        // Sau khi duyệt: ca bị huỷ + trừ đúng số ngày đã xin.
+        $this->assertEquals('cancelled', $schedule->fresh()->status);
+        $this->assertEquals(round($entitled - $requested, 2), $service->remainingDays($this->staffEmployee));
+
+        // Xoá đơn đã duyệt: hoàn số ngày phép + ca trở lại "đã xếp".
+        $this->actingAs($this->manager)->delete(route('leave-requests.destroy', $leave))->assertRedirect();
+
+        $this->assertSoftDeleted('leave_requests', ['id' => $leave->id]);
+        $this->assertEquals($entitled, $service->remainingDays($this->staffEmployee));
+        $this->assertEquals('scheduled', $schedule->fresh()->status);
+    }
+
+    /**
+     * Khi 1 ca bị phủ bởi 2 đơn nghỉ đã duyệt (trùng ngày), xoá 1 đơn KHÔNG được "mở lại" ca —
+     * vì đơn còn lại vẫn yêu cầu nghỉ đúng ngày đó.
+     */
+    public function test_deleting_one_of_two_overlapping_approved_leaves_keeps_schedule_cancelled(): void
+    {
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-leave-requests']));
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-approved-requests']));
+
+        $shift = Shift::create([
+            'code' => 'CA-FD2', 'name' => 'Ca hành chính', 'shift_type' => 'fulltime',
+            'start_time' => '09:00', 'end_time' => '18:00', 'break_minutes' => 60,
+            'break_start_time' => '12:00', 'work_mode' => 'onsite',
+        ]);
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->staffEmployee->id, 'shift_id' => $shift->id,
+            'work_date' => now()->addDays(4)->toDateString(), 'status' => 'cancelled', 'assignment_type' => 'rotation',
+        ]);
+
+        $common = [
+            'employee_id' => $this->staffEmployee->id,
+            'date_from' => now()->addDays(3)->toDateString(), 'date_to' => now()->addDays(5)->toDateString(),
+            'type' => 'annual', 'status' => 'approved', 'reviewed_by' => $this->manager->id, 'reviewed_at' => now(),
+        ];
+        $leaveA = LeaveRequest::create($common + ['code' => 'LR-OVL-A', 'reason' => 'Nghỉ A']);
+        LeaveRequest::create($common + ['code' => 'LR-OVL-B', 'reason' => 'Nghỉ B']);
+
+        $this->actingAs($this->manager)->delete(route('leave-requests.destroy', $leaveA))->assertRedirect();
+
+        // Đơn B vẫn phủ ngày này -> ca giữ nguyên "cancelled".
+        $this->assertEquals('cancelled', $schedule->fresh()->status);
     }
 
     public function test_manager_without_delete_permission_cannot_purge_pending_request_of_others(): void
@@ -792,6 +895,283 @@ class LeaveRequestTest extends TestCase
         $response->assertRedirect();
         $schedule->refresh();
         // Nghỉ từ đầu ca -> chỉ ghi đè giờ bắt đầu, KHÔNG huỷ ca.
+        $this->assertEquals('scheduled', $schedule->status);
+        $this->assertEquals('12:00', $schedule->adjusted_start_time);
+        $this->assertNull($schedule->adjusted_end_time);
+    }
+
+    /**
+     * Nghỉ nửa ngày theo giờ cụ thể (partial_mode=custom_time) — dành riêng cho khối văn phòng
+     * (is_office=true, thường chỉ 1 ca/ngày nên không thể "chọn 1 trong N ca" như part-time).
+     * Khác legacy: đi qua đúng store() (không tạo thẳng model), chốt lại toàn bộ luồng validate +
+     * tính day_fraction theo tỉ lệ phút nghỉ / tổng phút cả ca (giống shiftSpanMinutes()).
+     */
+    public function test_office_employee_can_request_half_day_via_custom_time(): void
+    {
+        $schedule = $this->makeMorningShiftSchedule(); // Ca 9h-18h (540 phút), is_office=true
+
+        $response = $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from'          => $schedule->work_date->toDateString(),
+            'date_to'            => $schedule->work_date->toDateString(),
+            'type'               => 'annual',
+            'reason'             => 'Nghỉ sáng đi khám bệnh',
+            'is_partial_day'     => 1,
+            'partial_mode'       => 'custom_time',
+            'shift_schedule_id'  => $schedule->id,
+            'from_time'          => '09:00',
+            'to_time'            => '12:00',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseHas('leave_requests', [
+            'employee_id'       => $this->staffEmployee->id,
+            'is_partial_day'    => 1,
+            'shift_schedule_id' => $schedule->id,
+        ]);
+
+        $leave = LeaveRequest::where('employee_id', $this->staffEmployee->id)->firstOrFail();
+        $this->assertEquals('09:00', substr($leave->from_time, 0, 5));
+        $this->assertEquals('12:00', substr($leave->to_time, 0, 5));
+        // day_fraction theo GIỜ CÔNG thực: 180 phút nghỉ / 480 phút công (540 span − 60 nghỉ).
+        // Ca này CHƯA cấu hình giờ nghỉ cụ thể nên khung 09:00–12:00 không trùng khoảng nghỉ →
+        // 180/480 = 0.38 (làm tròn 2 chữ số).
+        $this->assertEquals(0.38, (float) $leave->day_fraction);
+        // Mode custom_time không dùng bảng phụ nhiều ca.
+        $this->assertCount(0, $leave->shiftSchedules);
+    }
+
+    /**
+     * Ca 09:00–18:00 CÓ cấu hình giờ nghỉ cụ thể 12:00 (60 phút) → nghỉ nửa buổi sáng đúng phải là
+     * 09:00–14:00 (3h trước nghỉ + 1h sau nghỉ = 4h công), day_fraction = 4h/8h = 0.5. Khoá lại
+     * việc trừ phần trùng giờ nghỉ (12:00–13:00) khi tính day_fraction theo giờ công.
+     */
+    public function test_office_half_day_with_configured_break_yields_exact_half(): void
+    {
+        $shift = Shift::create([
+            'code' => 'CA-HC-B', 'name' => 'Ca hành chính (nghỉ trưa 12h)',
+            'start_time' => '09:00', 'end_time' => '18:00',
+            'break_minutes' => 60, 'break_start_time' => '12:00', 'work_mode' => 'onsite',
+        ]);
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->staffEmployee->id, 'shift_id' => $shift->id,
+            'work_date' => now()->addDays(4)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+
+        // Điểm chia nửa ca theo giờ công thực.
+        $this->assertEquals('14:00', $shift->halfDaySplitTime());
+
+        $response = $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from'          => $schedule->work_date->toDateString(),
+            'date_to'            => $schedule->work_date->toDateString(),
+            'type'               => 'annual',
+            'reason'             => 'Nghỉ buổi sáng',
+            'is_partial_day'     => 1,
+            'partial_mode'       => 'custom_time',
+            'shift_schedule_id'  => $schedule->id,
+            'from_time'          => '09:00',
+            'to_time'            => '14:00',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors();
+
+        $leave = LeaveRequest::where('employee_id', $this->staffEmployee->id)->firstOrFail();
+        // 09:00–14:00 = 300 phút đồng hồ, trừ 60 phút nghỉ trùng (12:00–13:00) = 240 phút công.
+        // 240 / 480 phút công = 0.5.
+        $this->assertEquals(0.5, (float) $leave->day_fraction);
+    }
+
+    public function test_custom_time_half_day_rejected_for_non_office_employee(): void
+    {
+        $nonOfficeUser = User::factory()->create();
+        $nonOfficeUser->assignRole('staff');
+        $nonOfficeEmployee = Employee::create([
+            'code' => 'EMP-BAR', 'name' => 'NV Bar', 'user_id' => $nonOfficeUser->id,
+            'branch_id' => $this->staffEmployee->branch_id, 'is_active' => true,
+            'employment_type' => 'full_time', 'is_office' => false,
+        ]);
+        $shift = Shift::create(['code' => 'CA-BAR', 'name' => 'Ca Bar', 'start_time' => '18:00', 'end_time' => '23:00', 'work_mode' => 'onsite']);
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $nonOfficeEmployee->id, 'shift_id' => $shift->id,
+            'work_date' => now()->addDays(3)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+
+        $response = $this->actingAs($nonOfficeUser)->post(route('leave-requests.store'), [
+            'date_from'         => $schedule->work_date->toDateString(),
+            'date_to'           => $schedule->work_date->toDateString(),
+            'type'              => 'unpaid',
+            'reason'            => 'Thử nghỉ nửa ca bar',
+            'is_partial_day'    => 1,
+            'partial_mode'      => 'custom_time',
+            'shift_schedule_id' => $schedule->id,
+            'from_time'         => '18:00',
+            'to_time'           => '20:00',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('leave_requests', ['employee_id' => $nonOfficeEmployee->id]);
+    }
+
+    /**
+     * Ma trận 3 loại nhân viên với phép năm (isEligibleForAnnualLeave = full_time && is_office):
+     * PART-TIME không đủ điều kiện dù có thuộc khối văn phòng — bị chặn ở employment_type.
+     */
+    public function test_part_time_employee_cannot_request_annual_leave_even_if_office(): void
+    {
+        $this->staffEmployee->update(['employment_type' => 'part_time', 'is_office' => true]);
+
+        $response = $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from' => now()->addDays(3)->toDateString(),
+            'date_to'   => now()->addDays(4)->toDateString(),
+            'type'      => 'annual',
+            'reason'    => 'Part-time xin phép năm',
+        ]);
+
+        $response->assertSessionHasErrors('type');
+        $this->assertDatabaseMissing('leave_requests', ['employee_id' => $this->staffEmployee->id]);
+    }
+
+    /**
+     * PART-TIME vẫn xin nghỉ KHÔNG LƯƠNG (unpaid) cả ngày bình thường — không vướng eligibility.
+     */
+    public function test_part_time_employee_can_request_unpaid_leave(): void
+    {
+        $this->staffEmployee->update(['employment_type' => 'part_time', 'is_office' => false]);
+
+        $response = $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from' => now()->addDays(3)->toDateString(),
+            'date_to'   => now()->addDays(4)->toDateString(),
+            'type'      => 'unpaid',
+            'reason'    => 'Part-time nghỉ không lương',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('leave_requests', [
+            'employee_id' => $this->staffEmployee->id, 'type' => 'unpaid',
+        ]);
+    }
+
+    /**
+     * PART-TIME (không văn phòng) KHÔNG được nghỉ nửa ngày theo giờ (custom_time) — tính năng này
+     * chỉ dành cho khối văn phòng; part-time nghỉ theo "chọn ca cụ thể" (shifts mode) thay thế.
+     */
+    public function test_part_time_employee_cannot_use_custom_time_half_day(): void
+    {
+        $this->staffEmployee->update(['employment_type' => 'part_time', 'is_office' => false]);
+
+        $shift = Shift::create([
+            'code' => 'CA-PT-1', 'name' => 'Ca part-time', 'shift_type' => 'parttime',
+            'start_time' => '08:00', 'end_time' => '12:00', 'break_minutes' => 0, 'work_mode' => 'onsite',
+        ]);
+        $schedule = ShiftSchedule::create([
+            'employee_id' => $this->staffEmployee->id, 'shift_id' => $shift->id,
+            'work_date' => now()->addDays(3)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+
+        $response = $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from'         => $schedule->work_date->toDateString(),
+            'date_to'           => $schedule->work_date->toDateString(),
+            'type'              => 'unpaid',
+            'reason'            => 'Part-time nghỉ nửa ca',
+            'is_partial_day'    => 1,
+            'partial_mode'      => 'custom_time',
+            'shift_schedule_id' => $schedule->id,
+            'from_time'         => '08:00',
+            'to_time'           => '10:00',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('leave_requests', ['employee_id' => $this->staffEmployee->id]);
+    }
+
+    /**
+     * PART-TIME nghỉ 1 trong 2 ca cùng ngày qua "chọn ca cụ thể" (shifts mode) — trừ đúng tỉ lệ
+     * (ca sáng 4h / tổng 8h = 0.5), không đòi hỏi office, không dùng custom_time.
+     */
+    public function test_part_time_employee_partial_leave_via_shifts_mode_uses_correct_fraction(): void
+    {
+        $this->staffEmployee->update(['employment_type' => 'part_time', 'is_office' => false]);
+        [$morning, $afternoon] = $this->makeTwoShiftsSameDay();
+
+        $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from'          => $morning->work_date->toDateString(),
+            'date_to'            => $morning->work_date->toDateString(),
+            'type'               => 'unpaid',
+            'reason'             => 'Part-time nghỉ ca sáng',
+            'is_partial_day'     => 1,
+            'shift_schedule_ids' => [$morning->id],
+        ])->assertRedirect();
+
+        $leave = LeaveRequest::firstOrFail();
+        $this->assertEquals(0.5, (float) $leave->day_fraction);
+    }
+
+    public function test_custom_time_half_day_must_be_a_single_day(): void
+    {
+        $schedule = $this->makeMorningShiftSchedule();
+
+        $response = $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from'         => $schedule->work_date->toDateString(),
+            'date_to'           => $schedule->work_date->copy()->addDay()->toDateString(),
+            'type'              => 'unpaid',
+            'reason'            => 'Nghỉ nửa ngày nhưng lỡ chọn 2 ngày',
+            'is_partial_day'    => 1,
+            'partial_mode'      => 'custom_time',
+            'shift_schedule_id' => $schedule->id,
+            'from_time'         => '09:00',
+            'to_time'           => '12:00',
+        ]);
+
+        $response->assertSessionHasErrors('to_time');
+        $this->assertDatabaseMissing('leave_requests', ['employee_id' => $this->staffEmployee->id]);
+    }
+
+    public function test_custom_time_half_day_rejects_time_range_outside_shift(): void
+    {
+        $schedule = $this->makeMorningShiftSchedule(); // Ca 9h-18h
+
+        $response = $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from'         => $schedule->work_date->toDateString(),
+            'date_to'           => $schedule->work_date->toDateString(),
+            'type'              => 'unpaid',
+            'reason'            => 'Nghỉ giờ ngoài ca',
+            'is_partial_day'    => 1,
+            'partial_mode'      => 'custom_time',
+            'shift_schedule_id' => $schedule->id,
+            'from_time'         => '07:00', // trước giờ vào ca (9h)
+            'to_time'           => '12:00',
+        ]);
+
+        $response->assertSessionHasErrors('to_time');
+        $this->assertDatabaseMissing('leave_requests', ['employee_id' => $this->staffEmployee->id]);
+    }
+
+    /**
+     * Đi trọn luồng qua HTTP: tạo đơn (custom_time) rồi duyệt — xác nhận ca CHỈ bị điều chỉnh
+     * khung giờ còn lại (không huỷ hẳn), khác hẳn nghỉ theo ca cụ thể (huỷ nguyên ca).
+     */
+    public function test_full_flow_store_then_approve_half_day_office_leave_adjusts_window(): void
+    {
+        $schedule = $this->makeMorningShiftSchedule(); // Ca 9h-18h
+
+        $this->actingAs($this->staffUser)->post(route('leave-requests.store'), [
+            'date_from'         => $schedule->work_date->toDateString(),
+            'date_to'           => $schedule->work_date->toDateString(),
+            'type'              => 'annual',
+            'reason'            => 'Nghỉ sáng',
+            'is_partial_day'    => 1,
+            'partial_mode'      => 'custom_time',
+            'shift_schedule_id' => $schedule->id,
+            'from_time'         => '09:00',
+            'to_time'           => '12:00',
+        ]);
+
+        $leave = LeaveRequest::where('employee_id', $this->staffEmployee->id)->firstOrFail();
+        $response = $this->actingAs($this->manager)->post(route('leave-requests.approve', $leave));
+
+        $response->assertRedirect();
+        $schedule->refresh();
         $this->assertEquals('scheduled', $schedule->status);
         $this->assertEquals('12:00', $schedule->adjusted_start_time);
         $this->assertNull($schedule->adjusted_end_time);

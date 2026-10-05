@@ -294,4 +294,200 @@ class ShiftSwapRequestTest extends TestCase
         $response = $this->get(route('shift-swap-requests.index'));
         $response->assertRedirect(route('login'));
     }
+
+    public function test_cannot_offer_a_schedule_with_active_leave_adjustment(): void
+    {
+        // Ca A đã được điều chỉnh giờ do một đơn nghỉ theo giờ được duyệt (xem LeaveRequestsController)
+        // — không được đổi ca này, nếu không B sẽ thừa hưởng nhầm điều chỉnh của A.
+        $this->scheduleA->update(['adjusted_start_time' => '13:00']);
+
+        $response = $this->storeSwap($this->userA);
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('shift_swap_requests', ['requester_schedule_id' => $this->scheduleA->id]);
+    }
+
+    public function test_cannot_accept_a_target_schedule_with_active_leave_adjustment(): void
+    {
+        $this->scheduleB->update(['adjusted_end_time' => '12:00']);
+
+        $response = $this->storeSwap($this->userA);
+        $response->assertStatus(422);
+    }
+
+    public function test_approval_still_blocked_if_adjustment_appears_between_request_and_approval(): void
+    {
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+
+        // Giả lập: ca A được duyệt nghỉ theo giờ SAU khi đơn đổi ca đã được gửi nhưng TRƯỚC khi
+        // được duyệt — assertSwappable() phải re-check tại thời điểm approve(), không chỉ store().
+        $this->scheduleA->update(['adjusted_start_time' => '13:00']);
+
+        $response = $this->actingAs($this->manager)->post(route('shift-swap-requests.approve', $swap));
+        $response->assertStatus(422);
+        $this->assertEquals($this->employeeA->id, $this->scheduleA->fresh()->employee_id);
+    }
+
+    // ── Destroy (huỷ tự thân / xoá bởi quản lý) ────────────────────────────────
+
+    public function test_owner_can_cancel_own_pending_swap_request(): void
+    {
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+
+        $response = $this->actingAs($this->userA)->delete(route('shift-swap-requests.destroy', $swap));
+
+        $response->assertRedirect();
+        $this->assertSoftDeleted('shift_swap_requests', ['id' => $swap->id]);
+    }
+
+    public function test_owner_cannot_cancel_approved_swap_request_without_delete_permission(): void
+    {
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+        $this->actingAs($this->manager)->post(route('shift-swap-requests.approve', $swap))->assertRedirect();
+
+        $response = $this->actingAs($this->userA)->delete(route('shift-swap-requests.destroy', $swap->fresh()));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('shift_swap_requests', ['id' => $swap->id, 'deleted_at' => null]);
+    }
+
+    public function test_uninvolved_user_cannot_cancel_swap_request(): void
+    {
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+
+        $outsider = User::factory()->create();
+        $outsider->assignRole('staff');
+        Employee::create(['code' => 'EMP-C', 'name' => 'Lê Văn C', 'user_id' => $outsider->id, 'is_active' => true]);
+
+        $response = $this->actingAs($outsider)->delete(route('shift-swap-requests.destroy', $swap));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('shift_swap_requests', ['id' => $swap->id, 'deleted_at' => null]);
+    }
+
+    public function test_manager_with_delete_permission_can_purge_approved_swap_request(): void
+    {
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-shift-swaps']));
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-approved-requests']));
+
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+        $this->actingAs($this->manager)->post(route('shift-swap-requests.approve', $swap))->assertRedirect();
+
+        $response = $this->actingAs($this->manager)->delete(route('shift-swap-requests.destroy', $swap->fresh()));
+
+        $response->assertRedirect();
+        $this->assertSoftDeleted('shift_swap_requests', ['id' => $swap->id]);
+    }
+
+    public function test_manager_without_delete_permission_cannot_purge_approved_swap_request(): void
+    {
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+        $this->actingAs($this->manager)->post(route('shift-swap-requests.approve', $swap))->assertRedirect();
+
+        $response = $this->actingAs($this->manager)->delete(route('shift-swap-requests.destroy', $swap->fresh()));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('shift_swap_requests', ['id' => $swap->id, 'deleted_at' => null]);
+    }
+
+    /**
+     * Sinh code dựa trên count() bản ghi CÙNG THÁNG — nếu không dùng withTrashed(), xoá 1 yêu
+     * cầu ở giữa tháng làm số đếm lùi lại, yêu cầu mới tạo sẽ trùng "code" (unique constraint)
+     * với yêu cầu chưa xoá, gây crash 500 khi insert. Xem ShiftSwapRequestsController::store().
+     */
+    public function test_creating_request_after_soft_delete_does_not_collide_on_code(): void
+    {
+        // Mỗi swap cần 1 cặp lịch riêng (khác lịch của swap trước) vì đã có ràng buộc chặn
+        // tạo swap thứ 2 trên cùng 1 lịch đang có yêu cầu pending khác.
+        for ($i = 0; $i < 3; $i++) {
+            $reqSchedule = ShiftSchedule::create([
+                'employee_id' => $this->employeeA->id, 'shift_id' => $this->shift->id,
+                'work_date' => now()->addDays(10 + $i * 2)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+            ]);
+            $tgtSchedule = ShiftSchedule::create([
+                'employee_id' => $this->employeeB->id, 'shift_id' => $this->shift->id,
+                'work_date' => now()->addDays(11 + $i * 2)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+            ]);
+            $this->storeSwap($this->userA, ['requester_schedule_id' => $reqSchedule->id, 'target_schedule_id' => $tgtSchedule->id]);
+        }
+
+        ShiftSwapRequest::orderBy('id')->skip(1)->first()->delete(); // soft-delete yêu cầu thứ 2
+
+        $reqSchedule = ShiftSchedule::create([
+            'employee_id' => $this->employeeA->id, 'shift_id' => $this->shift->id,
+            'work_date' => now()->addDays(20)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+        $tgtSchedule = ShiftSchedule::create([
+            'employee_id' => $this->employeeB->id, 'shift_id' => $this->shift->id,
+            'work_date' => now()->addDays(21)->toDateString(), 'status' => 'scheduled', 'assignment_type' => 'rotation',
+        ]);
+        $response = $this->storeSwap($this->userA, ['requester_schedule_id' => $reqSchedule->id, 'target_schedule_id' => $tgtSchedule->id]);
+
+        $response->assertRedirect();
+        $response->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseCount('shift_swap_requests', 4);
+        $codes = ShiftSwapRequest::withTrashed()->pluck('code');
+        $this->assertEquals($codes->count(), $codes->unique()->count(), 'Code bị trùng giữa các bản ghi.');
+    }
+
+    public function test_deleting_approved_swap_reverts_schedule_ownership(): void
+    {
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-shift-swaps']));
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-approved-requests']));
+
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+        $this->actingAs($this->manager)->post(route('shift-swap-requests.approve', $swap))->assertRedirect();
+
+        // Sau duyệt: đã hoán chủ.
+        $this->assertEquals($this->employeeB->id, $this->scheduleA->fresh()->employee_id);
+        $this->assertEquals($this->employeeA->id, $this->scheduleB->fresh()->employee_id);
+
+        $this->actingAs($this->manager)->delete(route('shift-swap-requests.destroy', $swap))->assertRedirect();
+
+        // Xoá đơn đã duyệt: hoán lịch trở lại chủ cũ.
+        $this->assertSoftDeleted('shift_swap_requests', ['id' => $swap->id]);
+        $this->assertEquals($this->employeeA->id, $this->scheduleA->fresh()->employee_id);
+        $this->assertEquals($this->employeeB->id, $this->scheduleB->fresh()->employee_id);
+    }
+
+    public function test_delete_swap_permission_alone_cannot_delete_approved_swap(): void
+    {
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-shift-swaps']));
+
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+        $this->actingAs($this->manager)->post(route('shift-swap-requests.approve', $swap))->assertRedirect();
+
+        $response = $this->actingAs($this->manager)->delete(route('shift-swap-requests.destroy', $swap));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('shift_swap_requests', ['id' => $swap->id, 'deleted_at' => null]);
+    }
+
+    public function test_cannot_reverse_swap_when_a_schedule_was_moved_by_another_operation(): void
+    {
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-shift-swaps']));
+        $this->manager->givePermissionTo(Permission::firstOrCreate(['name' => 'delete-approved-requests']));
+
+        $this->storeSwap($this->userA);
+        $swap = ShiftSwapRequest::first();
+        $this->actingAs($this->manager)->post(route('shift-swap-requests.approve', $swap))->assertRedirect();
+
+        // Một thao tác khác đổi tiếp chủ của scheduleA (không còn ở trạng thái đã hoán) -> chặn đảo.
+        $otherUser = User::factory()->create();
+        $otherUser->assignRole('staff');
+        $otherEmployee = Employee::create(['code' => 'EMP-C', 'name' => 'Lê Văn C', 'user_id' => $otherUser->id, 'branch_id' => $this->employeeA->branch_id, 'is_active' => true]);
+        $this->scheduleA->update(['employee_id' => $otherEmployee->id]);
+
+        $response = $this->actingAs($this->manager)->delete(route('shift-swap-requests.destroy', $swap));
+
+        $response->assertStatus(422);
+        $this->assertDatabaseHas('shift_swap_requests', ['id' => $swap->id, 'deleted_at' => null]);
+    }
 }

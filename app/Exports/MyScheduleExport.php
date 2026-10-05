@@ -33,8 +33,14 @@ class MyScheduleExport implements FromView, ShouldAutoSize, WithTitle
 
         $attendanceLogs = AttendanceLog::where('employee_id', $this->employee->id)
             ->whereBetween('work_date', [$this->from->toDateString(), $this->to->toDateString()])
-            ->get()
-            ->keyBy(fn($log) => $log->work_date->toDateString());
+            ->get();
+
+        // Khớp lượt chấm công theo ĐÚNG ca (shift_schedule_id); log không gắn ca fallback theo ngày
+        // chỉ khi ngày đúng 1 ca — tránh mọi ca của ngày đa ca hiện chung 1 giờ vào/ra.
+        $logsByScheduleId = $attendanceLogs->whereNotNull('shift_schedule_id')->keyBy('shift_schedule_id');
+        $looseLogsByDate  = $attendanceLogs->whereNull('shift_schedule_id')
+            ->groupBy(fn($log) => $log->work_date->toDateString());
+        $schedulesByDate  = $schedules->groupBy(fn($s) => $s->work_date->toDateString());
 
         $leaveRequests = LeaveRequest::where('employee_id', $this->employee->id)
             ->where('status', 'approved')
@@ -46,13 +52,18 @@ class MyScheduleExport implements FromView, ShouldAutoSize, WithTitle
         $rows  = [];
 
         foreach ($schedules as $schedule) {
-            $shift = $schedule->shift;
+            // effectiveShift(): ca linh hoạt (shift_id null) dựng Shift tạm từ custom_*.
+            $shift = $schedule->effectiveShift();
             if (!$shift) {
                 continue;
             }
+            $shiftName = $schedule->shift?->name ?? 'Ca linh hoạt';
 
             $dateKey = $schedule->work_date->toDateString();
-            $log     = $attendanceLogs->get($dateKey);
+            $log     = $logsByScheduleId->get($schedule->id);
+            if (!$log && ($schedulesByDate->get($dateKey)?->count() === 1)) {
+                $log = $looseLogsByDate->get($dateKey)?->first();
+            }
 
             if ($log && $log->check_in_at && $log->check_out_at) {
                 $status = 'Đã hoàn thành';
@@ -67,7 +78,7 @@ class MyScheduleExport implements FromView, ShouldAutoSize, WithTitle
             $rows[] = [
                 'date'        => $schedule->work_date,
                 'type'        => 'Ca làm việc',
-                'label'       => $shift->name . ($shift->isWfh() ? ' (WFH)' : ''),
+                'label'       => $shiftName .($shift->isWfh() ? ' (WFH)' : ''),
                 'time'        => substr($shift->start_time, 0, 5) . '–' . substr($shift->end_time, 0, 5),
                 'status'      => $status,
                 'checkIn'     => $log?->check_in_at?->format('H:i:s'),

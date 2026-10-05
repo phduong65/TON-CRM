@@ -21,7 +21,19 @@ class AttendanceLocationsController extends Controller
         $locations = $query->paginate(15)->withQueryString();
         $branches  = Branch::where('is_active', true)->orderBy('name')->get();
 
-        return view('attendance-locations.index', compact('locations', 'branches'));
+        // Cảnh báo "IP văn phòng có thể đã đổi" — hiển thị ngay trên bảng, không cần đợi thông báo.
+        $ipMismatchWarnings = [];
+        foreach ($locations as $l) {
+            $count = $l->todayIpMismatchEmployeeCount();
+            if ($count > 0) {
+                $ipMismatchWarnings[$l->id] = [
+                    'count'    => $count,
+                    'last_ip'  => $l->latestIpMismatch()?->ip,
+                ];
+            }
+        }
+
+        return view('attendance-locations.index', compact('locations', 'branches', 'ipMismatchWarnings'));
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ShiftSchedule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreStaffRequestRequest extends FormRequest
@@ -22,13 +23,24 @@ class StoreStaffRequestRequest extends FormRequest
         return $user && ($user->can('approve-staff-requests') || $user->can('approve-leave-requests') || $user->can('approve-shift-swaps'));
     }
 
+    /**
+     * Loại yêu cầu áp dụng lên đúng 1 AttendanceLog của ngày đã chọn — cần biết rõ ca nào nếu nhân
+     * viên xếp đa ca cùng ngày (VD ca sáng + ca tối), nếu không sẽ áp nhầm sang ca khác (bug thực
+     * tế đã gặp: tha lỗi/sửa giờ ca sáng thay vì ca tối thực sự liên quan).
+     */
+    public const SHIFT_AWARE_TYPES = ['attendance_correction', 'late_early', 'time_change'];
+
     public function rules(): array
     {
         $rules = [
-            'type'        => 'required|in:attendance_correction,business_trip,late_early,time_change,overtime',
-            'employee_id' => ($this->userIsApprover() ? 'required' : 'nullable') . '|exists:employees,id',
-            'work_date'   => 'required|date',
-            'reason'      => 'required|string|max:1000',
+            'type'              => 'required|in:attendance_correction,business_trip,late_early,time_change,overtime',
+            'employee_id'       => ($this->userIsApprover() ? 'required' : 'nullable') . '|exists:employees,id',
+            'work_date'         => 'required|date',
+            'reason'            => 'required|string|max:1000',
+            // Kiểm tra chi tiết (thuộc đúng nhân viên/ngày, bắt buộc khi ngày đa ca) nằm ở
+            // withValidator() bên dưới — khai báo rule ở đây chỉ để field lọt vào validated()
+            // (Laravel bỏ field không có rule khai báo, dù có gửi lên trong request).
+            'shift_schedule_id' => 'nullable|integer',
         ];
 
         return array_merge($rules, match ($this->input('type')) {
@@ -71,6 +83,50 @@ class StoreStaffRequestRequest extends FormRequest
                 }],
             ],
             default => [],
+        });
+    }
+
+    /**
+     * Kiểm tra shift_schedule_id bằng after-hook thay vì rule khai báo trong rules() — field này
+     * thường không được gửi lên (ngày chỉ có 1 ca), và rule dạng Closure/khai báo thường KHÔNG được
+     * Laravel chạy khi field hoàn toàn vắng mặt trong request (không implicit), nên logic "bắt buộc
+     * chọn khi ngày đa ca" sẽ không bao giờ kích hoạt nếu đặt trong rules(). after() luôn chạy bất
+     * kể field có mặt hay không.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $type = $this->input('type');
+            if (!in_array($type, self::SHIFT_AWARE_TYPES, true)) {
+                return;
+            }
+
+            $employeeId = $this->input('employee_id') ?: $this->user()?->employee?->id;
+            $workDate   = $this->input('work_date');
+            if (!$employeeId || !$workDate) {
+                return;
+            }
+
+            $value = $this->input('shift_schedule_id');
+
+            if ($value) {
+                $belongsToEmployeeAndDate = ShiftSchedule::where('id', $value)
+                    ->where('employee_id', $employeeId)
+                    ->where('work_date', $workDate)
+                    ->exists();
+                if (!$belongsToEmployeeAndDate) {
+                    $validator->errors()->add('shift_schedule_id', 'Ca đã chọn không hợp lệ cho nhân viên/ngày này.');
+                }
+                return;
+            }
+
+            $scheduleCount = ShiftSchedule::where('employee_id', $employeeId)
+                ->where('work_date', $workDate)
+                ->where('status', 'scheduled')
+                ->count();
+            if ($scheduleCount > 1) {
+                $validator->errors()->add('shift_schedule_id', 'Nhân viên có nhiều ca vào ngày này — vui lòng chọn đúng ca cần áp dụng.');
+            }
         });
     }
 

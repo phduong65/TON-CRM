@@ -44,18 +44,27 @@
                     <input type="time" id="editShiftEnd" name="end_time" class="form-input" required>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="form-label">Nghỉ giữa ca (phút)</label>
                     <input type="number" id="editShiftBreak" name="break_minutes" class="form-input" min="0">
                 </div>
                 <div>
+                    <label class="form-label">Giờ bắt đầu nghỉ giữa ca</label>
+                    <input type="time" id="editShiftBreakStart" name="break_start_time" class="form-input">
+                    <p class="text-xs text-slate-400 mt-1">VD 12:00 — dùng để tách nghỉ nửa ngày theo giờ công thực.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
                     <label class="form-label">Cho phép trễ (phút)</label>
                     <input type="number" id="editShiftGraceLate" name="grace_late_minutes" class="form-input" min="0">
+                    <p class="text-xs text-slate-400 mt-1">Số phút đi trễ không bị tính kỷ luật.</p>
                 </div>
                 <div>
                     <label class="form-label">Cho phép sớm (phút)</label>
                     <input type="number" id="editShiftGraceEarly" name="grace_early_minutes" class="form-input" min="0">
+                    <p class="text-xs text-slate-400 mt-1">Số phút về sớm không bị tính kỷ luật.</p>
                 </div>
             </div>
             <div>

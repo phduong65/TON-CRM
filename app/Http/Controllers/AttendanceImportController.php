@@ -137,10 +137,7 @@ class AttendanceImportController extends Controller
                 $rule = AttendanceImportRule::with('violation')->find($ruleId);
                 if (!$rule || !$rule->violation) { $skipped++; continue; }
 
-                $count = Penalty::whereYear('created_at', now()->year)
-                    ->whereMonth('created_at', now()->month)
-                    ->count() + 1;
-                $code = 'PNL-' . now()->format('Ym') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+                $code = Penalty::nextCode();
 
                 $minutes   = $type === 'late' ? $row['late_minutes'] : $row['early_minutes'];
                 $typeLabel = $type === 'late' ? "Đi trễ {$minutes} phút" : "Về sớm {$minutes} phút";

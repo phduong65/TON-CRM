@@ -4,19 +4,20 @@
 @section('page-title', 'Điểm chấm công')
 @section('breadcrumb', 'Ca làm việc & Chấm công')
 
-@section('content')
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Toạ độ GPS + danh sách IP WiFi văn phòng dùng để xác thực chấm công</p>
-        </div>
-        @can('create-attendance-locations')
-        <button onclick="openCreateLocationModal()" class="btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm điểm chấm công</span>
-        </button>
-        @endcan
-    </div>
+@section('page-subtitle')
+    Toạ độ GPS + danh sách IP WiFi văn phòng dùng để xác thực chấm công
+@endsection
 
+@section('page-actions')
+    @can('create-attendance-locations')
+    <button onclick="openCreateLocationModal()" class="btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        <span>Thêm điểm chấm công</span>
+    </button>
+    @endcan
+@endsection
+
+@section('content')
     <div class="card">
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
             <form action="{{ route('attendance-locations.index') }}" method="GET" class="flex flex-wrap items-end gap-2">
@@ -29,7 +30,7 @@
                         @endforeach
                     </select>
                 </div>
-                <button type="submit" class="btn-primary h-9 px-4 text-sm gap-1.5">
+                <button type="submit" class="btn-secondary h-9 px-4 text-sm gap-1.5">
                     <i class="bi bi-funnel text-xs"></i> Lọc
                 </button>
                 @if(request('branch_id'))
@@ -61,7 +62,19 @@
                             <td class="table-td text-slate-500 text-sm">{{ $l->branch?->name ?? '—' }}</td>
                             <td class="table-td text-xs font-mono">{{ $l->latitude }}, {{ $l->longitude }}</td>
                             <td class="table-td text-center text-sm">{{ $l->radius_meters }}m</td>
-                            <td class="table-td text-xs font-mono text-slate-500">{{ implode(', ', $l->allowed_ips ?? []) ?: '—' }}</td>
+                            <td class="table-td text-xs font-mono text-slate-500">
+                                {{ implode(', ', $l->allowed_ips ?? []) ?: '—' }}
+                                @if($warning = ($ipMismatchWarnings[$l->id] ?? null))
+                                    <p class="mt-1 flex items-center gap-1 text-amber-600 dark:text-amber-400 font-sans"
+                                       title="Có thể IP văn phòng đã đổi — nhân viên có GPS đúng nhưng IP không khớp danh sách trên">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        {{ $warning['count'] }} NV chấm công lỗi IP hôm nay
+                                        @if($warning['last_ip'])
+                                            (IP gần nhất: {{ $warning['last_ip'] }})
+                                        @endif
+                                    </p>
+                                @endif
+                            </td>
                             <td class="table-td text-center">
                                 @if($l->is_active)
                                     <span class="badge badge-success">Hoạt động</span>

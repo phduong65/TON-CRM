@@ -4,19 +4,20 @@
 @section('page-title', 'Ca làm việc')
 @section('breadcrumb', 'Ca làm việc & Chấm công')
 
-@section('content')
-    <div class="page-header">
-        <div>
-            <p class="page-subtitle">Ca làm việc dùng để xếp ca cho nhân viên</p>
-        </div>
-        @can('create-shifts')
-        <button onclick="openModal('createShiftModal')" class="btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            <span>Thêm ca làm việc</span>
-        </button>
-        @endcan
-    </div>
+@section('page-subtitle')
+    Ca làm việc dùng để xếp ca cho nhân viên
+@endsection
 
+@section('page-actions')
+    @can('create-shifts')
+    <button onclick="openModal('createShiftModal')" class="btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        <span>Thêm ca làm việc</span>
+    </button>
+    @endcan
+@endsection
+
+@section('content')
     <div class="card">
         <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
             @php $shiftFilterActive = request()->anyFilled(['search', 'work_mode', 'shift_type', 'branch_id']); @endphp
@@ -55,7 +56,7 @@
                     </div>
                 </div>
                 <div class="flex items-end gap-2">
-                    <button type="submit" class="btn-primary h-9 px-4 text-sm gap-1.5">
+                    <button type="submit" class="btn-secondary h-9 px-4 text-sm gap-1.5">
                         <i class="bi bi-funnel text-xs"></i> Lọc
                     </button>
                     @if($shiftFilterActive)
@@ -73,7 +74,7 @@
                     <thead>
                         <tr>
                             <th class="table-th">Mã ca</th>
-                            <th class="table-th">Tên ca</th>
+                            <th class="table-th" data-mcard-title>Tên ca</th>
                             <th class="table-th">Chi nhánh</th>
                             <th class="table-th">Giờ làm</th>
                             <th class="table-th text-center">Giờ công chuẩn</th>
@@ -116,6 +117,7 @@
                                         "id"=>$s->id,"code"=>$s->code,"name"=>$s->name,"branch_id"=>$s->branch_id,
                                         "start_time"=>substr($s->start_time,0,5),"end_time"=>substr($s->end_time,0,5),
                                         "is_overnight"=>$s->is_overnight,"break_minutes"=>$s->break_minutes,
+                                        "break_start_time"=>$s->break_start_time ? substr($s->break_start_time,0,5) : "",
                                         "grace_late_minutes"=>$s->grace_late_minutes,"grace_early_minutes"=>$s->grace_early_minutes,
                                         "standard_work_hours"=>$s->standard_work_hours,"shift_type"=>$s->shift_type,
                                         "work_mode"=>$s->work_mode,"is_active"=>$s->is_active,
@@ -135,7 +137,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="table-td text-center py-8 text-slate-400">
+                            <td colspan="10" class="table-td text-center py-8 text-slate-400">
                                 <i class="bi bi-clock-history text-3xl mb-2 block opacity-40"></i>
                                 <p>Chưa có ca làm việc nào</p>
                             </td>
@@ -170,6 +172,7 @@ function openEditShiftModal(data) {
     document.getElementById('editShiftEnd').value = data.end_time ?? '';
     document.getElementById('editShiftOvernight').checked = !!data.is_overnight;
     document.getElementById('editShiftBreak').value = data.break_minutes ?? 0;
+    document.getElementById('editShiftBreakStart').value = data.break_start_time ?? '';
     document.getElementById('editShiftGraceLate').value = data.grace_late_minutes ?? 0;
     document.getElementById('editShiftGraceEarly').value = data.grace_early_minutes ?? 0;
     document.getElementById('editShiftStandardHours').value = data.standard_work_hours ?? 8;
@@ -197,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
         end_time: '{{ old("end_time") }}',
         is_overnight: {{ old("is_overnight") ? "true" : "false" }},
         break_minutes: '{{ old("break_minutes") }}',
+        break_start_time: '{{ old("break_start_time") }}',
         grace_late_minutes: '{{ old("grace_late_minutes") }}',
         grace_early_minutes: '{{ old("grace_early_minutes") }}',
         standard_work_hours: '{{ old("standard_work_hours") }}',
