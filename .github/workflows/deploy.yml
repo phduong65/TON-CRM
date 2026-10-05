@@ -1,0 +1,93 @@
+name: Deploy to cPanel
+
+# Mỗi lần push lên main: build assets → chạy test → đẩy public/build lên server → chạy deploy.sh
+# (backup DB, git pull, composer, migrate --force, cache) qua SSH.
+# Secrets cần có: SSH_HOST, SSH_PORT, SSH_USER, SSH_PRIVATE_KEY.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # public/build bị gitignore nhưng view dùng @vite nên cần có cả khi chạy test.
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: public/build
+          retention-days: 1
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3, gd, zip, bcmath, intl, fileinfo
+          coverage: none
+
+      - name: Cài phụ thuộc PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Chuẩn bị .env cho test
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Chạy test
+        run: php artisan test --no-coverage
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: public/build
+
+      - name: Cấu hình SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Đẩy script deploy và assets đã build
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          SSH="ssh -i ~/.ssh/deploy_key -p $SSH_PORT"
+          scp -i ~/.ssh/deploy_key -P "$SSH_PORT" deploy/deploy.sh "$SSH_USER@$SSH_HOST:deploy-hr.sh"
+          rsync -az --delete -e "$SSH" public/build/ "$SSH_USER@$SSH_HOST:hr.toncapital.net/source/public/build/"
+
+      - name: Chạy deploy trên server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" 'bash ~/deploy-hr.sh'
