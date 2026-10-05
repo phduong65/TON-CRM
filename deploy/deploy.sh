@@ -65,7 +65,7 @@ git reset --hard "origin/$BRANCH"
 echo "Code: $PREV -> $(git rev-parse --short HEAD)"
 
 # ── 3. Phụ thuộc PHP ────────────────────────────────────────────────────────
-"$PHP_BIN" "$(command -v composer)" install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+"$PHP_BIN" "$(command -v composer)" install --no-dev --optimize-autoloader --no-interaction --prefer-dist \n    --ignore-platform-req=ext-sodium  # hosting chưa bật sodium; chỉ cần cho JWT Ed25519, Firebase dùng RS256
 
 # ── 4. Migrate DB (bật maintenance trong lúc chạy, luôn bật lại site khi thoát) ──
 "$PHP_BIN" artisan down --retry=30 || true
