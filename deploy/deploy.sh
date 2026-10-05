@@ -11,6 +11,9 @@ KEEP_BACKUPS="${KEEP_BACKUPS:-7}"
 BRANCH="${BRANCH:-main}"
 LOG_DIR="$HOME/deploy-logs"
 
+# Bỏ qua SIGHUP: nếu kết nối SSH rớt giữa chừng thì deploy vẫn chạy tiếp, không để vendor/DB ở trạng thái dở dang.
+trap '' HUP
+
 mkdir -p "$LOG_DIR" "$BACKUP_DIR"
 
 # Toàn bộ thân script nằm trong main() để vừa in ra màn hình (Actions) vừa ghi log file
