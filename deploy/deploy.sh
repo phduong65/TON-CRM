@@ -12,8 +12,10 @@ BRANCH="${BRANCH:-main}"
 LOG_DIR="$HOME/deploy-logs"
 
 mkdir -p "$LOG_DIR" "$BACKUP_DIR"
-exec > >(tee -a "$LOG_DIR/deploy-$(date +%Y%m%d).log") 2>&1
 
+# Toàn bộ thân script nằm trong main() để vừa in ra màn hình (Actions) vừa ghi log file
+# mà không cần process substitution (shell của hosting không có /dev/fd).
+main() {
 echo "=== Deploy bắt đầu $(date '+%F %T') ==="
 
 # Chỉ cho 1 lần deploy chạy tại một thời điểm.
@@ -77,3 +79,7 @@ trap '"$PHP_BIN" artisan up || true; rm -f "$CNF"' EXIT
 "$PHP_BIN" artisan queue:restart || true
 
 echo "=== Deploy xong $(date '+%F %T') ==="
+}
+
+main 2>&1 | tee -a "$LOG_DIR/deploy-$(date +%Y%m%d).log"
+exit "${PIPESTATUS[0]}"
