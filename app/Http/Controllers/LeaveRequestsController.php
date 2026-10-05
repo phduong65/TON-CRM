@@ -7,6 +7,7 @@ use App\Models\LeaveRequest;
 use App\Models\Shift;
 use App\Models\ShiftSchedule;
 use App\Services\AnnualLeaveService;
+use App\Services\AttendanceAlertService;
 use App\Services\NotificationService;
 use App\Support\Concerns\PreventsDuplicateSubmission;
 use Carbon\Carbon;
@@ -26,7 +27,7 @@ class LeaveRequestsController extends Controller
             || auth()->user()->can('approve-staff-requests')
             || auth()->user()->can('approve-shift-swaps');
 
-        $query = LeaveRequest::with(['employee.branch', 'reviewer', 'shiftSchedules'])
+        $query = LeaveRequest::with(['employee.branch', 'employee.user', 'reviewer', 'shiftSchedules.shift', 'shiftSchedule.shift'])
             ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END")
             ->orderByDesc('created_at');
 
@@ -54,7 +55,11 @@ class LeaveRequestsController extends Controller
             ->filter(fn(Employee $e) => $e->isEligibleForAnnualLeave())
             ->mapWithKeys(fn(Employee $e) => [$e->id => $annualLeaveService->remainingDays($e)]);
 
-        return view('leave-requests.index', compact('leaveRequests', 'employees', 'allEmployees', 'isApprover', 'annualLeaveBalances'));
+        // employee_id => is_office — JS dùng để chỉ hiện lựa chọn "Nghỉ nửa ngày (theo giờ)" cho
+        // đúng khối văn phòng (nhà hàng/bếp/bar theo ca trọn, không có khái niệm nửa ca).
+        $officeFlags = $balanceScope->mapWithKeys(fn(Employee $e) => [$e->id => (bool) $e->is_office]);
+
+        return view('leave-requests.index', compact('leaveRequests', 'employees', 'allEmployees', 'isApprover', 'annualLeaveBalances', 'officeFlags'));
     }
 
     /**
@@ -104,6 +109,19 @@ class LeaveRequestsController extends Controller
             'date'        => $s->work_date->toDateString(),
             'label'       => $s->work_date->format('d/m/Y') . ' — ' . $shiftName,
             'shift_type'  => $shift?->shift_type ?? 'fulltime',
+            // Dùng để giới hạn khung giờ nghỉ nửa ngày (mode "custom_time") trong đúng khoảng ca —
+            // và gợi ý mặc định "Nghỉ buổi sáng"/"Nghỉ buổi chiều" ở phía client.
+            'start_time'  => $shift?->start_time ? substr($shift->start_time, 0, 5) : null,
+            'end_time'    => $shift?->end_time ? substr($shift->end_time, 0, 5) : null,
+            // Điểm chia nửa ca theo giờ công thực (đã tính giờ nghỉ) — nút "Nghỉ buổi sáng/chiều"
+            // dùng làm ranh giới thay vì hardcode 12:00/13:00.
+            'split_time'    => $shift?->halfDaySplitTime(),
+            'break_start'   => $shift?->break_start_time ? substr($shift->break_start_time, 0, 5) : null,
+            'break_minutes' => (int) ($shift?->break_minutes ?? 0),
+            // Ca này đã bị 1 đơn nghỉ theo giờ ĐÃ DUYỆT cắt bớt khung giờ (adjusted_*): start_time/
+            // end_time ở trên là khung giờ CÒN LẠI, không phải khung giờ ca gốc. Client hiển thị chú
+            // thích để người dùng không nhầm "ca 09:00–18:00 sao chỉ chọn được từ 12:00".
+            'leave_adjusted' => (bool) ($s->adjusted_start_time || $s->adjusted_end_time),
         ];
     }
 
@@ -121,8 +139,12 @@ class LeaveRequestsController extends Controller
             'date_to'              => 'required|date|after_or_equal:date_from',
             'type'                 => 'required|in:annual,unpaid',
             'is_partial_day'       => 'nullable|boolean',
+            'partial_mode'         => 'nullable|in:shifts,custom_time',
             'shift_schedule_ids'   => 'nullable|array',
             'shift_schedule_ids.*' => 'integer|exists:shift_schedules,id',
+            'shift_schedule_id'    => 'nullable|integer|exists:shift_schedules,id',
+            'from_time'            => 'nullable|date_format:H:i|required_if:partial_mode,custom_time',
+            'to_time'              => 'nullable|date_format:H:i|after:from_time|required_if:partial_mode,custom_time',
             'reason'               => 'required|string|max:1000',
             'handover_employee_id' => 'nullable|exists:employees,id',
             'handover_phone'       => 'nullable|string|max:20',
@@ -147,12 +169,73 @@ class LeaveRequestsController extends Controller
         }
 
         $isPartialDay = (bool) ($validated['is_partial_day'] ?? false);
+        $partialMode  = $validated['partial_mode'] ?? 'shifts';
         $dayFraction  = null;
         // scheduleId => tỉ lệ ngày phép của riêng ca đó — dùng lại khi gắn vào bảng phụ bên dưới,
         // tránh tính lại (mỗi ca cần 1 query tổng phút các ca cùng ngày, tính 2 lần sẽ lãng phí).
         $perScheduleFraction = [];
+        // Chỉ set khi partial_mode=custom_time — dữ liệu ghi thẳng vào leave_requests (không qua
+        // bảng phụ leave_request_shift_schedules, vì chỉ áp dụng đúng 1 ca/1 ngày).
+        $customTimeFields = null;
 
-        if ($isPartialDay) {
+        if ($isPartialDay && $partialMode === 'custom_time') {
+            // Nghỉ nửa ngày theo khung giờ cụ thể (VD 09:00–12:00) trong 1 ca duy nhất — chỉ áp
+            // dụng khối văn phòng (NV nhà hàng/bếp/bar làm trọn ca, không có khái niệm nửa ca).
+            // Khác với "shifts" mode (chọn nguyên nhiều ca, có thể nhiều ngày): mode này chỉ cho 1
+            // ca/1 ngày vì day_fraction dựa trên khung giờ thủ công, không nhân được lên nhiều ca.
+            abort_unless($employee->is_office, 422, 'Nghỉ nửa ngày theo giờ chỉ áp dụng cho nhân viên khối văn phòng.');
+
+            if ($validated['date_from'] !== $validated['date_to']) {
+                return back()->withInput()->withErrors([
+                    'to_time' => 'Nghỉ nửa ngày theo giờ chỉ áp dụng cho đúng 1 ngày — vui lòng đặt "Đến ngày" trùng "Ngày bắt đầu".',
+                ]);
+            }
+
+            $schedule = ShiftSchedule::with('shift')
+                ->where('id', $validated['shift_schedule_id'] ?? 0)
+                ->where('employee_id', $employee->id)
+                ->where('work_date', $validated['date_from'])
+                ->where('status', 'scheduled')
+                ->first();
+
+            if (!$schedule) {
+                return back()->withInput()->withErrors([
+                    'shift_schedule_id' => 'Vui lòng chọn ca cần nghỉ nửa ngày — không tìm thấy ca đã xếp phù hợp cho ngày này.',
+                ]);
+            }
+
+            $shift = $schedule->effectiveShift();
+
+            if (!$shift || !$shift->start_time || !$shift->end_time) {
+                return back()->withInput()->withErrors([
+                    'shift_schedule_id' => 'Không xác định được khung giờ của ca đã chọn — vui lòng liên hệ quản lý xếp ca trước.',
+                ]);
+            }
+
+            $fromTime   = $validated['from_time'];
+            $toTime     = $validated['to_time'];
+            $shiftStart = substr($shift->start_time, 0, 5);
+            $shiftEnd   = substr($shift->end_time, 0, 5);
+
+            if ($fromTime < $shiftStart || $toTime > $shiftEnd) {
+                return back()->withInput()->withErrors([
+                    'to_time' => "Khung giờ nghỉ phải nằm trong khung giờ ca đã chọn ({$shiftStart}–{$shiftEnd}).",
+                ]);
+            }
+
+            // day_fraction theo GIỜ CÔNG thực (đã trừ giờ nghỉ giữa ca), không theo giờ đồng hồ —
+            // nhờ vậy nghỉ nửa ngày ca 09:00–18:00 (nghỉ 12:00–13:00): sáng 09–14 và chiều 14–18
+            // đều ra đúng 0.5. Mẫu số là tổng giờ công thực của ca (durationMinutes = span - break).
+            $netWorkMinutes = $shift->durationMinutes();
+            $offWorkMinutes = $shift->workMinutesInWindow($fromTime, $toTime);
+            $dayFraction    = $netWorkMinutes > 0 ? round(min(1, $offWorkMinutes / $netWorkMinutes), 2) : 0.0;
+
+            $customTimeFields = [
+                'shift_schedule_id' => $schedule->id,
+                'from_time'         => $fromTime,
+                'to_time'           => $toTime,
+            ];
+        } elseif ($isPartialDay) {
             $scheduleIds = $validated['shift_schedule_ids'] ?? [];
 
             if (empty($scheduleIds)) {
@@ -241,6 +324,9 @@ class LeaveRequestsController extends Controller
             'date_to'              => $validated['date_to'],
             'is_partial_day'       => $isPartialDay,
             'day_fraction'         => $dayFraction,
+            'shift_schedule_id'    => $customTimeFields['shift_schedule_id'] ?? null,
+            'from_time'            => $customTimeFields['from_time'] ?? null,
+            'to_time'              => $customTimeFields['to_time'] ?? null,
             'type'                 => $validated['type'],
             'reason'               => $validated['reason'],
             'handover_employee_id' => $validated['handover_employee_id'] ?? null,
@@ -249,7 +335,7 @@ class LeaveRequestsController extends Controller
             'status'               => 'pending',
         ]);
 
-        if ($isPartialDay) {
+        if ($isPartialDay && $partialMode !== 'custom_time') {
             $leaveRequest->shiftSchedules()->attach(
                 collect($perScheduleFraction)->mapWithKeys(fn($fraction, $id) => [$id => ['day_fraction' => $fraction]])->all()
             );
@@ -325,6 +411,7 @@ class LeaveRequestsController extends Controller
             ->log("Duyệt đơn xin nghỉ {$leaveRequest->code}");
 
         app(NotificationService::class)->notifyLeaveRequestApproved($leaveRequest);
+        app(AttendanceAlertService::class)->excuseAlertsOnLeaveApproved($leaveRequest);
 
         return back()->with('success', 'Đã duyệt đơn xin nghỉ!');
     }
@@ -360,22 +447,135 @@ class LeaveRequestsController extends Controller
      */
     public function destroy(LeaveRequest $leaveRequest)
     {
-        $isOwner  = $leaveRequest->employee?->user_id === auth()->id();
-        $canPurge = auth()->user()->can('delete-leave-requests');
+        // Quy tắc xoá theo trạng thái (đồng bộ với StaffRequests/ShiftSwap):
+        // - Chờ duyệt: chính chủ tự huỷ, HOẶC người có delete-leave-requests xoá.
+        // - Từ chối: người có delete-leave-requests xoá (không có gì để đảo ngược).
+        // - Đã duyệt: CHỈ admin (delete-approved-requests) — xoá kèm hoàn phép + khôi phục lịch.
+        $isOwner    = $leaveRequest->employee?->user_id === auth()->id();
+        $canPurge   = auth()->user()->can('delete-leave-requests');
+        $canReverse = auth()->user()->can('delete-approved-requests');
+        $status     = $leaveRequest->status;
 
-        abort_unless($isOwner || $canPurge, 403, 'Bạn không có quyền xoá đơn này.');
-        abort_if(!$canPurge && $leaveRequest->status !== 'pending', 403, 'Chỉ có thể huỷ đơn đang chờ duyệt.');
+        if ($status === 'approved') {
+            abort_unless($canReverse, 403, 'Chỉ admin được xoá đơn đã duyệt (thao tác sẽ hoàn phép và khôi phục lịch).');
+        } elseif ($status === 'pending') {
+            abort_unless($isOwner || $canPurge, 403, 'Bạn không có quyền xoá đơn này.');
+        } else { // rejected
+            abort_unless($canPurge, 403, 'Bạn không có quyền xoá đơn này.');
+        }
 
         $leaveRequest->loadMissing('employee');
+
+        // Xoá đơn ĐÃ DUYỆT phải hoàn tác toàn bộ ảnh hưởng lúc duyệt: (1) khôi phục các ca đã bị
+        // huỷ/điều chỉnh khung giờ về "đã xếp" để lịch nhân viên trở lại như trước; (2) hoàn số ngày
+        // phép năm (nếu là nghỉ có lương). Quỹ phép năm tính realtime từ các đơn CHƯA xoá
+        // (AnnualLeaveService::usedDays), nên soft delete tự động trả lại số ngày — chỉ cần tính
+        // trước để thông báo cho người dùng.
+        $wasApproved  = $status === 'approved';
+        $refundedDays = ($wasApproved && $leaveRequest->type === 'annual') ? $leaveRequest->daysCount() : 0.0;
+
+        DB::transaction(function () use ($leaveRequest, $wasApproved) {
+            $locked = LeaveRequest::lockForUpdate()->findOrFail($leaveRequest->id);
+
+            if ($wasApproved) {
+                $this->restoreSchedulesForApprovedLeave($locked);
+            }
+
+            $locked->delete();
+        });
+
+        $verb = ($status === 'pending' && $isOwner && !$canPurge) ? 'huỷ' : 'xoá';
         activity()->causedBy(auth()->user())
             ->performedOn($leaveRequest)
             ->inLog('leave_request')
-            ->withProperties(['code' => $leaveRequest->code])
-            ->log(($canPurge && !$isOwner ? 'Xoá' : 'Huỷ') . " đơn xin nghỉ {$leaveRequest->code}");
+            ->withProperties(['code' => $leaveRequest->code, 'refunded_days' => $refundedDays])
+            ->log(ucfirst($verb) . " đơn xin nghỉ {$leaveRequest->code}"
+                . ($refundedDays > 0 ? " — hoàn {$this->formatDays($refundedDays)} ngày phép năm" : ''));
 
-        $leaveRequest->delete();
+        $message = 'Đã ' . $verb . ' đơn xin nghỉ.';
+        if ($refundedDays > 0) {
+            $message .= ' Đã hoàn ' . $this->formatDays($refundedDays) . ' ngày phép năm về cho '
+                . ($leaveRequest->employee?->name ?? 'nhân viên') . '.';
+        }
 
-        return back()->with('success', 'Đã ' . ($canPurge && !$isOwner ? 'xoá' : 'huỷ') . ' đơn xin nghỉ.');
+        return back()->with('success', $message);
+    }
+
+    /**
+     * Hoàn tác các ca bị ảnh hưởng khi duyệt đơn nghỉ (đảo ngược LeaveRequestsController::approve):
+     * ca bị huỷ → về "đã xếp", ca bị điều chỉnh khung giờ (nghỉ nửa ca) → xoá adjusted_start/end.
+     * Bỏ qua ca vẫn đang được phủ bởi 1 đơn nghỉ ĐÃ DUYỆT khác (tránh "mở lại" ca đúng ra phải
+     * tiếp tục nghỉ vì trùng ngày với đơn khác).
+     */
+    private function restoreSchedulesForApprovedLeave(LeaveRequest $leaveRequest): void
+    {
+        $restore = function (ShiftSchedule $schedule) use ($leaveRequest): void {
+            if ($this->scheduleCoveredByOtherApprovedLeave($schedule, $leaveRequest->id)) {
+                return;
+            }
+            $schedule->update([
+                'status'              => 'scheduled',
+                'adjusted_start_time' => null,
+                'adjusted_end_time'   => null,
+            ]);
+        };
+
+        // Nghỉ theo ca cụ thể (có thể nhiều ca/nhiều ngày) — khôi phục đúng các ca đã bị huỷ.
+        $pivotIds = $leaveRequest->shiftSchedules()->pluck('shift_schedules.id');
+        if ($pivotIds->isNotEmpty()) {
+            ShiftSchedule::whereIn('id', $pivotIds)->lockForUpdate()->get()->each($restore);
+            return;
+        }
+
+        // Nghỉ nửa ngày theo giờ / dữ liệu cũ (1 ca): ca có thể đã bị huỷ trọn ca hoặc chỉ bị điều
+        // chỉnh khung giờ (status vẫn "scheduled" + adjusted_*), nên xử lý không lọc theo status.
+        if ($leaveRequest->shift_schedule_id) {
+            $schedule = ShiftSchedule::lockForUpdate()->find($leaveRequest->shift_schedule_id);
+            if ($schedule) {
+                $restore($schedule);
+            }
+            return;
+        }
+
+        // Nghỉ cả ngày — khôi phục các ca trong khoảng ngày đã bị huỷ lúc duyệt.
+        ShiftSchedule::where('employee_id', $leaveRequest->employee_id)
+            ->whereBetween('work_date', [$leaveRequest->date_from, $leaveRequest->date_to])
+            ->where('status', 'cancelled')
+            ->lockForUpdate()
+            ->get()
+            ->each($restore);
+    }
+
+    /**
+     * Ca này có đang được phủ bởi 1 đơn nghỉ ĐÃ DUYỆT khác (≠ đơn đang xoá) không — dùng để không
+     * "mở lại" nhầm ca vốn vẫn phải tiếp tục nghỉ theo đơn khác.
+     */
+    private function scheduleCoveredByOtherApprovedLeave(ShiftSchedule $schedule, int $excludeLeaveId): bool
+    {
+        $base = LeaveRequest::where('status', 'approved')->where('id', '!=', $excludeLeaveId);
+
+        $viaShift = (clone $base)->where(function ($q) use ($schedule) {
+            $q->where('shift_schedule_id', $schedule->id)
+                ->orWhereHas('shiftSchedules', fn($qq) => $qq->where('shift_schedules.id', $schedule->id));
+        })->exists();
+
+        if ($viaShift) {
+            return true;
+        }
+
+        // Đơn nghỉ CẢ NGÀY khác phủ đúng ngày làm việc của ca này.
+        return (clone $base)
+            ->where('employee_id', $schedule->employee_id)
+            ->where('is_partial_day', false)
+            ->whereDate('date_from', '<=', $schedule->work_date->toDateString())
+            ->whereDate('date_to', '>=', $schedule->work_date->toDateString())
+            ->exists();
+    }
+
+    /** "0.5" / "1" / "1.5" — số ngày phép gọn (bỏ số 0 thừa) cho thông báo. */
+    private function formatDays(float $days): string
+    {
+        return rtrim(rtrim(number_format($days, 2, '.', ''), '0'), '.');
     }
 
     /**

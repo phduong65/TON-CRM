@@ -4,18 +4,24 @@
 @section('page-title', 'Xin nghỉ phép')
 @section('breadcrumb', 'Ca làm việc & Chấm công')
 
+@section('page-subtitle')
+    @if($isApprover)
+    Danh sách đơn xin nghỉ của toàn bộ nhân viên
+    @else
+    Đơn xin nghỉ phép của bạn
+    @endif
+@endsection
+
+@section('page-actions')
+    <button onclick="openModal('createLeaveModal')" class="btn-primary h-9 text-xs font-black gap-1.5">
+        <i class="bi bi-calendar-plus"></i>
+        <span>Xin nghỉ phép</span>
+    </button>
+@endsection
+
 @section('content')
-    <div class="page-header flex items-center justify-between gap-2 mb-4">
-        <div>
-            <p class="page-subtitle">
-                @if($isApprover)
-                    Danh sách đơn xin nghỉ của toàn bộ nhân viên
-                @else
-                    Đơn xin nghỉ phép của bạn
-                @endif
-            </p>
-        </div>
-        <div class="flex items-center gap-2">
+    <div class="card">
+        <x-table-toolbar :paginator="$leaveRequests">
             <button onclick="toggleFilterDrawer(true)" class="btn-secondary h-9 px-3 gap-1.5 text-xs font-black relative">
                 <i class="bi bi-funnel"></i>
                 <span>Bộ lọc</span>
@@ -23,14 +29,7 @@
                     <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-pcrm-600 rounded-full animate-pulse"></span>
                 @endif
             </button>
-            <button onclick="openModal('createLeaveModal')" class="btn-primary h-9 text-xs font-black gap-1.5">
-                <i class="bi bi-calendar-plus"></i>
-                <span>Xin nghỉ phép</span>
-            </button>
-        </div>
-    </div>
-
-    <div class="card">
+        </x-table-toolbar>
 
         <div class="card-body p-0">
             <div class="table-container border-0 rounded-none">
@@ -38,7 +37,7 @@
                     <thead>
                         <tr>
                             <th class="table-th">Mã đơn</th>
-                            @if($isApprover)<th class="table-th">Nhân viên</th>@endif
+                            @if($isApprover)<th class="table-th" data-mcard-title>Nhân viên</th>@endif
                             <th class="table-th">Loại</th>
                             <th class="table-th">Thời gian nghỉ</th>
                             <th class="table-th">Lý do</th>
@@ -52,18 +51,32 @@
                             <td class="table-td font-mono text-xs">{{ $lr->code }}</td>
                             @if($isApprover)
                             <td class="table-td">
-                                <p class="font-medium">{{ $lr->employee?->name ?? '—' }}</p>
-                                <p class="text-xs text-slate-400">{{ $lr->employee?->branch?->name ?? '—' }}</p>
+                                <div class="flex items-center gap-2.5">
+                                    <x-employee-avatar :employee="$lr->employee" size="w-8 h-8" />
+                                    <div class="min-w-0">
+                                        <p class="font-medium">{{ $lr->employee?->name ?? '—' }}</p>
+                                        <p class="text-xs text-slate-400">{{ $lr->employee?->branch?->name ?? '—' }}</p>
+                                    </div>
+                                </div>
                             </td>
                             @endif
                             <td class="table-td text-sm">{{ $lr->typeLabel() }}</td>
                             <td class="table-td text-sm">
                                 {{ $lr->date_from->format('d/m/Y') }} – {{ $lr->date_to->format('d/m/Y') }}
-                                <span class="text-slate-400">({{ $lr->daysCount() }} ngày)</span>
+                                <span class="text-slate-400 whitespace-nowrap">({{ $lr->daysCount() }} ngày)</span>
                                 @if($lr->is_partial_day)
                                     <span class="badge badge-neutral ml-1">
                                         <i class="bi bi-clock-history"></i> {{ $lr->partialDayLabel() }}
                                     </span>
+                                    <ul class="mt-1.5 space-y-0.5">
+                                        @foreach($lr->selectedShifts() as $shiftItem)
+                                            <li class="text-xs text-slate-600 dark:text-slate-300">
+                                                <span class="font-semibold">{{ $shiftItem['name'] }}</span>
+                                                @if($shiftItem['time'])<span class="tabular-nums"> · {{ $shiftItem['time'] }}</span>@endif
+                                                <span class="text-slate-400 tabular-nums"> · {{ $shiftItem['date'] }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
                                 @endif
                             </td>
                             <td class="table-td text-sm max-w-xs truncate" title="{{ $lr->reason }}">{{ $lr->reason }}</td>
@@ -93,13 +106,20 @@
                                             {{ $lr->reviewer?->name ? 'bởi ' . $lr->reviewer->name : '—' }}
                                         </span>
                                     @endif
-                                    {{-- Huỷ (chính chủ, pending) hoặc Xoá (quản lý có quyền delete-leave-requests, mọi trạng thái) --}}
+                                    {{-- Huỷ (chính chủ, pending) / Xoá từ chối (delete-leave-requests) / Xoá đã duyệt kèm
+                                         hoàn phép+khôi phục lịch (CHỈ admin: delete-approved-requests) --}}
                                     @php($canPurgeLeave = auth()->user()->can('delete-leave-requests'))
-                                    @if(($lr->status === 'pending' && $lr->employee?->user_id === auth()->id()) || $canPurgeLeave)
+                                    @php($isOwnerLeave = $lr->employee?->user_id === auth()->id())
+                                    @php($canDeleteLeave = match($lr->status) {
+                                        'pending'  => $isOwnerLeave || $canPurgeLeave,
+                                        'approved' => auth()->user()->can('delete-approved-requests'),
+                                        default    => $canPurgeLeave,
+                                    })
+                                    @if($canDeleteLeave)
                                     <form action="{{ route('leave-requests.destroy', $lr) }}" method="POST" class="inline"
-                                          onsubmit="return confirm('{{ $canPurgeLeave && $lr->status !== 'pending' ? 'Xoá hẳn đơn này? Hành động không thể hoàn tác.' : 'Huỷ đơn xin nghỉ này?' }}')">
+                                          onsubmit="return confirm('{{ $lr->status === 'approved' ? 'Xoá đơn ĐÃ DUYỆT? Hệ thống sẽ hoàn phép năm (nếu có) và khôi phục lịch đã huỷ.' : ($lr->status === 'rejected' ? 'Xoá hẳn đơn này?' : 'Huỷ đơn xin nghỉ này?') }}')">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="btn-ghost btn-sm text-slate-500" title="{{ $canPurgeLeave && $lr->status !== 'pending' ? 'Xoá đơn' : 'Huỷ đơn' }}">
+                                        <button type="submit" class="btn-ghost btn-sm text-slate-500" title="{{ $lr->status === 'pending' && $isOwnerLeave && !$canPurgeLeave ? 'Huỷ đơn' : 'Xoá đơn' }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -173,27 +193,60 @@
                 @error('type') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="createLeavePartialToggle" name="is_partial_day" value="1"
-                       class="rounded border-slate-300 text-pcrm-600 focus:ring-pcrm-500"
-                       @checked(old('is_partial_day'))>
-                <span class="text-sm text-slate-600 dark:text-slate-300">Chỉ nghỉ một số ca cụ thể (không nghỉ trọn khoảng ngày đã chọn)</span>
-            </label>
-            @error('is_partial_day') <p class="form-error">{{ $message }}</p> @enderror
+            <input type="hidden" id="createLeavePartialToggle" name="is_partial_day" value="{{ old('is_partial_day', 0) }}">
 
-            <div id="createLeaveShiftPickerWrap" class="hidden">
-                <label class="form-label">Chọn ca cần nghỉ <span class="text-red-500">*</span></label>
-                <div id="createLeaveShiftChips" class="hidden flex flex-wrap gap-1.5 mb-1.5"></div>
-                <div class="relative">
-                    <input type="text" id="createLeaveShiftSearch" class="form-input" autocomplete="off"
-                           placeholder="Gõ để tìm ca theo ngày/tên ca, hoặc bấm để xem danh sách...">
-                    <div id="createLeaveShiftDropdown" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg divide-y divide-slate-100 dark:divide-slate-700"></div>
+            <div id="createLeavePartialWrap" class="hidden space-y-3">
+                <div id="createLeavePartialModeGroup" class="flex items-center gap-4 text-sm">
+                    <label class="flex items-center gap-1.5 cursor-pointer">
+                        <input type="radio" name="partial_mode" value="shifts" id="createLeaveModeShifts"
+                               class="border-slate-300 text-pcrm-600 focus:ring-pcrm-500"
+                               @checked(old('partial_mode', 'shifts') === 'shifts')>
+                        <span id="createLeaveModeShiftsLabel">Nghỉ theo ca cụ thể</span>
+                    </label>
+                    <label id="createLeaveModeCustomLabel" class="hidden flex items-center gap-1.5 cursor-pointer">
+                        <input type="radio" name="partial_mode" value="custom_time" id="createLeaveModeCustom"
+                               class="border-slate-300 text-pcrm-600 focus:ring-pcrm-500"
+                               @checked(old('partial_mode') === 'custom_time')>
+                        <span>Nghỉ nửa ngày (theo giờ)</span>
+                    </label>
                 </div>
-                <div id="createLeaveShiftHiddenInputs"></div>
-                <p id="createLeaveNoShiftHint" class="hidden mt-1.5 text-xs text-amber-600 dark:text-amber-400">
-                    <i class="bi bi-exclamation-triangle-fill mr-1"></i>Không tìm thấy ca đã xếp cho nhân viên này trong khoảng ngày đã chọn — vui lòng liên hệ quản lý xếp ca trước, hoặc chọn "Nghỉ cả ngày" thay vì "Chỉ nghỉ một số ca cụ thể".
-                </p>
-                @error('shift_schedule_ids') <p class="form-error">{{ $message }}</p> @enderror
+
+                <div id="createLeaveShiftPickerWrap">
+                    <label class="form-label">Chọn ca cần nghỉ <span class="text-red-500">*</span></label>
+                    <select id="createLeaveShiftSelect" name="shift_schedule_ids[]" multiple></select>
+                    <p id="createLeaveNoShiftHint" class="hidden mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                        <i class="bi bi-exclamation-triangle-fill mr-1"></i>Không tìm thấy ca đã xếp cho nhân viên này trong khoảng ngày đã chọn — vui lòng liên hệ quản lý xếp ca trước, hoặc chọn "Nghỉ cả ngày" thay vì "Chỉ nghỉ một phần".
+                    </p>
+                    @error('shift_schedule_ids') <p class="form-error">{{ $message }}</p> @enderror
+                </div>
+
+                <div id="createLeaveCustomTimeWrap" class="hidden space-y-2">
+                    <div>
+                        <label class="form-label">Ca cần nghỉ nửa ngày <span class="text-red-500">*</span></label>
+                        <select id="createLeaveCustomShiftSelect" name="shift_schedule_id"></select>
+                        @error('shift_schedule_id') <p class="form-error">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="createLeaveCustomMorningBtn" class="btn-secondary text-xs px-2.5 py-1.5">Nghỉ buổi sáng</button>
+                        <button type="button" id="createLeaveCustomAfternoonBtn" class="btn-secondary text-xs px-2.5 py-1.5">Nghỉ buổi chiều</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="form-label">Từ giờ <span class="text-red-500">*</span></label>
+                            <input type="time" id="createLeaveFromTime" name="from_time" class="form-input" value="{{ old('from_time') }}">
+                            @error('from_time') <p class="form-error">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="form-label">Đến giờ <span class="text-red-500">*</span></label>
+                            <input type="time" id="createLeaveToTime" name="to_time" class="form-input" value="{{ old('to_time') }}">
+                            @error('to_time') <p class="form-error">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                    <div id="createLeaveDurationInfo" class="hidden mt-1 rounded-lg bg-slate-50 dark:bg-slate-800/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300"></div>
+                    <p id="createLeaveCustomShiftHint" class="hidden mt-1 text-xs text-amber-600 dark:text-amber-400">
+                        <i class="bi bi-exclamation-triangle-fill mr-1"></i>Không tìm thấy ca đã xếp cho nhân viên này vào đúng ngày đã chọn.
+                    </p>
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
@@ -219,6 +272,7 @@
                 <button type="submit" class="btn-primary"><i class="bi bi-send"></i> Gửi đơn</button>
             </div>
             <script type="application/json" id="createLeaveBalanceData">@json($annualLeaveBalances)</script>
+            <script type="application/json" id="createLeaveOfficeData">@json($officeFlags)</script>
         </form>
     </div>
 </div>
@@ -294,33 +348,87 @@ function openRejectLeaveModal(id, code) {
 }
 
 // Chọn nhiều ca cụ thể (có thể thuộc nhiều ngày khác nhau trong khoảng date_from-date_to) —
-// gọi AJAX lấy toàn bộ ca đã xếp trong khoảng ngày mỗi khi đổi ngày/nhân viên, người dùng gõ tìm
-// + bấm chọn từng ca vào danh sách "chip" bên dưới. Không giới hạn theo cửa sổ ngày cố định.
-let createLeaveShiftOptions = [];   // [{id, label, shift_type, date}] — toàn bộ ca trong khoảng ngày hiện tại
-let createLeaveSelectedIds  = [];   // id các ca đã chọn, theo thứ tự chọn
+// gọi AJAX lấy toàn bộ ca đã xếp trong khoảng ngày mỗi khi đổi ngày/nhân viên, đổ vào 1 Tom Select
+// đa lựa chọn (search sẵn có, không cần tự viết dropdown/chip). Không giới hạn theo cửa sổ ngày cố định.
+let createLeaveShiftOptions = [];   // [{id, label, shift_type, date, start_time, end_time}] — toàn bộ ca trong khoảng ngày hiện tại
+let createLeaveShiftTS = null;       // Tom Select — chọn nhiều ca cụ thể (mode "shifts")
+let createLeaveCustomShiftTS = null; // Tom Select — chọn đúng 1 ca (mode "custom_time")
 let createLeaveShiftsRequestId = 0;
 const createLeaveOldSelectedIds = @json(old('shift_schedule_ids', []));
+const createLeaveOldShiftScheduleId = @json(old('shift_schedule_id'));
+const createLeaveOfficeFlags = JSON.parse(document.getElementById('createLeaveOfficeData').textContent || '{}');
 
-function createLeaveSelectedSet() {
-    return new Set(createLeaveSelectedIds.map(String));
+function initCreateLeaveTomSelects() {
+    if (typeof TomSelect === 'undefined' || createLeaveShiftTS) return;
+
+    createLeaveShiftTS = new TomSelect('#createLeaveShiftSelect', {
+        plugins: ['remove_button'],
+        placeholder: 'Gõ để tìm ca theo ngày/tên ca, hoặc bấm để xem danh sách...',
+        maxItems: null,
+        maxOptions: null,
+        render: {
+            option: function (data, escape) {
+                return '<div>' + escape(data.text)
+                    + (data.shift_type === 'parttime' ? ' <span class="badge badge-neutral text-[10px]">part-time</span>' : '')
+                    + '</div>';
+            },
+        },
+        onChange: function () { refreshCreateLeaveBalanceNote(); },
+    });
+
+    createLeaveCustomShiftTS = new TomSelect('#createLeaveCustomShiftSelect', {
+        maxItems: 1,
+        placeholder: '— Chọn ca —',
+        onChange: applyCreateLeaveCustomShiftBounds,
+    });
+}
+
+// Nhân viên đang được chọn trên form (approver chọn qua combobox, nhân viên thường luôn là
+// chính mình) — dùng chung ở nhiều nơi: gọi AJAX lấy ca, xác định có phải khối văn phòng không.
+function getCreateLeaveEmployeeId() {
+    const form = document.getElementById('createLeaveForm');
+    if (!form) return null;
+    const empHidden = form.querySelector('[name="employee_id"]');
+    return (empHidden ? empHidden.value : form.dataset.ownEmployeeId) || null;
+}
+
+// Nạp lại toàn bộ option cho Tom Select đa lựa chọn — giữ lại các lựa chọn cũ nếu ca đó vẫn còn
+// hợp lệ trong danh sách mới (VD đổi date_to xa hơn không làm mất lựa chọn đã có ở date_from).
+function populateCreateLeaveShiftTS(options) {
+    if (!createLeaveShiftTS) return;
+    const previousValues = createLeaveShiftTS.getValue(); // mảng string
+    createLeaveShiftTS.clear(true);
+    createLeaveShiftTS.clearOptions();
+    options.forEach(function (o) {
+        createLeaveShiftTS.addOption({ value: String(o.id), text: o.label, shift_type: o.shift_type });
+    });
+    createLeaveShiftTS.refreshOptions(false);
+
+    const validIds = options.map(function (o) { return String(o.id); });
+    let restore = previousValues.filter(function (v) { return validIds.includes(v); });
+    // Khôi phục lựa chọn cũ khi form mở lại do lỗi validate (chỉ 1 lần, ngay sau khi có data).
+    if (createLeaveOldSelectedIds.length && restore.length === 0 && previousValues.length === 0) {
+        restore = createLeaveOldSelectedIds.map(String).filter(function (v) { return validIds.includes(v); });
+        createLeaveOldSelectedIds.length = 0;
+    }
+    createLeaveShiftTS.setValue(restore, true);
 }
 
 function refreshCreateLeaveShifts() {
     const form = document.getElementById('createLeaveForm');
     if (!form) return;
     const hint = document.getElementById('createLeaveNoShiftHint');
-    const empHidden = form.querySelector('#createLeaveEmployeeField .emp-combobox-value');
-    const employeeId = empHidden ? empHidden.value : form.dataset.ownEmployeeId;
+    const employeeId = getCreateLeaveEmployeeId();
     const dateFrom = form.querySelector('[name="date_from"]').value;
     const dateTo = form.querySelector('[name="date_to"]').value || dateFrom;
-    const isPartial = document.getElementById('createLeavePartialToggle').checked;
 
     createLeaveShiftOptions = [];
-    if (!createLeaveOldSelectedIds.length) createLeaveSelectedIds = [];
-    renderCreateLeaveShiftChips();
-    renderCreateLeaveShiftDropdown('');
+    populateCreateLeaveShiftTS([]);
+    renderCreateLeaveCustomShiftOptions();
 
-    if (!isPartial || !employeeId || !dateFrom || !dateTo) {
+    if (!employeeId || !dateFrom || !dateTo) {
+        document.getElementById('createLeavePartialToggle').value = "0";
+        document.getElementById('createLeavePartialWrap').classList.add('hidden');
         if (hint) hint.classList.add('hidden');
         return;
     }
@@ -334,85 +442,209 @@ function refreshCreateLeaveShifts() {
         .then(function (data) {
             if (requestId !== createLeaveShiftsRequestId) return; // trả lời trễ, đã có yêu cầu mới hơn
             createLeaveShiftOptions = data.options || [];
-            // Khôi phục lựa chọn cũ khi form mở lại do lỗi validate (chỉ 1 lần, ngay sau khi có data).
-            if (createLeaveOldSelectedIds.length && createLeaveSelectedIds.length === 0) {
-                const availableIds = createLeaveShiftOptions.map(function (o) { return o.id; });
-                createLeaveSelectedIds = createLeaveOldSelectedIds.map(Number).filter(function (id) {
-                    return availableIds.includes(id);
-                });
-                createLeaveOldSelectedIds.length = 0;
+            
+            const hasShifts = createLeaveShiftOptions.length > 0;
+            document.getElementById('createLeavePartialToggle').value = hasShifts ? "1" : "0";
+            document.getElementById('createLeavePartialWrap').classList.toggle('hidden', !hasShifts);
+
+            if (hint) hint.classList.toggle('hidden', hasShifts);
+
+            if (hasShifts) {
+                populateCreateLeaveShiftTS(createLeaveShiftOptions);
+                renderCreateLeaveCustomShiftOptions();
+                syncCreateLeavePartialModeVisibility();
             }
-            if (hint) hint.classList.toggle('hidden', createLeaveShiftOptions.length > 0);
-            renderCreateLeaveShiftChips();
-            renderCreateLeaveShiftDropdown(document.getElementById('createLeaveShiftSearch').value);
         })
         .catch(function () {
             if (requestId !== createLeaveShiftsRequestId) return;
         });
 }
 
-function renderCreateLeaveShiftChips() {
-    const chipsWrap = document.getElementById('createLeaveShiftChips');
-    const hiddenWrap = document.getElementById('createLeaveShiftHiddenInputs');
-    const selected = createLeaveSelectedSet();
-    const chosen = createLeaveShiftOptions.filter(function (o) { return selected.has(String(o.id)); });
+// Đổ danh sách ca (cùng nguồn dữ liệu AJAX với picker "theo ca cụ thể") vào Tom Select chọn 1 ca
+// duy nhất cho mode "Nghỉ nửa ngày (theo giờ)" — chỉ nhận ca đúng ngày date_from (mode này luôn
+// giới hạn 1 ngày, xem validate ở server).
+function renderCreateLeaveCustomShiftOptions() {
+    if (!createLeaveCustomShiftTS) return;
+    const hint = document.getElementById('createLeaveCustomShiftHint');
+    const form = document.getElementById('createLeaveForm');
+    const dateFrom = form.querySelector('[name="date_from"]').value;
+    const options = createLeaveShiftOptions.filter(function (o) { return o.date === dateFrom; });
 
-    chipsWrap.innerHTML = chosen.map(function (o) {
-        return '<span class="inline-flex items-center gap-1 bg-pcrm-50 dark:bg-pcrm-900/30 text-pcrm-700 dark:text-pcrm-300 text-xs font-medium pl-2 pr-1 py-1 rounded-full border border-pcrm-200 dark:border-pcrm-800">'
-            + o.label
-            + '<button type="button" onclick="removeCreateLeaveShift(' + o.id + ')" class="w-4 h-4 flex items-center justify-center rounded-full hover:bg-pcrm-200 dark:hover:bg-pcrm-800"><i class="bi bi-x text-xs"></i></button>'
-            + '</span>';
-    }).join('');
-    chipsWrap.classList.toggle('hidden', chosen.length === 0);
-
-    hiddenWrap.innerHTML = chosen.map(function (o) {
-        return '<input type="hidden" name="shift_schedule_ids[]" value="' + o.id + '">';
-    }).join('');
-}
-
-function renderCreateLeaveShiftDropdown(query) {
-    const dropdown = document.getElementById('createLeaveShiftDropdown');
-    const selected = createLeaveSelectedSet();
-    const q = (query || '').trim().toLowerCase();
-    const matches = createLeaveShiftOptions.filter(function (o) {
-        return !selected.has(String(o.id)) && (!q || o.label.toLowerCase().includes(q));
+    const previousValue = createLeaveCustomShiftTS.getValue() || String(createLeaveOldShiftScheduleId || '');
+    createLeaveCustomShiftTS.clear(true);
+    createLeaveCustomShiftTS.clearOptions();
+    options.forEach(function (o) {
+        createLeaveCustomShiftTS.addOption({ value: String(o.id), text: o.label, start: o.start_time || '', end: o.end_time || '', split: o.split_time || '', breakStart: o.break_start || '', breakMinutes: o.break_minutes || 0, shiftType: o.shift_type || 'fulltime', leaveAdjusted: !!o.leave_adjusted });
     });
+    createLeaveCustomShiftTS.refreshOptions(false);
 
-    dropdown.innerHTML = matches.length === 0
-        ? '<div class="px-3 py-2 text-xs text-slate-400">Không có ca nào phù hợp</div>'
-        : matches.map(function (o) {
-            return '<button type="button" onclick="addCreateLeaveShift(' + o.id + ')" class="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-between gap-2">'
-                + '<span>' + o.label + '</span>'
-                + (o.shift_type === 'parttime' ? '<span class="badge badge-neutral text-[10px] shrink-0">part-time</span>' : '')
-                + '</button>';
-        }).join('');
+    const validIds = options.map(function (o) { return String(o.id); });
+    if (previousValue && validIds.includes(String(previousValue))) {
+        createLeaveCustomShiftTS.setValue(String(previousValue), true);
+    }
+    if (hint) hint.classList.toggle('hidden', options.length > 0);
+    applyCreateLeaveCustomShiftBounds();
 }
 
-function addCreateLeaveShift(id) {
-    if (!createLeaveSelectedIds.includes(id)) createLeaveSelectedIds.push(id);
-    document.getElementById('createLeaveShiftSearch').value = '';
-    renderCreateLeaveShiftChips();
-    renderCreateLeaveShiftDropdown('');
-    refreshCreateLeaveBalanceNote();
+// Cập nhật gợi ý khung giờ ca khi chọn ca. KHÔNG dùng thuộc tính min/max native của
+// <input type="time"> nữa — chúng bung popup tiếng Anh khó hiểu ("Value must be 12:00 or later")
+// và chặn nhầm. Thay vào đó chỉ hiển thị khung giờ + tự tính giờ nghỉ/công (updateCreateLeaveDurationInfo),
+// còn chặn giá trị ngoài ca do server validate với thông báo tiếng Việt rõ ràng.
+function applyCreateLeaveCustomShiftBounds() {
+    updateCreateLeaveDurationInfo();
 }
 
-function removeCreateLeaveShift(id) {
-    createLeaveSelectedIds = createLeaveSelectedIds.filter(function (x) { return x !== id; });
-    renderCreateLeaveShiftChips();
-    renderCreateLeaveShiftDropdown(document.getElementById('createLeaveShiftSearch').value);
-    refreshCreateLeaveBalanceNote();
+// 'HH:MM' -> số phút trong ngày.
+function leaveTimeToMinutes(t) {
+    if (!t) return null;
+    const parts = t.split(':');
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1] || '0', 10);
+}
+
+// Số phút CÔNG thực trong [from, to] của ca đang chọn — trừ phần trùng giờ nghỉ giữa ca.
+// Mirror của Shift::workMinutesInWindow() ở phía server.
+function leaveWorkMinutesInWindow(from, to, opt) {
+    const f = leaveTimeToMinutes(from), t = leaveTimeToMinutes(to);
+    if (f === null || t === null || t <= f) return null;
+    let minutes = t - f;
+    const bs = opt.breakStart ? leaveTimeToMinutes(opt.breakStart) : null;
+    const bm = parseInt(opt.breakMinutes || 0, 10);
+    if (bs !== null && bm > 0) {
+        const be = bs + bm;
+        const os = Math.max(f, bs), oe = Math.min(t, be);
+        if (oe > os) minutes -= (oe - os);
+    }
+    return Math.max(0, minutes);
+}
+
+// Tổng phút công của ca (span - giờ nghỉ) — mẫu số quy đổi công.
+function leaveNetWorkMinutes(opt) {
+    const s = leaveTimeToMinutes(opt.start), e = leaveTimeToMinutes(opt.end);
+    if (s === null || e === null) return 0;
+    let span = e - s;
+    if (span <= 0) span += 24 * 60; // ca qua đêm
+    return Math.max(0, span - parseInt(opt.breakMinutes || 0, 10));
+}
+
+// Hiển thị: khung giờ ca + giờ nghỉ thực tế (đã trừ giờ nghỉ giữa ca) + quy đổi công (ca fulltime).
+function updateCreateLeaveDurationInfo() {
+    const box = document.getElementById('createLeaveDurationInfo');
+    const fromInput = document.getElementById('createLeaveFromTime');
+    const toInput = document.getElementById('createLeaveToTime');
+    if (!box || !fromInput || !toInput) return;
+
+    const opt = getSelectedCustomShiftOption();
+    if (!opt || !opt.start || !opt.end) {
+        box.classList.add('hidden');
+        return;
+    }
+
+    const rangeLabel = opt.leaveAdjusted ? 'Khung giờ còn lại' : 'Khung giờ ca';
+    let html = '<i class="bi bi-clock-history mr-1"></i>' + rangeLabel + ': <b>' + opt.start + '–' + opt.end + '</b>';
+    if (opt.leaveAdjusted) {
+        html += '<br><span class="text-amber-600 dark:text-amber-400"><i class="bi bi-info-circle-fill mr-1"></i>Một phần ca này đã được duyệt nghỉ theo đơn khác — chỉ còn xin nghỉ được trong khung giờ trên. Muốn nghỉ sớm hơn, hãy xoá đơn nghỉ đã duyệt trước đó.</span>';
+    }
+    const from = fromInput.value, to = toInput.value;
+
+    if (from && to) {
+        const wm = leaveWorkMinutesInWindow(from, to, opt);
+        if (wm === null) {
+            html += ' · <span class="text-red-600 dark:text-red-400 font-semibold">Đến giờ phải sau Từ giờ</span>';
+        } else {
+            const h = Math.floor(wm / 60), m = wm % 60;
+            const dur = h + ' giờ' + (m ? ' ' + m + ' phút' : '');
+            html += ' · Nghỉ thực tế: <b class="text-pcrm-700 dark:text-pcrm-300">' + dur + '</b>';
+
+            const net = leaveNetWorkMinutes(opt);
+            if (opt.shiftType !== 'parttime' && net > 0) {
+                const cong = Math.round(Math.min(1, wm / net) * 100) / 100;
+                html += ' ≈ <b class="text-pcrm-700 dark:text-pcrm-300">' + cong + ' công</b>';
+            }
+
+            if (from < opt.start || to > opt.end) {
+                html += '<br><span class="text-red-600 dark:text-red-400 font-semibold"><i class="bi bi-exclamation-triangle-fill mr-1"></i>Giờ nghỉ đang nằm ngoài khung giờ ca — vui lòng nhập trong ' + opt.start + '–' + opt.end + '.</span>';
+            }
+        }
+    }
+
+    box.innerHTML = html;
+    box.classList.remove('hidden');
+}
+
+// Option (ca) đang chọn ở picker "nghỉ nửa ngày theo giờ" — chứa start/end/split để nút
+// "Nghỉ buổi sáng/chiều" tính khung giờ theo đúng ca. Trả null nếu chưa chọn ca.
+function getSelectedCustomShiftOption() {
+    const value = createLeaveCustomShiftTS && createLeaveCustomShiftTS.getValue();
+    return value ? createLeaveCustomShiftTS.options[value] : null;
+}
+
+function setCreateLeaveCustomTimeRange(fromTime, toTime) {
+    const fromInput = document.getElementById('createLeaveFromTime');
+    const toInput = document.getElementById('createLeaveToTime');
+    const value = createLeaveCustomShiftTS && createLeaveCustomShiftTS.getValue();
+    const opt = value ? createLeaveCustomShiftTS.options[value] : null;
+    if (!opt) return;
+    const start = opt.start || '00:00';
+    const end = opt.end || '23:59';
+    // Kẹp trong khoảng [start, end] của ca — VD ca 09:00–12:00 (chỉ nửa buổi sáng) thì nút
+    // "Nghỉ buổi chiều" vẫn cho ra khung giờ hợp lệ thay vì 13:00 nằm ngoài ca.
+    fromInput.value = fromTime < start ? start : (fromTime > end ? end : fromTime);
+    toInput.value = toTime > end ? end : (toTime < start ? start : toTime);
+    updateCreateLeaveDurationInfo();
 }
 
 function toggleCreateLeavePartialMode() {
     const toggle = document.getElementById('createLeavePartialToggle');
-    const wrap   = document.getElementById('createLeaveShiftPickerWrap');
+    const wrap   = document.getElementById('createLeavePartialWrap');
     wrap.classList.toggle('hidden', !toggle.checked);
     refreshCreateLeaveShifts();
+}
+
+// Chỉ nhân viên khối văn phòng (is_office) VÀ đang chọn đúng 1 ngày (date_from = date_to) mới
+// được nghỉ nửa ngày theo giờ cụ thể (NV nhà hàng/bếp/bar làm trọn ca, không có khái niệm nửa
+// ca) — ẩn lựa chọn và tự chuyển về mode "theo ca cụ thể" nếu không còn hợp lệ (VD vừa đổi sang
+// nhân viên không thuộc văn phòng, hoặc mở rộng khoảng ngày ra nhiều hơn 1 ngày).
+function syncCreateLeavePartialModeVisibility() {
+    const toggle = document.getElementById('createLeavePartialToggle');
+    if (!toggle || toggle.value !== '1') return;
+
+    const form = document.getElementById('createLeaveForm');
+    const dateFrom = form.querySelector('[name="date_from"]').value;
+    const dateTo = form.querySelector('[name="date_to"]').value || dateFrom;
+    const employeeId = getCreateLeaveEmployeeId();
+    const isOffice = !!(employeeId && createLeaveOfficeFlags[employeeId]);
+    const isSingleDay = !!dateFrom && dateFrom === dateTo;
+    const customAllowed = isOffice && isSingleDay;
+
+    const modeShiftsLabel = document.getElementById('createLeaveModeShiftsLabel');
+    if (modeShiftsLabel) {
+        modeShiftsLabel.textContent = customAllowed ? 'Nghỉ cả ngày (theo ca)' : 'Nghỉ theo ca cụ thể';
+    }
+
+    const modeGroup = document.getElementById('createLeavePartialModeGroup');
+    if (modeGroup) {
+        modeGroup.classList.toggle('hidden', !customAllowed);
+    }
+
+    document.getElementById('createLeaveModeCustomLabel').classList.toggle('hidden', !customAllowed);
+
+    const modeShifts = document.getElementById('createLeaveModeShifts');
+    const modeCustom = document.getElementById('createLeaveModeCustom');
+    if (!customAllowed && modeCustom.checked) {
+        modeShifts.checked = true;
+    }
+
+    const useCustom = customAllowed && modeCustom.checked;
+    document.getElementById('createLeaveShiftPickerWrap').classList.toggle('hidden', useCustom);
+    document.getElementById('createLeaveCustomTimeWrap').classList.toggle('hidden', !useCustom);
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('createLeaveForm');
     if (!form) return;
+
+    initCreateLeaveTomSelects();
+
     ['date_from', 'date_to'].forEach(function (name) {
         const el = form.querySelector('[name="' + name + '"]');
         if (el) el.addEventListener('change', function () {
@@ -420,36 +652,49 @@ document.addEventListener('DOMContentLoaded', function () {
             refreshCreateLeaveBalanceNote();
         });
     });
-    const empHidden = form.querySelector('#createLeaveEmployeeField .emp-combobox-value');
+    const empHidden = form.querySelector('[name="employee_id"]');
     if (empHidden) empHidden.addEventListener('change', function () {
         refreshCreateLeaveShifts();
         refreshCreateLeaveBalanceNote();
     });
 
-    document.getElementById('createLeavePartialToggle').addEventListener('change', function () {
-        toggleCreateLeavePartialMode();
-        refreshCreateLeaveBalanceNote();
+    ['createLeaveModeShifts', 'createLeaveModeCustom'].forEach(function (id) {
+        document.getElementById(id).addEventListener('change', function () {
+            // Đổi mode thì xoá lựa chọn của mode kia — tránh gửi kèm dữ liệu thừa (VD đã chọn vài
+            // ca ở mode "theo ca cụ thể" rồi đổi sang "nửa ngày theo giờ").
+            if (this.value === 'custom_time') {
+                if (createLeaveShiftTS) createLeaveShiftTS.clear(true);
+            } else {
+                if (createLeaveCustomShiftTS) createLeaveCustomShiftTS.clear(true);
+                document.getElementById('createLeaveFromTime').value = '';
+                document.getElementById('createLeaveToTime').value = '';
+            }
+            syncCreateLeavePartialModeVisibility();
+            refreshCreateLeaveBalanceNote();
+        });
     });
 
-    const searchInput = document.getElementById('createLeaveShiftSearch');
-    const dropdown = document.getElementById('createLeaveShiftDropdown');
-    searchInput.addEventListener('input', function () {
-        dropdown.classList.remove('hidden');
-        renderCreateLeaveShiftDropdown(searchInput.value);
-    });
-    searchInput.addEventListener('focus', function () {
-        dropdown.classList.remove('hidden');
-        renderCreateLeaveShiftDropdown(searchInput.value);
-    });
-    document.addEventListener('click', function (e) {
-        if (!document.getElementById('createLeaveShiftPickerWrap').contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
+    ['createLeaveFromTime', 'createLeaveToTime'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateCreateLeaveDurationInfo);
     });
 
-    @if(old('is_partial_day'))
-        toggleCreateLeavePartialMode();
-    @endif
+    document.getElementById('createLeaveCustomMorningBtn').addEventListener('click', function () {
+        // Nghỉ buổi sáng = từ đầu ca đến điểm chia nửa giờ công (split_time, đã tính giờ nghỉ giữa
+        // ca). VD ca 09:00–18:00 nghỉ 12:00–13:00 → 09:00–14:00 (= 4h công = nửa ngày).
+        const opt = getSelectedCustomShiftOption();
+        if (!opt) return;
+        setCreateLeaveCustomTimeRange(opt.start || '00:00', opt.split || opt.end || '12:00');
+    });
+    document.getElementById('createLeaveCustomAfternoonBtn').addEventListener('click', function () {
+        // Nghỉ buổi chiều = từ điểm chia nửa giờ công đến cuối ca. VD 14:00–18:00 (= 4h công).
+        const opt = getSelectedCustomShiftOption();
+        if (!opt) return;
+        setCreateLeaveCustomTimeRange(opt.split || opt.start || '13:00', opt.end || '23:59');
+    });
+
+    refreshCreateLeaveShifts();
+    refreshCreateLeaveBalanceNote();
 });
 
 // Hiển thị số ngày phép năm còn lại của nhân viên đang chọn (hoặc chính mình nếu không phải
@@ -466,7 +711,7 @@ function refreshCreateLeaveBalanceNote() {
         return;
     }
 
-    const empHidden = form.querySelector('#createLeaveEmployeeField .emp-combobox-value');
+    const empHidden = form.querySelector('[name="employee_id"]');
     const employeeId = (empHidden && empHidden.value) ? empHidden.value : form.dataset.ownEmployeeId;
     const balances = JSON.parse(document.getElementById('createLeaveBalanceData').textContent || '{}');
     const remaining = employeeId ? balances[employeeId] : undefined;
@@ -486,13 +731,17 @@ function refreshCreateLeaveBalanceNote() {
         return;
     }
 
-    const isPartial = document.getElementById('createLeavePartialToggle').checked;
+    const isPartial = document.getElementById('createLeavePartialToggle').value === '1';
 
     if (isPartial) {
-        // Nghỉ theo ca cụ thể chỉ trừ đúng tỉ lệ các ca đã chọn (tính chính xác ở server khi gửi
-        // đơn) — chỉ hiện số ngày phép còn lại, không ước tính số ngày xin ở đây để tránh sai lệch.
+        // Nghỉ theo ca cụ thể / nghỉ nửa ngày theo giờ đều chỉ trừ đúng tỉ lệ (tính chính xác ở
+        // server khi gửi đơn) — chỉ hiện số ngày phép còn lại, không ước tính số ngày xin ở đây để
+        // tránh sai lệch.
+        const isCustomTime = document.getElementById('createLeaveModeCustom').checked
+            && !document.getElementById('createLeaveModeCustomLabel').classList.contains('hidden');
         badge.classList.add('badge-success');
-        badge.innerHTML = '<i class="bi bi-calendar-check-fill mr-1"></i>Phép năm còn lại: ' + remaining + ' ngày (nghỉ theo ca cụ thể sẽ trừ theo tổng tỉ lệ giờ của các ca đã chọn)';
+        badge.innerHTML = '<i class="bi bi-calendar-check-fill mr-1"></i>Phép năm còn lại: ' + remaining + ' ngày ('
+            + (isCustomTime ? 'nghỉ nửa ngày sẽ trừ theo đúng tỉ lệ giờ đã chọn' : 'nghỉ theo ca cụ thể sẽ trừ theo tổng tỉ lệ giờ của các ca đã chọn') + ')';
         return;
     }
 

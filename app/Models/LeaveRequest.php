@@ -127,6 +127,37 @@ class LeaveRequest extends Model
         return 'Nghỉ nửa ngày' . ($time ? " ({$time})" : '');
     }
 
+    /**
+     * Các ca đã chọn nghỉ ("Nghỉ N ca cụ thể") — ưu tiên bảng pivot, fallback shift_schedule_id
+     * đơn cho dữ liệu cũ. Đơn nghỉ cả ngày trả mảng rỗng. Nên eager-load
+     * 'shiftSchedules.shift' và 'shiftSchedule.shift' khi dùng cho danh sách (tránh N+1).
+     *
+     * @return array<int, array{date: string, name: string, time: string, fraction: ?float}>
+     */
+    public function selectedShifts(): array
+    {
+        $schedules = $this->shiftSchedules->isNotEmpty()
+            ? $this->shiftSchedules
+            : collect([$this->shiftSchedule])->filter();
+
+        return $schedules
+            ->sortBy(fn($s) => $s->work_date->toDateString() . ' ' . ($s->effectiveShift()?->start_time ?? ''))
+            ->map(function ($s) {
+                $shift = $s->effectiveShift();
+
+                return [
+                    'date'     => $s->work_date->format('d/m/Y'),
+                    'name'     => $s->shift?->name ?? 'Ca linh hoạt',
+                    'time'     => $shift && $shift->start_time && $shift->end_time
+                        ? substr($shift->start_time, 0, 5) . ' – ' . substr($shift->end_time, 0, 5)
+                        : '',
+                    'fraction' => isset($s->pivot) && $s->pivot->day_fraction !== null ? (float) $s->pivot->day_fraction : null,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
     public function typeLabel(): string
     {
         return match ($this->type) {
